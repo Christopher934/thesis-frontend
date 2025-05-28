@@ -40,7 +40,7 @@ const PegawaiForm = ({ type, data }: { type: "create" | "update"; data?: any }) 
     const onSubmit = handleSubmit(data => { console.log(data) });
     return (
         < form action="" className="flex flex-col gap-4" onSubmit={onSubmit}>
-            <h1 className="text-xl font-semibold">Tambah data pegawai</h1>
+            <h1 className="text-xl font-semibold">{type === "create" ? "Create" : "Update"} data pegawai</h1>
             <span className="text-xs text-gray-400 font-medium">Authentication Information</span>
             <div className="flex justify-between gap-4 flex-wrap">
                 <InputField
@@ -88,7 +88,7 @@ const PegawaiForm = ({ type, data }: { type: "create" | "update"; data?: any }) 
                     name="phone"
                     register={register}
                     error={errors.phone}
-                    defaultValue={data?.phone}
+                    defaultValue={data?.nomorhandphone}
                 />
                 <InputField
                     label="Alamat"

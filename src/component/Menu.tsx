@@ -32,7 +32,7 @@ const menuItems = [
             {
                 icon: "/assignment.png",
                 label: "Ajukan Tukar Shift",
-                href: "/list/ajukanpertukaranshift",
+                href: "/list/ajukantukarshift",
                 visible: ["admin", "pegawai"],
             },
             {
@@ -49,15 +49,15 @@ const menuItems = [
             },
             {
                 icon: "/message.png",
-                label: "Pengumuman",
+                label: "Pesan",
                 href: "/list/messages",
                 visible: ["admin", "pegawai"],
             },
             {
                 icon: "/announcement.png",
                 label: "Laporan",
-                href: "/list/Laporan",
-                visible: ["admin", "pegawai"],
+                href: "/list/laporan",
+                visible: ["admin",],
             },
         ],
     },
@@ -68,12 +68,6 @@ const menuItems = [
                 icon: "/profile.png",
                 label: "Profile",
                 href: "/profile",
-                visible: ["admin", "pegawai"],
-            },
-            {
-                icon: "/setting.png",
-                label: "Settings",
-                href: "/settings",
                 visible: ["admin", "pegawai"],
             },
             {

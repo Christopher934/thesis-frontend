@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int                @id @default(autoincrement())
+  nama                 String
+  email                String             @unique
+  password             String
+  role                 Role
+  nomorHP              String?
+  idPegawai            String             @unique
+  unitKerja            String?
+  absensi              Absensi[]
+  shift                Shift[]
+  // 🔁 Relasi balik untuk shift swap request
+  shiftRequestsPengaju ShiftSwapRequest[] @relation("Pengaju")
+  shiftRequestsTarget  ShiftSwapRequest[] @relation("Target")
+  createdAt            DateTime           @default(now())
+}
+
+model Shift {
+  id           Int                @id @default(autoincrement())
+  tanggal      DateTime
+  jamMulai     String
+  jamSelesai   String
+  lokasiShift  String
+  userId       Int
+  user         User               @relation(fields: [userId], references: [id])
+  // 🔁 Relasi balik untuk permintaan pertukaran shift
+  swapRequests ShiftSwapRequest[]
+  createdAt    DateTime           @default(now())
+}
+
+model Absensi {
+  id        Int           @id @default(autoincrement())
+  tanggal   DateTime
+  jamMasuk  String?
+  jamKeluar String?
+  status    AbsensiStatus
+  userId    Int
+  user      User          @relation(fields: [userId], references: [id])
+  createdAt DateTime      @default(now())
+}
+
+model ShiftSwapRequest {
+  id           Int        @id @default(autoincrement())
+  pengajuId    Int
+  targetUserId Int
+  shiftId      Int
+  status       SwapStatus @default(PENDING)
+  createdAt    DateTime   @default(now())
+
+  pengaju    User  @relation("Pengaju", fields: [pengajuId], references: [id])
+  targetUser User  @relation("Target", fields: [targetUserId], references: [id])
+  shift      Shift @relation(fields: [shiftId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  DOKTER
+  PERAWAT
+  STAF
+}
+
+enum AbsensiStatus {
+  HADIR
+  TERLAMBAT
+  SAKIT
+  IZIN
+  ALPHA
+}
+
+enum SwapStatus {
+  PENDING
+  DISETUJUI
+  DITOLAK
+}

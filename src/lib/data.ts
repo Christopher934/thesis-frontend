@@ -1,6 +1,6 @@
 // TEMPORARY DATA
 
-export let role = "admin"; // "admin" or "pegawai"
+export let role = "pegawai"; // "admin" or "pegawai"
 
 export const tanagakerjaData = [
 
@@ -257,16 +257,17 @@ export const jadwalData = [
     idpegawai: "PEG001",
     nama: "dr. Ana Sulistyo",
     nomorhandphone: "081234567890",
-    tanggal: "2025-06-01",
+    tanggal: "Senin, 2 Juni",
     lokasishift: "Poli Umum",
     jammulai: "07:00",
-    jamselesai: "14:00"
+    jamselesai: "14:00",
+    tipeshift: "Pagi",
   },
   {
     idpegawai: "PEG002",
     nama: "Suster Rini Wijaya",
     nomorhandphone: "082112345678",
-    tanggal: "2025-06-01",
+    tanggal: "Senin, 2 Juni",
     lokasishift: "IGD",
     jammulai: "14:00",
     jamselesai: "21:00"
@@ -275,7 +276,7 @@ export const jadwalData = [
     idpegawai: "PEG003",
     nama: "Budi Santoso",
     nomorhandphone: "085612345678",
-    tanggal: "2025-06-01",
+    tanggal: "Senin, 2 Juni",
     lokasishift: "Rekam Medis",
     jammulai: "08:00",
     jamselesai: "15:00"
@@ -284,7 +285,7 @@ export const jadwalData = [
     idpegawai: "PEG004",
     nama: "drg. Citra Amelia",
     nomorhandphone: "081278945612",
-    tanggal: "2025-06-01",
+    tanggal: "Senin, 2 Juni",
     lokasishift: "Poli Gigi",
     jammulai: "07:30",
     jamselesai: "13:30"
@@ -293,7 +294,7 @@ export const jadwalData = [
     idpegawai: "PEG005",
     nama: "Joko Prasetyo",
     nomorhandphone: "083812345611",
-    tanggal: "2025-06-01",
+    tanggal: "Senin, 2 Juni",
     lokasishift: "Sarana & Prasarana",
     jammulai: "06:00",
     jamselesai: "14:00"

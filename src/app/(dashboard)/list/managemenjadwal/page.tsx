@@ -9,9 +9,9 @@ const columns = [
     { headers: "Nama", accessor: "nama" },
     { headers: "ID Pegawai", accessor: "nomorhandphone", className: "hidden md:table-cell" },
     { headers: "Tanggal", accessor: "jabatan", className: "hidden md:table-cell" },
-    { headers: "Unit Kerja", accessor: "unitkerja", className: "hidden md:table-cell" },
     { headers: "Jam Mulai", accessor: "status", className: "hidden md:table-cell" },
     { headers: "Jam Selesai", accessor: "status", className: "hidden md:table-cell" },
+    { headers: "Shift", accessor: "tipeshift", className: "table-cell md:hidden" },
     { headers: "Action", accessor: "action" },
 
 ]
@@ -24,6 +24,7 @@ type Jadwal = {
     lokasishift: string;
     jammulai: string;
     jamselesai: string;
+    tipeshift: string;
 }
 
 const ManagemenJadwalPage = () => {
@@ -33,14 +34,19 @@ const ManagemenJadwalPage = () => {
                 <td className="flex items-center gap-4 p-4">
                     <div className="flex flex-col">
                         <h3 className="font-semibold">{item.nama}</h3>
-                        <p className="text-xs text-gray-500">{item?.nomorhandphone}</p>
+                        <p className="text-xs text-gray-500">{item.lokasishift}</p>
                     </div>
                 </td>
                 <td className="hidden md:table-cell">{item.idpegawai}</td>
                 <td className="hidden md:table-cell">{item.tanggal}</td>
-                <td className="hidden md:table-cell">{item.lokasishift}</td>
                 <td className="hidden md:table-cell">{item.jammulai}</td>
                 <td className="hidden md:table-cell">{item.jamselesai}</td>
+                <td className="table-cell md:hidden">
+                    <div className="flex flex-col">
+                        <div >{item.tanggal}</div>
+                        <div className="text-xs text-gray-500"> {item.jammulai}-{item.jamselesai}</div>
+                    </div>
+                </td>
                 <td>
                     <div className="flex items-center gap-2">
                         {role === "admin" && (

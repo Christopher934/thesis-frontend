@@ -2,9 +2,17 @@
 import Image from "next/image";
 import { useState } from "react";
 import PegawaiForm from "./forms/PegawaiForm";
+import JadwalForm from "./forms/JadwalForm";
+import TukarShiftForm from "./forms/TukarShiftForm";
+
+const forms: { [key: string]: (type: "create" | "update", data?: any) => JSX.Element; } = {
+    pegawai: (type, data) => <PegawaiForm type={type} data={data} />,
+    tukarshift: (type, data) => <TukarShiftForm type={type} data={data} />,
+    jadwal: (type, data) => <JadwalForm type={type} data={data} />, // Assuming JadwalForm is similar to PegawaiForm
+}
 
 const FormModal = ({ table, type, data, id }: {
-    table: "pegawai" | "jadwal";
+    table: "pegawai" | "jadwal" | "tukarshift";
     type: "create" | "update" | "delete";
     data?: any;
     id?: string;
@@ -19,9 +27,9 @@ const FormModal = ({ table, type, data, id }: {
                 <span className="text-center font-medium">Data pada {table} akan hilang secara permanen. Yakin ingin menghapus?</span>
                 <button className="bg-red-700 text-white py-2 px-2 rounded-md border-none w-max self-center">Delete</button>
             </form>
-        ) : (
-            <PegawaiForm type={"create"} />
-        );
+        ) : type === "create" || type === "update" ? (
+            forms[table](type, data) // Render the appropriate form based on the table type
+        ) : "Form not found";
     };
     return (
         <>

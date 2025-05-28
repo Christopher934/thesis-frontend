@@ -1,10 +1,8 @@
-'use client'; // ✅ Ini penting untuk pakai useState dan useRouter
+'use client';
 
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-
-
 
 const SignInPage = () => {
     const [email, setEmail] = useState('');
@@ -14,13 +12,26 @@ const SignInPage = () => {
 
     const handleLogin = async () => {
         try {
-            const res = await axios.post<{ token: string }>('http://localhost:3001/auth/login', {
-                email,
-                password,
-            });
-            localStorage.setItem('token', res.data.token);
-            setError('');
-            router.push('/dashboard');
+            const res = await axios.post<{
+                token: string;
+                user: {
+                    id: number;
+                    email: string;
+                    role: 'ADMIN' | 'DOKTER' | 'PERAWAT' | 'STAF';
+                };
+            }>('http://localhost:3004/auth/login', { email, password });
+
+            const { token, user } = res.data;
+            localStorage.setItem('token', token);
+            localStorage.setItem('role', user.role);
+
+            // arahkan ke dashboard berdasarkan role
+            if (user.role === 'ADMIN') {
+                router.push('/dashboard/admin');
+            } else {
+                router.push('/dashboard/pegawai');
+            }
+
         } catch (err: any) {
             setError(err.response?.data?.message || 'Login gagal');
         }

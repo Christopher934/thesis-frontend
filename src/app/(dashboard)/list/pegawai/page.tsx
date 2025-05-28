@@ -24,8 +24,7 @@ const columns = [
     { headers: "Jabatan", accessor: "jabatan", className: "hidden md:table-cell" },
     { headers: "Unit Kerja", accessor: "unitkerja", className: "hidden md:table-cell" },
     { headers: "Status", accessor: "status", className: "hidden md:table-cell" },
-    { headers: "Action", accessor: "action" },
-
+    ...(role === "admin" ? [{ headers: "Action", accessor: "action" }] : []),
 ]
 
 const PegawaiListPage = () => {

@@ -1,6 +1,6 @@
 // TEMPORARY DATA
 
-export let role = "pegawai"; // "admin" or "pegawai"
+export let role = "admin"; // "admin" or "pegawai"
 
 export const tanagakerjaData = [
 

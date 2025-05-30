@@ -17,16 +17,17 @@ export class UserService {
     }
 
     // Create new user
-    async create(data: { email: string; password: string; status: string; role: 'ADMIN' | 'DOKTER' | 'PERAWAT' | 'STAF' }) {
-        return this.prisma.user.create({
-            data: {
-                email: data.email,
-                password: data.password,
-                status: data.status,
-                role: data.role, // ← ini penting
-            },
-        });
-    }
+    async create(data: { nama: string; email: string; password: string; status: string; role: 'ADMIN' | 'DOKTER' | 'PERAWAT' | 'STAF' }) {
+  return this.prisma.user.create({
+    data: {
+      nama: data.nama, // ✅ wajib
+      email: data.email,
+      password: data.password,
+      status: data.status,
+      role: data.role,
+    },
+  });
+}
 
 
     // Update user

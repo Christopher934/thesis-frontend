@@ -1,25 +1,9 @@
-import Announcements from "../../../component/Announcement"
-import EventCalendar from "../../../component/EventCalendar"
-import BigCalendar from "../../../component/BigCalendar"
+// src/app/(dashboard)/pegawai/page.tsx
 
-const PegawaiPage = () => {
-  return (
-    <div className='p-2 flex gap-4 flex-col xl:flex-row'>
-      {/* LEFT */}
-      <div className="w-full xl:w-2/3">
-        <div className="h-full bg-white p-4 rounded-md">
-          <h1 className="text-xl font-semibold ">Schedule</h1>
-          <BigCalendar></BigCalendar>
-        </div>
-      </div>
-      {/* RIGHT */}
-      <div className="w-full lg:w-1/3 flex flex-col gap-8">
-        <EventCalendar />
-        {/* <Announcements /> */}
-        <Announcements />
-      </div>
-    </div>
-  )
-}
+import dynamic from 'next/dynamic';
 
-export default PegawaiPage
+const PegawaiPage = dynamic(() => import('@/component/pages/PegawaiPageProtected'), {
+  ssr: false,
+});
+
+export default PegawaiPage;

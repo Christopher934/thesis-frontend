@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,14 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-  role     Role   // tambahkan ini
-  status   String
-}
-
 enum Role {
   ADMIN
   DOKTER
@@ -28,3 +14,100 @@ enum Role {
   STAF
 }
 
+enum AbsensiStatus {
+  HADIR
+  TERLAMBAT
+  IZIN
+  ALFA
+}
+
+enum SwapStatus {
+  PENDING
+  DISETUJUI
+  DITOLAK
+}
+
+model User {
+  id         Int           @id @default(autoincrement())
+  nama       String
+  email      String        @unique
+  password   String
+  role       Role
+  status     String
+  shift      Shift[]       @relation("ShiftPegawai")
+  absensi    Absensi[]
+  swapFrom   ShiftSwap[]   @relation("SwapFrom")
+  swapTo     ShiftSwap[]   @relation("SwapTo")
+  token      Token[]
+  loginLogs  LoginLog[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model Shift {
+  id         Int         @id @default(autoincrement())
+  tanggal    DateTime
+  jamMulai   String
+  jamSelesai String
+  pegawaiId  Int
+  pegawai    User        @relation("ShiftPegawai", fields: [pegawaiId], references: [id])
+  absensi    Absensi?
+  swap       ShiftSwap?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Absensi {
+  id         Int            @id @default(autoincrement())
+  userId     Int
+  shiftId    Int            @unique
+  jamMasuk   DateTime?
+  jamKeluar  DateTime?
+  status     AbsensiStatus
+  user       User           @relation(fields: [userId], references: [id])
+  shift      Shift          @relation(fields: [shiftId], references: [id])
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}
+
+model ShiftSwap {
+  id            Int         @id @default(autoincrement())
+  fromUserId    Int
+  toUserId      Int
+  shiftId       Int         @unique
+  status        SwapStatus  @default(PENDING)
+  alasan        String?
+  tanggalSwap   DateTime
+  fromUser      User        @relation("SwapFrom", fields: [fromUserId], references: [id])
+  toUser        User        @relation("SwapTo", fields: [toUserId], references: [id])
+  shift         Shift       @relation(fields: [shiftId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Kegiatan {
+  id          Int       @id @default(autoincrement())
+  nama        String
+  deskripsi   String
+  tanggal     DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Token {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  token      String   @unique
+  expiredAt  DateTime
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  ipAddress String?
+  userAgent String?
+  loginAt   DateTime @default(now())
+}

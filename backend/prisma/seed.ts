@@ -1,107 +1,71 @@
-import { PrismaClient } from '@prisma/client';
+// prisma/seed.ts
+import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Buat password hash
+  // 1) Create atau skip admin
   const adminPass = await bcrypt.hash('admin123', 10);
-  const pegawai1Pass = await bcrypt.hash('pegawai123', 10);
-  const pegawai2Pass = await bcrypt.hash('pegawai456', 10);
-
-  // Tambah User
-  const admin = await prisma.user.create({
-    data: {
-      nama: 'Admin RSUD',
-      email: 'admin@rsud.local',
+  await prisma.user.upsert({
+    where: { username: 'adminrsud' },
+    update: {}, // jika sudah ada, tidak melakukan apa‐apa
+    create: {
+      username: 'adminrsud',
+      email: 'admin@example.com',
       password: adminPass,
-      role: 'ADMIN',
-      status: 'AKTIF',
+      namaDepan: 'Admin',
+      namaBelakang: 'RSUD',
+      alamat: 'Jalan Kesehatan No.1',
+      noHp: '081234567890',
+      jenisKelamin: 'L',
+      tanggalLahir: new Date('1990-01-01'),
+      role: Role.ADMIN,
+      status: 'ACTIVE',
     },
   });
 
-  const pegawai1 = await prisma.user.create({
-    data: {
-      nama: 'Pegawai Satu',
-      email: 'pegawai1@rsud.local',
+  // 2) Create atau skip pegawai satu
+  const pegawai1Pass = await bcrypt.hash('pegawai123', 10);
+  await prisma.user.upsert({
+    where: { username: 'pegawaione' },
+    update: {},
+    create: {
+      username: 'pegawaione',
+      email: 'pegawai1@example.com',
       password: pegawai1Pass,
-      role: 'PERAWAT',
-      status: 'AKTIF',
+      namaDepan: 'Budi',
+      namaBelakang: 'Santoso',
+      alamat: 'Jalan Pahlawan No.2',
+      noHp: '081111111111',
+      jenisKelamin: 'L',
+      tanggalLahir: new Date('1992-05-20'),
+      role: Role.STAF,
+      status: 'ACTIVE',
     },
   });
 
-  const pegawai2 = await prisma.user.create({
-    data: {
-      nama: 'Pegawai Dua',
-      email: 'pegawai2@rsud.local',
+  // 3) Create atau skip pegawai dua
+  const pegawai2Pass = await bcrypt.hash('pegawai456', 10);
+  await prisma.user.upsert({
+    where: { username: 'pegawaitwo' },
+    update: {},
+    create: {
+      username: 'pegawaitwo',
+      email: 'pegawai2@example.com',
       password: pegawai2Pass,
-      role: 'PERAWAT',
-      status: 'AKTIF',
+      namaDepan: 'Siti',
+      namaBelakang: 'Rahayu',
+      alamat: 'Jalan Merdeka No.3',
+      noHp: '082222222222',
+      jenisKelamin: 'P',
+      tanggalLahir: new Date('1994-07-15'),
+      role: Role.STAF,
+      status: 'ACTIVE',
     },
   });
 
-  // Tambah Shift
-  const shift1 = await prisma.shift.create({
-    data: {
-      tanggal: new Date('2025-06-01'),
-      jamMulai: '08:00',
-      jamSelesai: '16:00',
-      pegawaiId: pegawai1.id,
-    },
-  });
-
-  const shift2 = await prisma.shift.create({
-    data: {
-      tanggal: new Date('2025-06-02'),
-      jamMulai: '08:00',
-      jamSelesai: '16:00',
-      pegawaiId: pegawai2.id,
-    },
-  });
-
-  // Tambah Absensi
-  await prisma.absensi.create({
-    data: {
-      userId: pegawai1.id,
-      shiftId: shift1.id,
-      jamMasuk: new Date('2025-06-01T08:10:00'),
-      jamKeluar: new Date('2025-06-01T16:00:00'),
-      status: 'TERLAMBAT',
-    },
-  });
-
-  await prisma.absensi.create({
-    data: {
-      userId: pegawai2.id,
-      shiftId: shift2.id,
-      jamMasuk: new Date('2025-06-02T07:59:00'),
-      jamKeluar: new Date('2025-06-02T16:00:00'),
-      status: 'HADIR',
-    },
-  });
-
-  // Tambah Tukar Shift
-  await prisma.shiftSwap.create({
-    data: {
-      fromUserId: pegawai1.id,
-      toUserId: pegawai2.id,
-      shiftId: shift1.id,
-      status: 'PENDING',
-      alasan: 'Perlu izin ke luar kota',
-      tanggalSwap: new Date('2025-06-01'),
-    },
-  });
-
-  // Tambah Kegiatan
-  await prisma.kegiatan.create({
-    data: {
-      nama: 'Rapat Evaluasi Bulanan',
-      deskripsi: 'Rapat rutin untuk membahas kinerja unit kerja RSUD',
-      tanggal: new Date('2025-06-03T10:00:00'),
-    },
-  });
-
-  console.log('✅ Data seed berhasil dimasukkan!');
+  console.log('✅ Seeding selesai.');
 }
 
 main()
@@ -109,4 +73,6 @@ main()
     console.error('❌ Error saat seeding:', e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

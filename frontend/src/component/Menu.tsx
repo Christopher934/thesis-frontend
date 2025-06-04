@@ -8,22 +8,22 @@ const menuItems = [
   {
     title: "MENU",
     items: [
-      { icon: "/home.png", label: "Dashboard", href: "/", visible: ["admin", "perawat"] },
+      { icon: "/home.png", label: "Dashboard", href: "/", visible: ["admin", "perawat","staf","dokter"] },
       { icon: "/tenagakerja.png", label: "Pegawai", href: "/list/pegawai", visible: ["admin"] },
       { icon: "/subject.png", label: "Managemen Jadwal", href: "/list/managemenjadwal", visible: ["admin"] },
-      { icon: "/class.png", label: "Jadwal Saya", href: "/list/jadwalsaya", visible: ["admin", "perawat"] },
-      { icon: "/assignment.png", label: "Ajukan Tukar Shift", href: "/list/ajukantukarshift", visible: ["admin", "perawat"] },
-      { icon: "/attendance.png", label: "Absensi", href: "/list/absensi", visible: ["admin", "perawat"] },
-      { icon: "/calendar.png", label: "Events", href: "/list/events", visible: ["admin", "perawat"] },
-      { icon: "/message.png", label: "Pesan", href: "/list/messages", visible: ["admin", "perawat"] },
+      { icon: "/class.png", label: "Jadwal Saya", href: "/list/jadwalsaya", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/assignment.png", label: "Ajukan Tukar Shift", href: "/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/attendance.png", label: "Absensi", href: "/list/absensi", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/calendar.png", label: "Events", href: "/list/events", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/message.png", label: "Pesan", href: "/list/messages", visible: ["admin", "perawat","staf","dokter"] },
       { icon: "/announcement.png", label: "Laporan", href: "/list/laporan", visible: ["admin"] },
     ],
   },
   {
     title: "OTHER",
     items: [
-      { icon: "/profile.png", label: "Profile", href: "/profile", visible: ["admin", "perawat"] },
-      { icon: "/logout.png", label: "Logout", href: "/logout", visible: ["admin", "perawat"] },
+      { icon: "/profile.png", label: "Profile", href: "/profile", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/logout.png", label: "Logout", href: "/logout", visible: ["admin", "perawat","staf","dokter"] },
     ],
   },
 ];

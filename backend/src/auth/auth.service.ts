@@ -1,8 +1,8 @@
+// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { LoginDto } from './dto/login.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -11,29 +11,26 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(dto: LoginDto) {
+  // Definisi login menerima dua parameter: email dan password
+  async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
+    if (!user) throw new UnauthorizedException('Email atau password salah');
 
-    if (!user) throw new UnauthorizedException('Email tidak ditemukan');
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) throw new UnauthorizedException('Email atau password salah');
 
-    const isMatch = await bcrypt.compare(dto.password, user.password);
-    if (!isMatch) throw new UnauthorizedException('Password salah');
-
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
-
-    const token = await this.jwtService.signAsync(payload);
+    const payload = { sub: user.id, role: user.role };
+    const token = this.jwtService.sign(payload);
 
     return {
       access_token: token,
       user: {
         id: user.id,
-        nama: user.nama,
+        username: user.username,
+        namaDepan: user.namaDepan,
+        namaBelakang: user.namaBelakang,
         email: user.email,
         role: user.role,
       },

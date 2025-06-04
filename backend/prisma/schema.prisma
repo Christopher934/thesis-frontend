@@ -28,46 +28,58 @@ enum SwapStatus {
 }
 
 model User {
-  id         Int           @id @default(autoincrement())
-  nama       String
-  email      String        @unique
-  password   String
-  role       Role
-  status     String
-  shift      Shift[]       @relation("ShiftPegawai")
-  absensi    Absensi[]
-  swapFrom   ShiftSwap[]   @relation("SwapFrom")
-  swapTo     ShiftSwap[]   @relation("SwapTo")
-  token      Token[]
-  loginLogs  LoginLog[]
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id            Int           @id @default(autoincrement())
+  username      String        @unique
+  email         String        @unique
+  password      String
+  namaDepan     String
+  namaBelakang  String
+  alamat        String?
+  noHp          String
+  jenisKelamin  String
+  tanggalLahir  DateTime
+  role          Role
+  status        String        @default("ACTIVE")
+  shift         Shift[]       @relation("ShiftPegawai")
+  absensi       Absensi[]
+  swapFrom      ShiftSwap[]   @relation("SwapFrom")
+  swapTo        ShiftSwap[]   @relation("SwapTo")
+  token         Token[]
+  loginLogs     LoginLog[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("users")
 }
 
 model Shift {
-  id         Int         @id @default(autoincrement())
-  tanggal    DateTime
-  jamMulai   String
-  jamSelesai String
-  pegawaiId  Int
-  pegawai    User        @relation("ShiftPegawai", fields: [pegawaiId], references: [id])
-  absensi    Absensi?
-  swap       ShiftSwap?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id           Int         @id @default(autoincrement())
+  tanggal      DateTime
+  jamMulai     String
+  jamSelesai   String
+  pegawaiId    Int
+  pegawai      User        @relation("ShiftPegawai", fields: [pegawaiId], references: [id])
+  absensi      Absensi?
+  swap         ShiftSwap?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("shifts")
 }
 
 model Absensi {
-  id         Int            @id @default(autoincrement())
-  userId     Int
-  shiftId    Int            @unique
-  jamMasuk   DateTime?
-  jamKeluar  DateTime?
-  status     AbsensiStatus
-  user       User           @relation(fields: [userId], references: [id])
-  shift      Shift          @relation(fields: [shiftId], references: [id])
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id           Int            @id @default(autoincrement())
+  userId       Int
+  shiftId      Int            @unique
+  jamMasuk     DateTime?
+  jamKeluar    DateTime?
+  status       AbsensiStatus
+  user         User           @relation(fields: [userId], references: [id])
+  shift        Shift          @relation(fields: [shiftId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("absensis")
 }
 
 model ShiftSwap {
@@ -83,31 +95,39 @@ model ShiftSwap {
   shift         Shift       @relation(fields: [shiftId], references: [id])
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  @@map("shiftswaps")
 }
 
 model Kegiatan {
-  id          Int       @id @default(autoincrement())
-  nama        String
-  deskripsi   String
-  tanggal     DateTime
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           Int       @id @default(autoincrement())
+  nama         String
+  deskripsi    String
+  tanggal      DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("kegiatans")
 }
 
 model Token {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  token      String   @unique
-  expiredAt  DateTime
-  user       User     @relation(fields: [userId], references: [id])
-  createdAt  DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  token        String   @unique
+  expiredAt    DateTime
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@map("tokens")
 }
 
 model LoginLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  ipAddress String?
-  userAgent String?
-  loginAt   DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  ipAddress   String?
+  userAgent   String?
+  loginAt     DateTime @default(now())
+
+  @@map("login_logs")
 }

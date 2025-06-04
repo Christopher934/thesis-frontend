@@ -1,12 +1,22 @@
-import Image from "next/image"
+// src/component/TableSearch.tsx
+'use client';
 
-const TableSearch = () => {
-    return (
-        <div className="w-full md:w-auto flex items-center gap-2 text-xs ring-[1.5px] ring-gray-300  rounded-full px-2">
-            <Image src="/search.png" alt='' width={14} height={14}></Image>
-            <input type="text" placeholder='Search...' className='w-[200px] p-2 bg-transparent outline-none' />
-        </div>
-    )
+import React from 'react';
+
+type TableSearchProps = {
+  placeholder: string;
+  value: string;
+  onChange: (val: string) => void;
+};
+
+export default function TableSearch({ placeholder, value, onChange }: TableSearchProps) {
+  return (
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="border rounded px-3 py-1 w-full md:w-64 text-sm"
+    />
+  );
 }
-
-export default TableSearch

@@ -1,33 +1,49 @@
 // src/user/user.controller.ts
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  Delete,
+  ValidationPipe,
+  UsePipes,
+} from '@nestjs/common';
 import { UserService } from './user.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UserController {
-    constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService) {}
 
-    @Get()
-    findAll() {
-        return this.userService.findAll();
-    }
+  @Get()
+  async findAll() {
+    return this.userService.findAll();
+  }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.userService.findOne(+id);
-    }
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.userService.findOne(+id);
+  }
 
-    @Post()
-    create(@Body() data: any) {
-        return this.userService.create(data);
-    }
+   @Post()
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.userService.create(createUserDto);
+  }
 
-    @Put(':id')
-    update(@Param('id') id: string, @Body() data: any) {
-        return this.userService.update(+id, data);
-    }
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.userService.update(+id, updateUserDto);
+  }
 
-    @Delete(':id')
-    delete(@Param('id') id: string) {
-        return this.userService.delete(+id);
-    }
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    return this.userService.delete(+id);
+  }
 }

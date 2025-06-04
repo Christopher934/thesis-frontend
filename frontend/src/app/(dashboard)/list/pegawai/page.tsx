@@ -1,99 +1,249 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from "react"
-import Pagination from "@/component/Pagination"
-import TableSearch from "@/component/TableSearch"
-import Table from "@/component/Table"
-import Image from "next/image"
-import FormModal from "@/component/FormModal"
+import { useEffect, useState } from 'react';
+import FormModal from '@/component/FormModal';
+import Table from '@/component/Table';
+import TableSearch from '@/component/TableSearch';
+import Pagination from '@/component/Pagination';
+import Image from 'next/image';
 
-// Dummy data pegawai (nanti bisa di-fetch dari API)
-const dummyPegawaiData = [
-  {
-    nama: "dr. Ana Sulistyo",
-    idpegawai: "PEG001",
-    nomorhandphone: "081234567890",
-    jabatan: "Dokter Umum",
-    unitkerja: "Poli Umum",
-    status: "Aktif",
-    email: "ana.sulistyo@rsud.co.id",
-  },
-  {
-    nama: "Suster Rini Wijaya",
-    idpegawai: "PEG002",
-    nomorhandphone: "082112345678",
-    jabatan: "Perawat",
-    unitkerja: "IGD",
-    status: "Aktif",
-    email: "rini.wijaya@rsud.co.id",
-  },
-]
+type Pegawai = {
+  id: number;
+  username: string;
+  email: string;
+  namaDepan: string;
+  namaBelakang: string;
+  alamat: string;
+  noHp: string;
+  tanggalLahir: string;
+  jenisKelamin: 'L' | 'P';
+  role: 'ADMIN' | 'DOKTER' | 'PERAWAT' | 'STAF';
+  status: 'ACTIVE' | 'INACTIVE';
+};
 
-// Simulasikan role (harusnya dari auth context atau session)
-const currentRole = "admin" // bisa juga "pegawai"
+const ITEMS_PER_PAGE = 10;
 
-const PegawaiListPage = () => {
-  const [pegawai, setPegawai] = useState(dummyPegawaiData)
+export default function PegawaiPage() {
+  const [pegawaiList, setPegawaiList] = useState<Pegawai[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
+  // State untuk menampilkan/hide modal Create
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 1) Fetch data dari /users (bukan /pegawai)
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:3004/users', {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error('Gagal fetch pegawai');
+        const json: Pegawai[] = await res.json();
+        // Hanya include role tertentu
+        const filtered = json.filter((u) =>
+          ['ADMIN', 'DOKTER', 'PERAWAT', 'STAF'].includes(u.role)
+        );
+        setPegawaiList(filtered);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // 2) Filter + Pagination
+  const filteredList = pegawaiList.filter((u) => {
+    const fullName = `${u.namaDepan} ${u.namaBelakang}`.toLowerCase();
+    return (
+      u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fullName.includes(searchTerm.toLowerCase())
+    );
+  });
+  const totalItems = filteredList.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const paginatedList = filteredList.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // 3) Callback setelah “Create” sukses
+  const handleAfterCreate = (newPegawai: Pegawai) => {
+    setPegawaiList((prev) => [...prev, newPegawai]);
+  };
+
+  // 4) Callback setelah “Update” sukses
+  const handleAfterUpdate = (updated: Pegawai) => {
+    setPegawaiList((prev) =>
+      prev.map((p) => (p.id === updated.id ? updated : p))
+    );
+  };
+
+  // 5) Callback setelah “Delete” sukses
+  const handleAfterDelete = (deletedId: number) => {
+    setPegawaiList((prev) => prev.filter((p) => p.id !== deletedId));
+  };
+
+  // 6) Kolom dan fungsi renderRow
   const columns = [
-    { headers: "Nama", accessor: "nama" },
-    { headers: "ID Pegawai", accessor: "idpegawai", className: "hidden md:table-cell" },
-    { headers: "Nomor Handphone", accessor: "nomorhandphone", className: "hidden md:table-cell" },
-    { headers: "Jabatan", accessor: "jabatan", className: "hidden md:table-cell" },
-    { headers: "Unit Kerja", accessor: "unitkerja", className: "hidden md:table-cell" },
-    { headers: "Status", accessor: "status", className: "hidden md:table-cell" },
-    ...(currentRole === "admin" ? [{ headers: "Action", accessor: "action" }] : []),
-  ]
+    { headers: 'No', accessor: 'no' },
+    { headers: 'Nama', accessor: 'namaDepan' },
+    { headers: 'Email', accessor: 'email' },
+    { headers: 'No HP', accessor: 'noHp', className: 'hidden md:table-cell' },
+    {
+      headers: 'Jenis Kelamin',
+      accessor: 'jenisKelamin',
+      className: 'hidden md:table-cell',
+    },
+    {
+      headers: 'Tanggal Lahir',
+      accessor: 'tanggalLahir',
+      className: 'hidden md:table-cell',
+    },
+    { headers: 'Role', accessor: 'role', className: 'hidden md:table-cell' },
+    {
+      headers: 'Status',
+      accessor: 'status',
+      className: 'hidden md:table-cell',
+    },
+    { headers: 'Aksi', accessor: 'action' },
+  ];
 
-  const renderRow = (item: any) => (
-    <tr key={item.idpegawai} className="border-b border-gray-500 even:bg-slate-50 text-md hover:bg-gray-50 transition-colors">
-      <td className="flex items-center gap-4 p-4">
-        <div className="flex flex-col">
-          <h3 className="font-semibold">{item.nama}</h3>
-          <p className="text-xs text-gray-500">{item.email}</p>
-        </div>
-      </td>
-      <td className="hidden md:table-cell">{item.idpegawai}</td>
-      <td className="hidden md:table-cell">{item.nomorhandphone}</td>
-      <td className="hidden md:table-cell">{item.jabatan}</td>
-      <td className="hidden md:table-cell">{item.unitkerja}</td>
-      <td className="hidden md:table-cell">{item.status}</td>
-      {currentRole === "admin" && (
-        <td>
-          <div className="flex items-center gap-2">
-            <FormModal table="pegawai" type="update" data={item} />
-            <FormModal table="pegawai" type="delete" id={item.idpegawai} />
+  const renderRow = (item: Pegawai) => {
+    // Hitung nomor urut tampilan:
+    const rowIndex = paginatedList.indexOf(item); // 0-based di halaman ini
+    const noTampil =
+      (currentPage - 1) * ITEMS_PER_PAGE + (rowIndex + 1);
+
+    return (
+      <tr
+        key={item.id}
+        className="border-b even:bg-gray-50 hover:bg-gray-100"
+      >
+        {/* Kolom “No” */}
+        <td className="px-4 py-2">{noTampil}</td>
+        <td className="px-4 py-2">
+          {item.namaDepan} {item.namaBelakang}
+        </td>
+        <td className="px-4 py-2">{item.email}</td>
+        <td className="px-4 py-2 hidden md:table-cell">{item.noHp}</td>
+        <td className="px-4 py-2 hidden md:table-cell">
+          {item.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+        </td>
+        <td className="px-4 py-2 hidden md:table-cell">
+          {new Date(item.tanggalLahir).toLocaleDateString('id-ID')}
+        </td>
+        <td className="px-4 py-2 hidden md:table-cell">{item.role}</td>
+        <td className="px-4 py-2 hidden md:table-cell">{item.status}</td>
+        
+        <td className="px-4 py-2">
+          <div className="flex gap-2">
+            {/* Tombol “Update” */}
+            <FormModal
+              table="pegawai"
+              type="update"
+              data={{
+                id: item.id,
+                username: item.username,
+                email: item.email,
+                namaDepan: item.namaDepan,
+                namaBelakang: item.namaBelakang,
+                alamat: item.alamat,
+                noHp: item.noHp,
+                tanggalLahir: item.tanggalLahir,
+                jenisKelamin: item.jenisKelamin,
+                role: item.role,
+                status: item.status,
+              }}
+              onCreated={() => {}}
+              onUpdated={handleAfterUpdate}
+              onDeleted={() => {}}
+              // default renderTrigger=true → ikon ✏️ muncul di tabel
+            />
+
+            {/* Tombol “Delete” */}
+            <FormModal
+              table="pegawai"
+              type="delete"
+              id={String(item.id)}
+              nameLabel={`${item.namaDepan} ${item.namaBelakang}`}
+              onCreated={() => {}}
+              onUpdated={() => {}}
+              onDeleted={(did) => handleAfterDelete(Number(did))}
+              // default renderTrigger=true → ikon 🗑️ muncul di tabel
+            />
           </div>
         </td>
-      )}
-    </tr>
-  )
+      </tr>
+    );
+  };
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">Semua Pegawai</h1>
-        <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition-all">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition-all">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
-            {currentRole === "admin" && (
-              <FormModal table="pegawai" type="create" />
-            )}
-          </div>
+    <div className="p-4 bg-white rounded-lg m-4 flex-1">
+      {/* Header bar dengan Search + Filter/Sort + Create */}
+      <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+        <h1 className="text-2xl font-semibold">Manajemen Pegawai</h1>
+
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <TableSearch
+            placeholder="Cari Username / Email / Nama…"
+            value={searchTerm}
+            onChange={(val) => {
+              setSearchTerm(val);
+              setCurrentPage(1);
+            }}
+          />
+
+          {/* Icon filter & sort (dummy saja) */}
+          <button className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200">
+            <Image src="/filter.png" alt="Filter" width={16} height={16} />
+          </button>
+          <button className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200">
+            <Image src="/sort.png" alt="Sort" width={16} height={16} />
+          </button>
+
+          {/* Tombol “Create” (plus) */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition-all"
+          >
+            <Image src="/create.png" alt="Create" width={16} height={16} />
+          </button>
         </div>
       </div>
-      {/* Table */}
-      <Table columns={columns} renderRow={renderRow} data={pegawai} />
-      <Pagination />
-    </div>
-  )
-}
 
-export default PegawaiListPage
+      {/* Table daftar pegawai */}
+      <Table columns={columns} data={paginatedList} renderRow={renderRow} />
+
+      {/* Pagination di bawah tabel */}
+      <div className="mt-4">
+        <Pagination
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          currentPage={currentPage}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
+      </div>
+
+      {/* Modal “Create Pegawai” */}
+      {isModalOpen && (
+        <FormModal
+          table="pegawai"
+          type="create"
+          onCreated={handleAfterCreate}
+          onUpdated={() => {}}
+          onDeleted={() => {}}
+          renderTrigger={false}  // agar tombol “+” di dalam FormModal tidak dirender
+          initialOpen={true}     // buka modal langsung begitu komponen mount
+          // Tambahkan onClose agar setelah cancel parent tahu harus unmount
+          onAfterClose={() => setIsModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}

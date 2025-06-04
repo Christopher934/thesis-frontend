@@ -1,39 +1,52 @@
-import { FieldError } from "react-hook-form";
+// File: src/component/InputField.tsx
+'use client';
+import React from 'react';
+import { FieldError, UseFormRegister } from 'react-hook-form';
 
 type InputFieldProps = {
-    label: string;
-    type?: string;
-    register: any;
-    name: string;
-    defaultValue?: string;
-    error?: FieldError;
-    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
+  label: string;
+  name: string;
+  register: UseFormRegister<any>;
+  error?: FieldError;
+  type?: string;
+  defaultValue?: string;
+  as?: 'textarea';
+  rows?: number;
 };
 
-const InputField = ({
-    label,
-    type = "text",
-    register,
-    name,
-    defaultValue,
-    error,
-    inputProps,
-}: InputFieldProps) => {
-    return (
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-            <label className="text-xs text-gray-500">{label}</label>
-            <input
-                type={type}
-                {...register(name)}
-                className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-                {...inputProps}
-                defaultValue={defaultValue}
-            />
-            {error?.message && (
-                <p className="text-xs text-red-400">{error.message.toString()}</p>
-            )}
-        </div>
-    );
-};
-
-export default InputField;
+export default function InputField({
+  label,
+  name,
+  register,
+  error,
+  type = 'text',
+  defaultValue,
+  as,
+  rows,
+}: InputFieldProps) {
+  return (
+    <div className="flex flex-col">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
+      {as === 'textarea' ? (
+        <textarea
+          {...register(name)}
+          defaultValue={defaultValue}
+          rows={rows}
+          className="w-full border rounded-md px-3 py-2 text-sm"
+        />
+      ) : (
+        <input
+          type={type}
+          {...register(name)}
+          defaultValue={defaultValue}
+          className="w-full border rounded-md px-3 py-2 text-sm"
+        />
+      )}
+      {error && (
+        <p className="text-xs text-red-500 mt-1">{error.message}</p>
+      )}
+    </div>
+  );
+}

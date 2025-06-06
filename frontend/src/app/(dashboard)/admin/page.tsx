@@ -18,7 +18,8 @@ const AdminPage: React.FC = () => (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <UserCard type="Dokter" />
         <UserCard type="Perawat" />
-        <UserCard type="Staff" />
+        <UserCard type="Staf" />
+        <UserCard type="admin" />
         <UserCard type="Total" />
       </div>
 

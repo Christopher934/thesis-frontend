@@ -1,7 +1,10 @@
+/* eslint-disable prettier/prettier */
 // src/user/user.service.ts
+// eslint-disable-next-line prettier/prettier
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { Role } from '@prisma/client';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -9,6 +12,32 @@ import { UpdateUserDto } from './dto/update-user.dto';
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
+
+   async countByRole(): Promise<Record<string, number>> {
+    // Enum Role di Prisma: ADMIN, DOKTER, PERAWAT, STAF
+    const roles: Role[] = ['ADMIN', 'DOKTER', 'PERAWAT', 'STAF'];
+
+    const result: Record<string, number> = {};
+    for (const role of roles) {
+      const cnt = await this.prisma.user.count({
+        where: { role },
+      });
+      result[role] = cnt;
+    }
+    return result;
+  }
+
+  async countByGender(): Promise<{ L: number; P: number }> {
+    // Hitung user dengan jenisKelamin 'L'
+    const countL = await this.prisma.user.count({
+      where: { jenisKelamin: 'L' },
+    });
+    // Hitung user dengan jenisKelamin 'P'
+    const countP = await this.prisma.user.count({
+      where: { jenisKelamin: 'P' },
+    });
+    return { L: countL, P: countP };
+  }
 
   /**
    * 1️⃣ Ambil semua user (tanpa field password)

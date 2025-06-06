@@ -1,59 +1,11 @@
-/*
-  Warnings:
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'DOKTER', 'PERAWAT', 'STAF');
 
-  - You are about to drop the `Absensi` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Kegiatan` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `LoginLog` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Shift` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `ShiftSwap` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Token` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
+-- CreateEnum
+CREATE TYPE "AbsensiStatus" AS ENUM ('HADIR', 'TERLAMBAT', 'IZIN', 'ALFA');
 
-*/
--- DropForeignKey
-ALTER TABLE "Absensi" DROP CONSTRAINT "Absensi_shiftId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Absensi" DROP CONSTRAINT "Absensi_userId_fkey";
-
--- DropForeignKey
-ALTER TABLE "LoginLog" DROP CONSTRAINT "LoginLog_userId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Shift" DROP CONSTRAINT "Shift_pegawaiId_fkey";
-
--- DropForeignKey
-ALTER TABLE "ShiftSwap" DROP CONSTRAINT "ShiftSwap_fromUserId_fkey";
-
--- DropForeignKey
-ALTER TABLE "ShiftSwap" DROP CONSTRAINT "ShiftSwap_shiftId_fkey";
-
--- DropForeignKey
-ALTER TABLE "ShiftSwap" DROP CONSTRAINT "ShiftSwap_toUserId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Token" DROP CONSTRAINT "Token_userId_fkey";
-
--- DropTable
-DROP TABLE "Absensi";
-
--- DropTable
-DROP TABLE "Kegiatan";
-
--- DropTable
-DROP TABLE "LoginLog";
-
--- DropTable
-DROP TABLE "Shift";
-
--- DropTable
-DROP TABLE "ShiftSwap";
-
--- DropTable
-DROP TABLE "Token";
-
--- DropTable
-DROP TABLE "User";
+-- CreateEnum
+CREATE TYPE "SwapStatus" AS ENUM ('PENDING', 'DISETUJUI', 'DITOLAK');
 
 -- CreateTable
 CREATE TABLE "users" (

@@ -31,7 +31,7 @@ export default function LoginPage() {
     localStorage.setItem('token', data.access_token);
     localStorage.setItem('role', data.user.role);
 
-    if (data.user.role === 'perawat' || data.user.role === 'dokter' || data.user.role === 'staf') {
+    if (data.user.role === 'perawat' || data.user.role === 'dokter' || data.user.role === 'STAF') {
       router.push('/pegawai');
     } else {
       router.push('/admin');

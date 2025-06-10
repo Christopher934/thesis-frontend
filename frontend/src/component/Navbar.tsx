@@ -4,12 +4,17 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
 const Navbar = () => {
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [user, setUser] = useState<{
+    nameDepan: string;
+    nameBelakang: string;
+    role: string;
+  } | null>(null);
 
   useEffect(() => {
-    const name = localStorage.getItem('name') || 'Pengguna';
+    const nameDepan = localStorage.getItem('nameDepan') || '';
+    const nameBelakang = localStorage.getItem('nameBelakang') || '';
     const role = localStorage.getItem('role') || '';
-    setUser({ name, role });
+    setUser({ nameDepan, nameBelakang, role });
   }, []);
 
   return (
@@ -35,7 +40,9 @@ const Navbar = () => {
 
         <div className="flex flex-col text-right">
           <span className='text-xs leading-3 font-medium'>
-            {user?.name || '-'}
+            {user
+              ? `${user.nameDepan}${user.nameBelakang ? ' ' + user.nameBelakang : ''}`
+              : '-'}
           </span>
           <span className='text-[10px] text-gray-500 capitalize'>
             {user?.role || '-'}

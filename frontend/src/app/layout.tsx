@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 
 import StorageCleaner from '@/component/StorageCleaner'; // ← impor Client Component
+import AuthStateSynchronizer from '@/component/AuthStateSynchronizer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,6 +23,9 @@ export default function RootLayout({
       <body className={inter.className}>
         {/* Komponen ini hanya menjalankan efek di client (menghapus localStorage saat unload) */}
         <StorageCleaner />
+        
+        {/* Synchronize auth state between localStorage and cookies */}
+        <AuthStateSynchronizer />
 
         {/* Konten halaman lain akan dirender di sini */}
         {children}

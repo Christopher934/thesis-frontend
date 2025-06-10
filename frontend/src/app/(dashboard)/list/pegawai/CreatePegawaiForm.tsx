@@ -19,7 +19,7 @@ type PegawaiFormProps = {
     noHp: string;
     tanggalLahir: string;      // YYYY-MM-DD
     jenisKelamin: 'L' | 'P';
-    role: 'ADMIN' | 'DOKTER' | 'PERAWAT' | 'STAF';
+    role: 'ADMIN' | 'DOKTER' | 'PERAWAT' | 'STAF' | 'SUPERVISOR';
     status: 'ACTIVE' | 'INACTIVE';
   };
   onClose: () => void;
@@ -92,15 +92,17 @@ export default function CreatePegawaiForm({
         namaBelakang: values.namaBelakang,
         alamat: values.alamat,
         noHp: values.noHp,
-        tanggalLahir: values.tanggalLahir,   // “YYYY-MM-DD”
-        jenisKelamin: values.jenisKelamin,   // “L” or “P”
-        role: values.role,                   // “ADMIN”|“DOKTER”|“PERAWAT”|“STAF”
-        status: values.status,               // “ACTIVE”|“INACTIVE”
+        tanggalLahir: values.tanggalLahir,   // "YYYY-MM-DD"
+        jenisKelamin: values.jenisKelamin,   // "L" or "P"
+        role: values.role,                   // "ADMIN"|"DOKTER"|"PERAWAT"|"STAF"|"SUPERVISOR"
+        status: values.status,               // "ACTIVE"|"INACTIVE"
       };
 
       let res: Response;
       if (type === 'create') {
-        res = await fetch('http://localhost:3004/users', {
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+        console.log('Using API URL:', apiUrl);
+        res = await fetch(apiUrl + '/users', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -110,7 +112,9 @@ export default function CreatePegawaiForm({
         });
       } else {
         if (!data) throw new Error('Tidak ada data untuk update.');
-        res = await fetch(`http://localhost:3004/users/${data.id}`, {
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+        console.log('Using API URL:', apiUrl);
+        res = await fetch(apiUrl + '/users/' + data.id, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -254,6 +258,7 @@ export default function CreatePegawaiForm({
               <option value="DOKTER">DOKTER</option>
               <option value="PERAWAT">PERAWAT</option>
               <option value="STAF">STAF</option>
+              <option value="SUPERVISOR">SUPERVISOR</option>
             </select>
             {errors.role && (
               <p className="text-xs text-red-400">{errors.role.message}</p>

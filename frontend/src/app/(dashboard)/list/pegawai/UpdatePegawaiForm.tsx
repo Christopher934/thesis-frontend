@@ -121,7 +121,9 @@ export default function UpdatePegawaiForm({
         payload.password = values.password;
       }
 
-      const res = await fetch(`http://localhost:3004/users/${data.id}`, {
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+      console.log('Using API URL:', apiUrl);
+      const res = await fetch(apiUrl + '/users/' + data.id, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

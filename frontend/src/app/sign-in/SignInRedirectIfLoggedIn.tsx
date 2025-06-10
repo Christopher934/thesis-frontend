@@ -11,9 +11,15 @@ export default function SignInRedirectIfLoggedIn() {
     const role = localStorage.getItem('role')?.toLowerCase();
 
     if (token && role) {
-      router.push('/dashboard');
+      if (role === 'admin') {
+        router.push('/admin');
+      } else if (['perawat', 'dokter', 'staf'].includes(role)) {
+        router.push('/pegawai');
+      } else {
+        router.push('/dashboard');
+      }
     }
-  }, []);
+  }, [router]);
 
   return null;
 }

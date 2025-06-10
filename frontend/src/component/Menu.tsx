@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Cookies from 'js-cookie';
 
 const menuItems = [
   {
@@ -12,7 +13,7 @@ const menuItems = [
       { icon: "/tenagakerja.png", label: "Pegawai", href: "/list/pegawai", visible: ["admin"] },
       { icon: "/subject.png", label: "Managemen Jadwal", href: "/list/managemenjadwal", visible: ["admin"] },
       { icon: "/class.png", label: "Jadwal Saya", href: "/list/jadwalsaya", visible: ["admin", "perawat","staf","dokter"] },
-      { icon: "/assignment.png", label: "Ajukan Tukar Shift", href: "/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/assignment.png", label: "Ajukan Tukar Shift", href: "/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { icon: "/attendance.png", label: "Absensi", href: "/list/absensi", visible: ["admin", "perawat","staf","dokter"] },
       { icon: "/calendar.png", label: "Events", href: "/list/events", visible: ["admin", "perawat","staf","dokter"] },
       { icon: "/message.png", label: "Pesan", href: "/list/messages", visible: ["admin", "perawat","staf","dokter"] },
@@ -23,7 +24,7 @@ const menuItems = [
     title: "OTHER",
     items: [
       { icon: "/profile.png", label: "Profile", href: "/profile", visible: ["admin", "perawat","staf","dokter"] },
-      { icon: "/logout.png", label: "Logout", href: "/logout", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/logout.png", label: "Logout", href: "/logout", visible: ["admin", "perawat","staf","dokter","supervisor"] },
     ],
   },
 ];
@@ -59,9 +60,10 @@ const Menu = () => {
                 <button
                   key={item.label}
                   onClick={() => {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("role");
-                    window.location.href = "/sign-in";
+                    import('@/lib/authUtils').then(({ clearAuthData }) => {
+                      clearAuthData();
+                      window.location.href = "/sign-in";
+                    });
                   }}
                   className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-2"
                 >

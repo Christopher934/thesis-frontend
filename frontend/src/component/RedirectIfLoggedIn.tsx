@@ -1,24 +1,33 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { shouldRedirectFromSignIn } from '@/lib/authUtils';
 
 export default function RedirectIfLoggedIn({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-
-    if (token && role) {
-      // Redirect sesuai role
-      if (role.toLowerCase() === 'admin') {
-        router.push('/admin');
+    const checkAuth = () => {
+      const { redirect, path } = shouldRedirectFromSignIn();
+      
+      if (redirect && path) {
+        router.replace(path);
       } else {
-        router.push('/pegawai');
+        setIsChecking(false);
       }
-    }
-  }, []);
+    };
 
-  return <>{children}</>;
+    // Run immediately
+    checkAuth();
+
+    // Set up interval to check continuously (prevent manual navigation back)
+    const interval = setInterval(checkAuth, 1000);
+    
+    return () => clearInterval(interval);
+  }, [router]);
+
+  // Only render children when we've confirmed the user is not logged in
+  return isChecking ? <div className="flex justify-center items-center h-screen">Checking authentication...</div> : <>{children}</>;
 }

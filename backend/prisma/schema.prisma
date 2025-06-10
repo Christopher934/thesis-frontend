@@ -12,6 +12,7 @@ enum Role {
   DOKTER
   PERAWAT
   STAF
+  SUPERVISOR
 }
 
 enum AbsensiStatus {
@@ -22,9 +23,34 @@ enum AbsensiStatus {
 }
 
 enum SwapStatus {
-  PENDING
-  DISETUJUI
-  DITOLAK
+  PENDING                // Initial status when request is created
+  APPROVED_BY_TARGET     // Target employee approved
+  REJECTED_BY_TARGET     // Target employee rejected
+  WAITING_UNIT_HEAD      // Waiting for unit head approval (for special units)
+  REJECTED_BY_UNIT_HEAD  // Unit head rejected
+  WAITING_SUPERVISOR     // Waiting for supervisor approval
+  REJECTED_BY_SUPERVISOR // Supervisor rejected
+  APPROVED              // Final approved status
+}
+
+enum LokasiShift {
+  POLI_UMUM
+  POLI_ANAK
+  POLI_GIGI
+  IGD
+  ICU
+  LABORATORIUM
+  RADIOLOGI
+  FARMASI
+  EMERGENCY_ROOM
+}
+
+enum TipeShift {
+  PAGI
+  SIANG
+  MALAM
+  ON_CALL
+  JAGA
 }
 
 model User {
@@ -40,7 +66,7 @@ model User {
   tanggalLahir  DateTime
   role          Role
   status        String        @default("ACTIVE")
-  shift         Shift[]       @relation("ShiftPegawai")
+  shifts        Shift[]       @relation("ShiftPegawai")
   absensi       Absensi[]
   swapFrom      ShiftSwap[]   @relation("SwapFrom")
   swapTo        ShiftSwap[]   @relation("SwapTo")
@@ -55,10 +81,15 @@ model User {
 model Shift {
   id           Int         @id @default(autoincrement())
   tanggal      DateTime
-  jamMulai     String
-  jamSelesai   String
-  pegawaiId    Int
-  pegawai      User        @relation("ShiftPegawai", fields: [pegawaiId], references: [id])
+  jammulai     String
+  jamselesai   String
+  lokasishift  String      // Keeping as String for backward compatibility
+  lokasiEnum   LokasiShift? // New enum field for type safety
+  tipeshift    String?     // Keeping as String for backward compatibility
+  tipeEnum     TipeShift?  // New enum field for type safety
+  idpegawai    String
+  userId       Int
+  user         User        @relation("ShiftPegawai", fields: [userId], references: [id])
   absensi      Absensi?
   swap         ShiftSwap?
   createdAt    DateTime    @default(now())
@@ -83,18 +114,26 @@ model Absensi {
 }
 
 model ShiftSwap {
-  id            Int         @id @default(autoincrement())
-  fromUserId    Int
-  toUserId      Int
-  shiftId       Int         @unique
-  status        SwapStatus  @default(PENDING)
-  alasan        String?
-  tanggalSwap   DateTime
-  fromUser      User        @relation("SwapFrom", fields: [fromUserId], references: [id])
-  toUser        User        @relation("SwapTo", fields: [toUserId], references: [id])
-  shift         Shift       @relation(fields: [shiftId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                    Int         @id @default(autoincrement())
+  fromUserId            Int
+  toUserId              Int
+  shiftId               Int         @unique
+  status                SwapStatus  @default(PENDING)
+  alasan                String?
+  tanggalSwap           DateTime
+  fromUser              User        @relation("SwapFrom", fields: [fromUserId], references: [id])
+  toUser                User        @relation("SwapTo", fields: [toUserId], references: [id])
+  shift                 Shift       @relation(fields: [shiftId], references: [id])
+  requiresUnitHead      Boolean     @default(false)  // For special units like ICU, NICU, IGD
+  targetApprovedAt      DateTime?   // When target employee approved/rejected
+  unitHeadApprovedAt    DateTime?   // When unit head approved/rejected
+  supervisorApprovedAt  DateTime?   // When supervisor approved/rejected
+  targetApprovedBy      Int?        // User ID who approved/rejected (target employee)
+  unitHeadApprovedBy    Int?        // User ID who approved/rejected (unit head)
+  supervisorApprovedBy  Int?        // User ID who approved/rejected (supervisor)
+  rejectionReason       String?     // Reason if rejected at any stage
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   @@map("shiftswaps")
 }

@@ -49,8 +49,8 @@ export const pegawaiSchema = z.object({
       message: 'Tanggal lahir harus format YYYY-MM-DD',
     }),
 
-  role: z.enum(['ADMIN', 'DOKTER', 'PERAWAT', 'STAF'], {
-    required_error: 'Pilih role: ADMIN | DOKTER | PERAWAT | STAF',
+  role: z.enum(['ADMIN', 'DOKTER', 'PERAWAT', 'STAF', 'SUPERVISOR'], {
+    required_error: 'Pilih role: ADMIN | DOKTER | PERAWAT | STAF | SUPERVISOR',
     invalid_type_error: 'Role tidak valid',
   }),
 

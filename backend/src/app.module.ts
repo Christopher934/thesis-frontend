@@ -5,10 +5,11 @@ import { AuthModule } from './auth/auth.module';
 import { PrismaService } from './prisma/prisma.service';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ShiftModule } from './shift/shift.module'; // Import ShiftModule
 
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule],
+  imports: [AuthModule, UserModule, PrismaModule, ShiftModule], // Tambahkan ShiftModule
   controllers: [AppController],
   providers: [PrismaService, AppService],
 })
-export class AppModule { }
+export class AppModule {}

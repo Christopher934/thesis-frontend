@@ -19,7 +19,7 @@ const AdminPage: React.FC = () => (
         <UserCard type="Dokter" />
         <UserCard type="Perawat" />
         <UserCard type="Staf" />
-        <UserCard type="admin" />
+        <UserCard type="Supervisor" />
         <UserCard type="Total" />
       </div>
 
@@ -53,5 +53,5 @@ const AdminPage: React.FC = () => (
   </div>
 );
 
-// Proteksi halaman hanya untuk role ADMIN
-export default withAuth(AdminPage, ['ADMIN']);
+// Proteksi halaman hanya untuk role ADMIN dan SUPERVISOR
+export default withAuth(AdminPage, ['ADMIN', 'SUPERVISOR']);

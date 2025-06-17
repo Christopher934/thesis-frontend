@@ -9,7 +9,7 @@ export default function DashboardRedirectPage() {
   useEffect(() => {
     const role = localStorage.getItem('role')?.toLowerCase();
 
-    if (role === 'admin') {
+    if (role === 'admin' || role === 'supervisor') {
       router.replace('/admin');
     } else if (['perawat', 'dokter', 'staf'].includes(role || '')) {
       router.replace('/pegawai');

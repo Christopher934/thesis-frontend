@@ -26,8 +26,14 @@ const UserCard: React.FC<UserCardProps> = ({ type }) => {
         let valueToShow = 0;
 
         if (type.toUpperCase() === 'TOTAL') {
-          // JUMLAHKAN SEMUA VALUE
-          valueToShow = Object.values(countsObj).reduce((sum, v) => sum + v, 0);
+          // JUMLAHKAN SEMUA VALUE KECUALI ADMIN
+          valueToShow = Object.entries(countsObj).reduce((sum, [key, value]) => {
+            // Skip ADMIN role in total count
+            if (key.toUpperCase() !== 'ADMIN') {
+              return sum + value;
+            }
+            return sum;
+          }, 0);
         } else {
           // Kita cek dulu: key backend mungkin lowercase, uppercase, titlecase, dll.
           // Misal jika backend meng‐embalikan: { dokter: 3, perawat: 4, STAF: 1 }, gunakan:
@@ -37,8 +43,20 @@ const UserCard: React.FC<UserCardProps> = ({ type }) => {
           // Jika backend mengembalikan: { Dokter: 3, … }, gunakan:
           const keyTitle = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase(); // 'Dokter'
 
-          // Periksa urutannya: coba keyLower dulu, kalau tidak ada, coba keyUpper, baru keyTitle
-          if (countsObj[keyLower] !== undefined) {
+          // Special case for SUPERVISOR since it might not be in the counts object
+          if (type.toUpperCase() === 'SUPERVISOR') {
+            console.log('Trying to display SUPERVISOR count');
+            // Check if server includes SUPERVISOR in the response
+            valueToShow = countsObj['SUPERVISOR'] || 0;
+            // The API route should handle adding SUPERVISOR if missing
+          }
+          // Hide Admin role from display
+          else if (type.toUpperCase() === 'ADMIN') {
+            // Return -1 to indicate this card should not be displayed
+            valueToShow = -1;
+          } 
+          // For other roles, check various case formats
+          else if (countsObj[keyLower] !== undefined) {
             valueToShow = countsObj[keyLower];
           } else if (countsObj[keyUpper] !== undefined) {
             valueToShow = countsObj[keyUpper];
@@ -73,6 +91,11 @@ const UserCard: React.FC<UserCardProps> = ({ type }) => {
         <span className="text-red-500">{error}</span>
       </div>
     );
+  }
+  
+  // Don't render anything for Admin role
+  if (count === -1 || type.toUpperCase() === 'ADMIN') {
+    return null;
   }
 
   return (

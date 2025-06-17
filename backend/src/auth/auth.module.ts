@@ -7,12 +7,15 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'SECRET_KEY',
-      signOptions: { expiresIn: '1d' },
+      secret:
+        process.env.JWT_SECRET ||
+        'MY_STRONGER_SECRET_KEY_FOR_RSUD_ANUGERAH_APP',
+      signOptions: { expiresIn: '7d' }, // Increase token expiration to 7 days
     }),
     PrismaModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],
+  exports: [JwtModule], // Export JwtModule so it can be used in other modules
 })
 export class AuthModule {}

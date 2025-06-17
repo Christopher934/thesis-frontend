@@ -1,8 +1,14 @@
 // File: src/app/(dashboard)/dashboard/pegawai/page.tsx
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import withAuth from '@/lib/withAuth';
+import FilterButton from '@/component/FilterButton';
+import SortButton from '@/component/SortButton';
+import { getApiUrl } from '@/config/api';
+import { fetchWithFallback } from '@/utils/fetchWithFallback';
+import Image from 'next/image';
 
 // Load komponen yang butuh browser-only (mis. FullCalendar) tanpa SSR
 const BigCalendar = dynamic(
@@ -20,13 +26,198 @@ const Announcements = dynamic(
   { ssr: false }
 );
 
+// Interface for shift data
+interface ShiftData {
+  id: number;
+  idpegawai: string;
+  userId?: number;
+  tipeshift?: string;
+  tipeEnum?: string;
+  tanggal: string;
+  originalDate?: string;
+  lokasishift: string;
+  lokasiEnum?: string;
+  jammulai: string;
+  jamselesai: string;
+  nama?: string;
+}
+
 function PegawaiPage() {
+  const [shifts, setShifts] = useState<ShiftData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filterValue, setFilterValue] = useState<string>("");
+  const [sortValue, setSortValue] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  
+  // Filter options untuk tipe shift
+  const filterOptions = [
+    { label: "Semua", value: "" },
+    { label: "Tipe: Pagi", value: "PAGI" },
+    { label: "Tipe: Siang", value: "SIANG" },
+    { label: "Tipe: Malam", value: "MALAM" },
+    { label: "Tipe: On Call", value: "ON_CALL" },
+    { label: "Tipe: Jaga", value: "JAGA" },
+  ];
+
+  // Sort options
+  const sortOptions = [
+    { label: "Tanggal", value: "tanggal" },
+    { label: "Lokasi", value: "lokasishift" },
+    { label: "Jam Mulai", value: "jammulai" },
+  ];
+
+  // Handle filtering
+  const handleFilter = (value: string) => {
+    setFilterValue(value);
+  };
+
+  // Handle sorting
+  const handleSort = (value: string, direction: "asc" | "desc") => {
+    setSortValue(value);
+    setSortDirection(direction);
+  };
+  
+  // Filtered and sorted shifts
+  const filteredShifts = useMemo(() => {
+    let filtered = [...shifts];
+    
+    // Apply tipeshift filter
+    if (filterValue) {
+      filtered = filtered.filter(item => item.tipeshift === filterValue);
+    }
+    
+    // Apply sorting
+    if (sortValue) {
+      filtered.sort((a, b) => {
+        let valueA, valueB;
+        
+        switch (sortValue) {
+          case "tanggal":
+            valueA = a.tanggal;
+            valueB = b.tanggal;
+            break;
+          case "lokasishift":
+            valueA = a.lokasishift;
+            valueB = b.lokasishift;
+            break;
+          case "jammulai":
+            valueA = a.jammulai;
+            valueB = b.jammulai;
+            break;
+          default:
+            return 0;
+        }
+        
+        if (sortDirection === "asc") {
+          return valueA > valueB ? 1 : -1;
+        } else {
+          return valueA < valueB ? 1 : -1;
+        }
+      });
+    }
+    
+    return filtered;
+  }, [shifts, filterValue, sortValue, sortDirection]);
+  
+  // Memoize shifts to prevent unnecessary re-renders
+  const memoizedShifts = useMemo(() => filteredShifts, [filteredShifts]);
+  
+  // Fetch shifts for the current user when the component mounts
+  useEffect(() => {
+    const fetchShifts = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        const userIdentifier = localStorage.getItem("idpegawai");
+        
+        if (!token) {
+          throw new Error("Authentication token not found");
+        }
+        
+        if (!userIdentifier) {
+          throw new Error("User ID not found");
+        }
+        
+        console.log("Fetching shifts for user:", userIdentifier);
+        
+        // Get the API URL from our configuration
+        const apiUrl = getApiUrl();
+        console.log('Using API URL:', apiUrl);
+        
+        // Use the fetchWithFallback utility to get shifts with automatic fallback
+        const allShifts = await fetchWithFallback<ShiftData[]>(
+          apiUrl,
+          '/shifts',
+          '/mock-shifts.json',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            },
+            timeout: 8000 // 8 seconds timeout
+          },
+          // Transform mock data to match user ID
+          (mockData) => mockData.map((shift: ShiftData) => ({
+            ...shift,
+            idpegawai: userIdentifier
+          }))
+        );
+        
+        // Filter shifts for the current user
+        const userShifts = allShifts.filter((shift: ShiftData) => {
+          if (!shift.idpegawai || !userIdentifier) return false;
+          
+          // Check for exact match or case-insensitive match
+          const exactMatch = shift.idpegawai === userIdentifier;
+          const caseInsensitiveMatch = !exactMatch && 
+                                      shift.idpegawai.toLowerCase() === userIdentifier.toLowerCase();
+          
+          return exactMatch || caseInsensitiveMatch;
+        });
+        
+        console.log("User shifts found:", userShifts.length);
+        setShifts(userShifts);
+      } catch (err) {
+        console.error("Error in shift data retrieval process:", err);
+        setError(err instanceof Error ? err.message : 'An error occurred while retrieving shift data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchShifts();
+  }, []);
+  
   return (
     <div className="p-4 flex flex-col xl:flex-row gap-6">
       {/* LEFT: Kalender penuh */}
       <div className="w-full xl:w-2/3 bg-white rounded-lg shadow p-4">
-        <h2 className="text-2xl font-semibold mb-4">Jadwal Saya</h2>
-        <BigCalendar />
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-semibold">Jadwal Saya</h2>
+          <div className="flex items-center gap-2">
+            <FilterButton 
+              options={filterOptions} 
+              onFilter={handleFilter}
+            />
+            <SortButton 
+              options={sortOptions} 
+              onSort={handleSort} 
+            />
+          </div>
+        </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-[400px]">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-500">{error}</div>
+        ) : (
+          <BigCalendar 
+            shifts={memoizedShifts}
+            useDefaultEvents={false}
+            key={`calendar-${memoizedShifts.length}`}
+          />
+        )}
       </div>
 
       {/* RIGHT: Event & Pengumuman */}

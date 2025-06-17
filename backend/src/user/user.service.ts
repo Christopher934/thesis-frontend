@@ -14,16 +14,21 @@ export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
    async countByRole(): Promise<Record<string, number>> {
-    // Enum Role di Prisma: ADMIN, DOKTER, PERAWAT, STAF
-    const roles: Role[] = ['ADMIN', 'DOKTER', 'PERAWAT', 'STAF'];
+    // Enum Role di Prisma: ADMIN, DOKTER, PERAWAT, STAF, SUPERVISOR
+    const roles: Role[] = ['ADMIN', 'DOKTER', 'PERAWAT', 'STAF', 'SUPERVISOR'];
 
     const result: Record<string, number> = {};
     for (const role of roles) {
       const cnt = await this.prisma.user.count({
         where: { role },
       });
+      // Make sure the role is included in the result even if count is 0
       result[role] = cnt;
     }
+    
+    // Log the result to verify SUPERVISOR is included
+    console.log('Count by role result:', result);
+    
     return result;
   }
 

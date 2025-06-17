@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import roleConfig, { canAccessPage } from './roleConfig';
 
-function withAuth<P>(Component: React.ComponentType<P>, allowedRoles: string[]) {
+function withAuth<P extends {}>(Component: React.ComponentType<P>, allowedRoles: string[]) {
   // 1️⃣ ubah semua allowedRoles jadi lowercase
   const normalized = allowedRoles.map((r) => r.toLowerCase());
 
@@ -19,7 +20,13 @@ function withAuth<P>(Component: React.ComponentType<P>, allowedRoles: string[]) 
       if (!token) {
         router.replace('/sign-in');
       } else if (!normalized.includes(role)) {
-        router.replace('/sign-in');
+        // Check if this role inherits from any allowed role
+        // Special handling for SUPERVISOR role (can access admin pages)
+        if (role === 'supervisor' && normalized.includes('admin')) {
+          setAuthorized(true);
+        } else {
+          router.replace('/sign-in');
+        }
       } else {
         setAuthorized(true);
       }

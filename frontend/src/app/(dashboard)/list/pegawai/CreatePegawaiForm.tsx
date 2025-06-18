@@ -77,6 +77,15 @@ export default function CreatePegawaiForm({
     }
   }, [type, data, defaultValues, reset]);
 
+  // Utility to remove empty optional fields from payload
+  function filterEmptyFields(obj: Record<string, any>) {
+    return Object.fromEntries(
+      Object.entries(obj).filter(
+        ([, v]) => v !== '' && v !== undefined && v !== null
+      )
+    );
+  }
+
   // 4) onSubmit sends exactly the DTO shape:
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -84,7 +93,7 @@ export default function CreatePegawaiForm({
       if (!token) throw new Error('Anda belum login.');
 
       // Build payload that matches CreateUserDto exactly:
-      const payload: any = {
+      const rawPayload: any = {
         username: values.username,
         email: values.email,
         ...(values.password ? { password: values.password } : {}),
@@ -97,6 +106,8 @@ export default function CreatePegawaiForm({
         role: values.role,                   // "ADMIN"|"DOKTER"|"PERAWAT"|"STAF"|"SUPERVISOR"
         status: values.status,               // "ACTIVE"|"INACTIVE"
       };
+      // Remove empty optional fields
+      const payload = filterEmptyFields(rawPayload);
 
       let res: Response;
       if (type === 'create') {
@@ -150,54 +161,58 @@ export default function CreatePegawaiForm({
       </h2>
 
       <form onSubmit={onSubmit} className="space-y-4">
-        {/* Row 1: username | email | password */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Row 0: username */}
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           <InputField
-            label="Username"
+            label={<span>Username <span className="text-red-500">*</span></span>}
             name="username"
             register={register}
             error={errors.username}
           />
+        </div>
+        {/* Row 1: email | password */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
-            label="Email"
+            label={<span>Email <span className="text-red-500">*</span></span>}
             name="email"
             type="email"
             register={register}
             error={errors.email}
           />
           <InputField
-            label="Password"
+            label={<span>Password <span className="text-red-500">*</span></span>}
             name="password"
             type="password"
             register={register}
             error={errors.password}
           />
         </div>
-
-        {/* Row 2: namaDepan | namaBelakang | noHp */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Row 2: namaDepan | namaBelakang */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
-            label="Nama Depan"
+            label={<span>Nama Depan <span className="text-red-500">*</span></span>}
             name="namaDepan"
             register={register}
             error={errors.namaDepan}
           />
           <InputField
-            label="Nama Belakang"
+            label={<span>Nama Belakang <span className="text-red-500">*</span></span>}
             name="namaBelakang"
             register={register}
             error={errors.namaBelakang}
           />
+        </div>
+        {/* Row 3: noHp */}
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           <InputField
-            label="Nomor HP"
+            label={<span>Nomor HP <span className="text-red-500">*</span></span>}
             name="noHp"
             type="tel"
             register={register}
             error={errors.noHp}
           />
         </div>
-
-        {/* Row 3: alamat textarea */}
+        {/* Row 4: alamat */}
         <div>
           <InputField
             label="Alamat"
@@ -208,13 +223,12 @@ export default function CreatePegawaiForm({
             rows={2}
           />
         </div>
-
-        {/* Row 4: tanggalLahir | jenisKelamin | role | status */}
+        {/* Row 5: tanggalLahir | jenisKelamin | role | status */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* tanggalLahir */}
           <div className="flex flex-col">
             <label className="block text-xs text-gray-500 font-medium mb-1">
-              Tanggal Lahir
+              Tanggal Lahir <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -227,16 +241,16 @@ export default function CreatePegawaiForm({
               </p>
             )}
           </div>
-
           {/* jenisKelamin */}
           <div className="flex flex-col">
             <label className="text-xs text-gray-500 font-medium mb-1">
-              Jenis Kelamin
+              Jenis Kelamin <span className="text-red-500">*</span>
             </label>
             <select
               {...register('jenisKelamin')}
               className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             >
+              <option value="">Pilih</option>
               <option value="L">Laki-laki</option>
               <option value="P">Perempuan</option>
             </select>
@@ -246,10 +260,9 @@ export default function CreatePegawaiForm({
               </p>
             )}
           </div>
-
           {/* role */}
           <div className="flex flex-col">
-            <label className="text-xs text-gray-500 font-medium mb-1">Role</label>
+            <label className="text-xs text-gray-500 font-medium mb-1">Role <span className="text-red-500">*</span></label>
             <select
               {...register('role')}
               className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
@@ -264,7 +277,6 @@ export default function CreatePegawaiForm({
               <p className="text-xs text-red-400">{errors.role.message}</p>
             )}
           </div>
-
           {/* status */}
           <div className="flex flex-col">
             <label className="text-xs text-gray-500 font-medium mb-1">
@@ -282,8 +294,7 @@ export default function CreatePegawaiForm({
             )}
           </div>
         </div>
-
-        {/* Row 5: Cancel + Submit */}
+        {/* Row 6: Cancel + Submit */}
         <div className="pt-4 border-t flex justify-end gap-2">
           <button
             type="button"

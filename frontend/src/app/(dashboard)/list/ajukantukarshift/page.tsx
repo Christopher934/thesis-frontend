@@ -81,23 +81,22 @@ export default function AjukanTukarShiftPage() {
   // Fetch tukar shift data
   const fetchTukarShiftData = async () => {
     try {
-      // Only run on client side
       if (typeof window === 'undefined') return;
-      
       const token = localStorage.getItem('token');
       if (!token) {
-        console.error('No authentication token found');
         setTukarShiftData([]);
         setLoading(false);
         return;
       }
-
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      
-      const response = await fetch(`${apiUrl}/shift-swap-requests`, {
+      // Always fetch only current user's requests for regular users
+      let url = `${apiUrl}/shift-swap-requests`;
+      if (currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && currentUserId) {
+        url += `?userId=${currentUserId}`;
+      }
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
       if (response.ok) {
         const data = await response.json();
         setTukarShiftData(data);
@@ -130,10 +129,13 @@ export default function AjukanTukarShiftPage() {
     }
   }, []);
 
-  // Load data on component mount
+  // Load data on component mount and when user info changes
   useEffect(() => {
-    fetchTukarShiftData();
-  }, []);
+    if (currentUserId !== null && currentUserRole !== null) {
+      fetchTukarShiftData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId, currentUserRole]);
 
   // Filter and search logic
   const processedData = useMemo(() => {
@@ -426,15 +428,6 @@ export default function AjukanTukarShiftPage() {
                 : 'Belum ada pengajuan tukar shift yang dibuat'
               }
             </p>
-            {!searchValue && !selectedStatus && (
-              <FormModal
-                table="tukarshift"
-                type="create"
-                onCreated={handleCreate}
-                onUpdated={handleUpdate}
-                onDeleted={handleDelete}
-              />
-            )}
           </div>
         )}
       </div>
@@ -455,25 +448,25 @@ export default function AjukanTukarShiftPage() {
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-600">
-            {tukarShiftData.filter(item => item.status === 'PENDING').length}
+            {processedData.filter(item => item.status === 'PENDING').length}
           </div>
           <div className="text-sm text-gray-600">Menunggu</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-green-600">
-            {tukarShiftData.filter(item => item.status === 'APPROVED').length}
+            {processedData.filter(item => item.status === 'APPROVED' || item.status === 'APPROVED_BY_TARGET').length}
           </div>
           <div className="text-sm text-gray-600">Disetujui</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-red-600">
-            {tukarShiftData.filter(item => item.status === 'REJECTED').length}
+            {processedData.filter(item => item.status && item.status.startsWith('REJECTED')).length}
           </div>
           <div className="text-sm text-gray-600">Ditolak</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-gray-600">
-            {tukarShiftData.length}
+            {processedData.length}
           </div>
           <div className="text-sm text-gray-600">Total</div>
         </div>

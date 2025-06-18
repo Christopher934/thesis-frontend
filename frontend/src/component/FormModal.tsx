@@ -91,50 +91,45 @@ export default function FormModal({
         // Try using the real API first
         let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         console.log('Using API URL:', apiUrl);
-        
-        // Use the URL utility for proper URL construction
-        const endpoint = '/' + table + 's/' + id;
+        let endpoint = '';
+        if (table === 'pegawai') {
+          endpoint = '/users/' + id; // gunakan endpoint UserController
+        } else {
+          endpoint = '/' + table + 's/' + id;
+        }
         const url = joinUrl(apiUrl, endpoint);
         console.log('Full API URL:', url);
-        
+
         const res = await fetch(url, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         if (!res.ok) {
           throw new Error(`API request failed with status ${res.status}`);
         }
-        
+
         // Process was successful
         console.log('Successfully deleted via API');
       } catch (apiError) {
         console.warn('API delete failed, using mock implementation:', apiError);
-        
         // Simulate a delay for the mock delete
         await new Promise(resolve => setTimeout(resolve, 500));
-        
         // Store the deleted ID in localStorage to persist the deletion
         try {
-          // Get existing deleted IDs or initialize an empty array
           const storageKey = `deleted_${table}_ids`;
           const deletedIdsJSON = localStorage.getItem(storageKey) || '[]';
           const deletedIds = JSON.parse(deletedIdsJSON);
-          
-          // Add the current ID if not already in the list
           if (!deletedIds.includes(id)) {
             deletedIds.push(id);
             localStorage.setItem(storageKey, JSON.stringify(deletedIds));
           }
-          
           console.log(`Added ID ${id} to deleted ${table} list in localStorage`);
         } catch (storageError) {
           console.error('Error updating localStorage with deleted ID:', storageError);
         }
-        
         console.log('Successfully deleted via mock implementation');
       }
-
       // In either case, we notify the parent component
       onDeleted(id);
       handleClose(); // tutup modal dan beri tahu parent

@@ -88,6 +88,7 @@ function TukarShiftForm({
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -118,31 +119,29 @@ function TukarShiftForm({
         if (!token) throw new Error('Tidak ada token autentikasi');
 
         // Get current user info
-        const currentUserId = localStorage.getItem('user');
-        const currentUsername = localStorage.getItem('idpegawai');
+        const currentUserStr = localStorage.getItem('user');
         const currentRole = localStorage.getItem('role');
-        
-        // Parse current user ID for shift fetching
         let parsedUserId = 0;
-        if (currentUserId && currentUsername) {
-          const parsedUser = JSON.parse(currentUserId);
+        let parsedUser: User | null = null;
+        if (currentUserStr) {
+          parsedUser = JSON.parse(currentUserStr);
           parsedUserId = parsedUser.id || 0;
+          setCurrentUser(parsedUser); // <-- fix: set currentUser state
         }
 
         // Fetch all users for partner selection
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        
         try {
           const usersResponse = await fetch(`${apiUrl}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          
           if (usersResponse.ok) {
             const usersData = await usersResponse.json();
             // Filter users with same role as current user
+            // FIX: Gunakan id dari localStorage user dan pastikan tipe data number
             const filteredUsers = usersData.filter((user: User) => 
               user.role.toLowerCase() === currentRole?.toLowerCase() && 
-              user.id !== parsedUserId
+              String(user.id) !== String(parsedUserId)
             );
             setUsers(filteredUsers);
           } else {
@@ -154,14 +153,12 @@ function TukarShiftForm({
         }
 
         // Fetch current user's shifts
-        await fetchUserShifts(parsedUserId);
-
+        await fetchUserShifts(parsedUserId, parsedUser);
       } catch (error) {
         console.error('Error fetching initial data:', error);
         setErrorMessage('Gagal memuat data initial');
       }
     };
-
     fetchInitialData();
   }, [setValue]);
 
@@ -176,21 +173,16 @@ function TukarShiftForm({
   }, [watchedToUserId, users]);
 
   // Fetch shifts for current user
-  const fetchUserShifts = async (userId: number) => {
-    // Only run on client side
+  const fetchUserShifts = async (userId: number, userObj?: User | null) => {
     if (typeof window === 'undefined') return;
-    
     try {
       const token = localStorage.getItem('token');
       if (!token || userId === 0) return;
-
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      
       try {
         const response = await fetch(`${apiUrl}/shifts?userId=${userId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
         if (response.ok) {
           const shifts = await response.json();
           const futureShifts = shifts.filter((shift: Shift) => {
@@ -198,8 +190,13 @@ function TukarShiftForm({
             const today = new Date();
             return shiftDate >= today;
           });
-          
-          setCurrentUserShifts(futureShifts);
+          // Only show shifts owned by current user
+          const userToUse = userObj || currentUser;
+          if (futureShifts && userToUse) {
+            setCurrentUserShifts(futureShifts.filter((shift: Shift) => shift.userId === userToUse.id));
+          } else {
+            setCurrentUserShifts(futureShifts);
+          }
         } else {
           throw new Error(`Failed to fetch shifts: ${response.status}`);
         }
@@ -216,7 +213,7 @@ function TukarShiftForm({
   const onSubmit = handleSubmit(async (formData) => {
     setIsSubmitting(true);
     setErrorMessage(null);
-
+    setSuccessMessage(null);
     try {
       // Only run on client side
       if (typeof window === 'undefined') return;
@@ -235,6 +232,7 @@ function TukarShiftForm({
         alasan: formData.alasan,
         requiresUnitHead: false, // Will be determined by backend based on shift location
       };
+      console.log('Submitting shift swap request:', requestData);
 
       try {
         const response = await fetch(`${apiUrl}${endpoint}`, {
@@ -248,16 +246,20 @@ function TukarShiftForm({
 
         if (!response.ok) {
           const errorText = await response.text();
+          console.error('API error:', errorText);
           throw new Error(`API request failed: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
         console.log('Success from API:', result);
+        setSuccessMessage('Pengajuan tukar shift berhasil!');
 
         // Call the appropriate callback
         if (type === 'create') {
+          console.log('Calling onCreate callback');
           onCreate(result);
         } else if (type === 'update' && onUpdate) {
+          console.log('Calling onUpdate callback');
           onUpdate(result);
         }
 
@@ -265,8 +267,10 @@ function TukarShiftForm({
         if (type === 'create') {
           reset();
         }
-        onClose();
-
+        setTimeout(() => {
+          setSuccessMessage(null);
+          onClose();
+        }, 1200);
       } catch (apiError: any) {
         console.error('API request failed:', apiError);
         setErrorMessage(apiError.message || 'Gagal mengirim permintaan ke server');
@@ -295,6 +299,12 @@ function TukarShiftForm({
         {errorMessage && (
           <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-sm" role="alert">
             <span className="block font-medium">{errorMessage}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded-lg shadow-sm" role="alert">
+            <span className="block font-medium">{successMessage}</span>
           </div>
         )}
 

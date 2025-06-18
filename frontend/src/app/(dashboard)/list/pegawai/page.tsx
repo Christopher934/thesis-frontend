@@ -14,6 +14,7 @@ import SortButton from '@/component/SortButton';
 import { getApiUrl } from '@/config/api';
 import { fetchWithFallback } from '@/utils/fetchWithFallback';
 import RouteGuard from '@/component/RouteGuard';
+import { capitalizeWords } from '@/lib/capitalize';
 
 /**
  * Format a date string to DD/MM/YYYY format, handling various input formats
@@ -313,7 +314,7 @@ export default function PegawaiPage() {
         {/* Kolom “No” */}
         <td className="px-4 py-2">{noTampil}</td>
         <td className="px-4 py-2">
-          {item.namaDepan} {item.namaBelakang}
+          {capitalizeWords(item.namaDepan)} {capitalizeWords(item.namaBelakang)}
         </td>
         <td className="px-4 py-2">{item.email}</td>
         <td className="px-4 py-2 hidden md:table-cell">{item.noHp}</td>

@@ -4,7 +4,7 @@ import React from 'react';
 import { FieldError, UseFormRegister } from 'react-hook-form';
 
 type InputFieldProps = {
-  label: string;
+  label: React.ReactNode; // Accept React elements as label
   name: string;
   register: UseFormRegister<any>;
   error?: FieldError;

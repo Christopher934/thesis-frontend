@@ -12,15 +12,13 @@ import { z } from 'zod';
 export const pegawaiSchema = z.object({
   username: z
     .string()
-    .min(1, { message: 'Username dibutuhkan' })        // nonempty
-    .min(3, { message: 'Username membutuhkan minimal 3 karakter' })
+    .min(3, { message: 'Username minimal 3 karakter' })
     .max(20, { message: 'Username maksimal 20 karakter' }),
 
   email: z.string().email({ message: 'Email tidak valid' }),
   
   password: z
     .string()
-    .min(1, { message: 'Password dibutuhkan' })        // nonempty
     .min(8, { message: 'Password membutuhkan minimal 8 karakter' }),
 
   namaDepan: z.string().min(1, { message: 'Nama depan dibutuhkan!' }),
@@ -33,31 +31,19 @@ export const pegawaiSchema = z.object({
   // or simply require nonempty string and leave deeper format checks to backend.
   noHp: z
     .string()
-    .min(1, { message: 'Nomor HP dibutuhkan!' })
-    .regex(/^08\d{7,13}$/, {
-      message: 'Nomor HP tidak valid (contoh: 081234567890)',
-    }),
+    .min(10, { message: 'Nomor HP dibutuhkan dan minimal 10 digit' })
+    .regex(/^08\d{7,13}$/, { message: 'Nomor HP tidak valid (contoh: 081234567890)' }),
 
-  jenisKelamin: z.enum(['L', 'P'], {
-    required_error: 'Pilih jenis kelamin: L atau P',
-    invalid_type_error: 'Jenis kelamin harus “L” atau “P”',
-  }),
+  jenisKelamin: z.enum(['L', 'P'], { required_error: 'Jenis kelamin wajib diisi' }),
 
   tanggalLahir: z
     .string()
-    .refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
-      message: 'Tanggal lahir harus format YYYY-MM-DD',
-    }),
+    .min(1, { message: 'Tanggal lahir wajib diisi' })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Tanggal lahir harus format YYYY-MM-DD' }),
 
-  role: z.enum(['ADMIN', 'DOKTER', 'PERAWAT', 'STAF', 'SUPERVISOR'], {
-    required_error: 'Pilih role: ADMIN | DOKTER | PERAWAT | STAF | SUPERVISOR',
-    invalid_type_error: 'Role tidak valid',
-  }),
+  role: z.enum(['ADMIN', 'DOKTER', 'PERAWAT', 'STAF', 'SUPERVISOR']),
 
-  status: z.enum(['ACTIVE', 'INACTIVE'], {
-    required_error: 'Pilih status: ACTIVE atau INACTIVE',
-    invalid_type_error: 'Status tidak valid',
-  }),
+  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
 });
 
 // Export the inferred TypeScript type for convenience:

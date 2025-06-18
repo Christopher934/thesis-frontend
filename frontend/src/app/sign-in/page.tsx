@@ -66,6 +66,7 @@ export default function LoginPage() {
       localStorage.setItem('nameDepan', data.user.namaDepan || '');
       localStorage.setItem('nameBelakang', data.user.namaBelakang || '');
       localStorage.setItem('idpegawai', data.user.username || ''); // Store username as idpegawai
+      localStorage.setItem('user', JSON.stringify(data.user)); // <-- Tambahkan baris ini
       localStorage.setItem('userId', data.user.id ? data.user.id.toString() : '');
 
       // Normalize role to lowercase for consistent comparison

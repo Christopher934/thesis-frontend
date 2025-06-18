@@ -73,6 +73,7 @@ export default function AjukanTukarShiftPage() {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   const itemsPerPage = 10;
@@ -121,6 +122,7 @@ export default function AjukanTukarShiftPage() {
         try {
           const user = JSON.parse(userStr);
           setCurrentUserId(user.id);
+          setCurrentUserRole(user.role);
         } catch (error) {
           console.error('Error parsing user data:', error);
         }
@@ -136,6 +138,13 @@ export default function AjukanTukarShiftPage() {
   // Filter and search logic
   const processedData = useMemo(() => {
     let filtered = tukarShiftData;
+
+    // Filter data untuk user biasa (bukan ADMIN/SUPERVISOR)
+    if (currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase())) {
+      filtered = filtered.filter(item =>
+        item.fromUser?.id === currentUserId || item.toUser?.id === currentUserId
+      );
+    }
 
     // Filter by search
     if (searchValue) {
@@ -183,7 +192,7 @@ export default function AjukanTukarShiftPage() {
     }
 
     return filtered;
-  }, [tukarShiftData, searchValue, selectedStatus, sortConfig]);
+  }, [tukarShiftData, searchValue, selectedStatus, sortConfig, currentUserId, currentUserRole]);
 
   // Pagination
   const totalPages = Math.ceil(processedData.length / itemsPerPage);

@@ -109,23 +109,23 @@ export class ShiftService {
             : undefined,
         }));
       }
-      
+
       // Jika tidak ada data, return mock data
-      console.log("No shifts found in database, returning mock data");
+      console.log('No shifts found in database, returning mock data');
       return this.getMockShifts();
     } catch (error) {
-      console.error("Error fetching shifts:", error);
+      console.error('Error fetching shifts:', error);
       // Return mock data jika terjadi error
       return this.getMockShifts();
     }
   }
-  
+
   // Helper method untuk menghasilkan data shift dummy
   private getMockShifts() {
     const currentDate = new Date();
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    
+
     // Generate shifts for current month (10 shifts)
     return [
       {
@@ -137,7 +137,7 @@ export class ShiftService {
         tipeshift: 'PAGI',
         idpegawai: 'DOK001',
         userId: 2,
-        nama: 'Dokter Spesialis'
+        nama: 'Dokter Spesialis',
       },
       {
         id: 2,
@@ -148,7 +148,7 @@ export class ShiftService {
         tipeshift: 'SIANG',
         idpegawai: 'PER001',
         userId: 3,
-        nama: 'Perawat Senior'
+        nama: 'Perawat Senior',
       },
       {
         id: 3,
@@ -157,9 +157,9 @@ export class ShiftService {
         jamselesai: '15:00',
         lokasishift: 'IGD',
         tipeshift: 'PAGI',
-        idpegawai: 'DOK001', 
+        idpegawai: 'DOK001',
         userId: 2,
-        nama: 'Dokter Spesialis'
+        nama: 'Dokter Spesialis',
       },
       {
         id: 4,
@@ -170,7 +170,7 @@ export class ShiftService {
         tipeshift: 'SIANG',
         idpegawai: 'PER001',
         userId: 3,
-        nama: 'Perawat Senior'
+        nama: 'Perawat Senior',
       },
       {
         id: 5,
@@ -181,7 +181,7 @@ export class ShiftService {
         tipeshift: 'PAGI',
         idpegawai: 'DOK001',
         userId: 2,
-        nama: 'Dokter Spesialis'
+        nama: 'Dokter Spesialis',
       },
       {
         id: 6,
@@ -192,7 +192,7 @@ export class ShiftService {
         tipeshift: 'SIANG',
         idpegawai: 'PER001',
         userId: 3,
-        nama: 'Perawat Senior'
+        nama: 'Perawat Senior',
       },
       {
         id: 7,
@@ -203,7 +203,7 @@ export class ShiftService {
         tipeshift: 'PAGI',
         idpegawai: 'DOK001',
         userId: 2,
-        nama: 'Dokter Spesialis'
+        nama: 'Dokter Spesialis',
       },
       {
         id: 8,
@@ -214,7 +214,7 @@ export class ShiftService {
         tipeshift: 'SIANG',
         idpegawai: 'PER001',
         userId: 3,
-        nama: 'Perawat Senior'
+        nama: 'Perawat Senior',
       },
       {
         id: 9,
@@ -225,7 +225,7 @@ export class ShiftService {
         tipeshift: 'PAGI',
         idpegawai: 'DOK001',
         userId: 2,
-        nama: 'Dokter Spesialis'
+        nama: 'Dokter Spesialis',
       },
       {
         id: 10,
@@ -236,8 +236,8 @@ export class ShiftService {
         tipeshift: 'SIANG',
         idpegawai: 'PER001',
         userId: 3,
-        nama: 'Perawat Senior'
-      }
+        nama: 'Perawat Senior',
+      },
     ];
   }
 

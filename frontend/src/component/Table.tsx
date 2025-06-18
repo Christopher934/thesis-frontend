@@ -1,3 +1,5 @@
+import React from 'react';
+
 const Table = ({ columns, renderRow, data }:
     {
         columns: { headers: string; accessor: string; className?: string; }[];

@@ -41,7 +41,7 @@
 </head>
 <body>
     <h1>Simple API Test</h1>
-    <p>This page tests the connection to the simple mock server at http://localhost:3004</p>
+    <p>This page tests the connection to the simple mock server at http://localhost:3001</p>
     
     <button id="testEndpoint">Test /test Endpoint</button>
     <div id="testResult"></div>
@@ -55,7 +55,7 @@
             resultDiv.innerHTML = 'Testing connection to /test...';
             
             try {
-                const response = await fetch('http://localhost:3004/test');
+                const response = await fetch('http://localhost:3001/test');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -74,7 +74,7 @@
             resultDiv.innerHTML = 'Testing connection to /shifts...';
             
             try {
-                const response = await fetch('http://localhost:3004/shifts');
+                const response = await fetch('http://localhost:3001/shifts');
                 
                 if (response.ok) {
                     const data = await response.json();

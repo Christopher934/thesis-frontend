@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering for real-time schedule data
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import Pagination from "@/component/Pagination";
 import TableSearch from "@/component/TableSearch";
@@ -193,7 +196,7 @@ const JadwalSayaPage = () => {
       
       console.log("Fetching shifts for user:", userIdentifier);
       
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       console.log('Using API URL:', apiUrl);
       const url = joinUrl(apiUrl, '/shifts');
       console.log('Full API URL:', url);

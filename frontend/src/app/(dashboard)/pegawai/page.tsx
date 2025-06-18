@@ -1,8 +1,11 @@
 // File: src/app/(dashboard)/dashboard/pegawai/page.tsx
 'use client';
 
+// Force dynamic rendering for real-time employee dashboard data
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect, useMemo } from 'react';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import withAuth from '@/lib/withAuth';
 import FilterButton from '@/component/FilterButton';
 import SortButton from '@/component/SortButton';
@@ -11,17 +14,17 @@ import { fetchWithFallback } from '@/utils/fetchWithFallback';
 import Image from 'next/image';
 
 // Load komponen yang butuh browser-only (mis. FullCalendar) tanpa SSR
-const BigCalendar = dynamic(
+const BigCalendar = nextDynamic(
   () => import('@/component/BigCalendar'),
   { ssr: false }
 );
 
-const EventCalendar = dynamic(
+const EventCalendar = nextDynamic(
   () => import('@/component/EventCalendar'),
   { ssr: false }
 );
 
-const Announcements = dynamic(
+const Announcements = nextDynamic(
   () => import('@/component/Announcement'),
   { ssr: false }
 );

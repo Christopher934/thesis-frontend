@@ -17,7 +17,7 @@
             
             try {
                 // First try without auth
-                const response = await fetch('http://localhost:3004/shifts');
+                const response = await fetch('http://localhost:3001/shifts');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -28,7 +28,7 @@
                     
                     // Try with a mock token
                     resultDiv.innerHTML += '<p>Trying with mock token...</p>';
-                    const responseWithToken = await fetch('http://localhost:3004/shifts', {
+                    const responseWithToken = await fetch('http://localhost:3001/shifts', {
                         headers: {
                             'Authorization': 'Bearer mock-jwt-token-for-admin'
                         }

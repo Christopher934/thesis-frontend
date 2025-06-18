@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering for real-time schedule management data
+export const dynamic = 'force-dynamic';
+
 import FormModal from '@/component/FormModal';
 import { useState, useEffect } from 'react';
 import Table from '@/component/Table';
@@ -174,7 +177,7 @@ const ManagemenJadwalPage = () => {
                 
                 try {
                     // Try to fetch from the API server first
-                    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+                    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
                     console.log('Using API URL:', apiUrl);
                     const [jadwalRes, usersRes] = await Promise.all([
                         fetch(joinUrl(apiUrl, '/shifts'), {

@@ -15,7 +15,9 @@ export class PegawaiService {
     } catch (error: any) {
       // Jika error.code === 'P2025', berarti record tidak ditemukan
       if (error.code === 'P2025') {
-        throw new NotFoundException(`Data pegawai dengan id ${id} tidak ditemukan.`);
+        throw new NotFoundException(
+          `Data pegawai dengan id ${id} tidak ditemukan.`,
+        );
       }
       // Lempar error lain (misalnya koneksi database gagal)
       throw error;

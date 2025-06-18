@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering for real-time employee data
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState, useMemo } from 'react';
 import FormModal from '@/component/FormModal';
 import Table from '@/component/Table';
@@ -10,6 +13,7 @@ import FilterButton from '@/component/FilterButton';
 import SortButton from '@/component/SortButton';
 import { getApiUrl } from '@/config/api';
 import { fetchWithFallback } from '@/utils/fetchWithFallback';
+import RouteGuard from '@/component/RouteGuard';
 
 /**
  * Format a date string to DD/MM/YYYY format, handling various input formats
@@ -377,68 +381,68 @@ export default function PegawaiPage() {
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg m-4 flex-1">
-      {/* Header bar dengan Search + Filter/Sort + Create */}
-      <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
-        <h1 className="text-2xl font-semibold">Manajemen Pegawai</h1>
+    <RouteGuard>
+      <div className="p-4 bg-white rounded-lg m-4 flex-1">
+        {/* Header bar dengan Search + Filter/Sort + Create */}
+        <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+          <h1 className="text-2xl font-semibold">Manajemen Pegawai</h1>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <TableSearch
-            placeholder="Cari Username / Email / Nama…"
-            value={searchTerm}
-            onChange={(val) => {
-              setSearchTerm(val);
-              setCurrentPage(1);
-            }}
-          />
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <TableSearch
+              placeholder="Cari Username / Email / Nama…"
+              value={searchTerm}
+              onChange={(val) => {
+                setSearchTerm(val);
+                setCurrentPage(1);
+              }}
+            />
 
-          {/* Filter and Sort buttons */}
-          <FilterButton 
-            options={filterOptions}
-            onFilter={handleFilter}
-          />
-          <SortButton 
-            options={sortOptions}
-            onSort={handleSort}
-          />
+            <FilterButton 
+              options={filterOptions}
+              onFilter={handleFilter}
+            />
+            <SortButton 
+              options={sortOptions}
+              onSort={handleSort}
+            />
 
-          {/* Tombol “Create” (plus) */}
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition-all"
-          >
-            <Image src="/create.png" alt="Create" width={16} height={16} />
-          </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition-all"
+            >
+              <Image src="/create.png" alt="Create" width={16} height={16} />
+            </button>
+          </div>
         </div>
+
+        {/* Table daftar pegawai */}
+        <Table columns={columns} data={paginatedList} renderRow={renderRow} />
+
+        {/* Pagination di bawah tabel */}
+        <div className="mt-4">
+          <Pagination
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
+            currentPage={currentPage}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
+        </div>
+
+        {/* Modal “Create Pegawai” */}
+        {isModalOpen && (
+          <FormModal
+            table="pegawai"
+            type="create"
+            onCreated={handleAfterCreate}
+            onUpdated={() => {}}
+            onDeleted={() => {}}
+            renderTrigger={false}  // agar tombol “+” di dalam FormModal tidak dirender
+            initialOpen={true}     // buka modal langsung begitu komponen mount
+            // Tambahkan onClose agar setelah cancel parent tahu harus unmount
+            onAfterClose={() => setIsModalOpen(false)}
+          />
+        )}
       </div>
-
-      {/* Table daftar pegawai */}
-      <Table columns={columns} data={paginatedList} renderRow={renderRow} />
-
-      {/* Pagination di bawah tabel */}
-      <div className="mt-4">
-        <Pagination
-          totalItems={totalItems}
-          itemsPerPage={ITEMS_PER_PAGE}
-          currentPage={currentPage}
-          onPageChange={(page) => setCurrentPage(page)}
-        />
-      </div>
-
-      {/* Modal “Create Pegawai” */}
-      {isModalOpen && (
-        <FormModal
-          table="pegawai"
-          type="create"
-          onCreated={handleAfterCreate}
-          onUpdated={() => {}}
-          onDeleted={() => {}}
-          renderTrigger={false}  // agar tombol “+” di dalam FormModal tidak dirender
-          initialOpen={true}     // buka modal langsung begitu komponen mount
-          // Tambahkan onClose agar setelah cancel parent tahu harus unmount
-          onAfterClose={() => setIsModalOpen(false)}
-        />
-      )}
-    </div>
+    </RouteGuard>
   );
 }

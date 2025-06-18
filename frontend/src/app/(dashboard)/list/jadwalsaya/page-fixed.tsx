@@ -96,7 +96,7 @@ const JadwalSayaPage = () => {
 
       console.log("Fetching shifts for user:", userIdentifier);
       
-      const response = await fetch("http://localhost:3004/shifts", {
+      const response = await fetch("http://localhost:3001/shifts", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

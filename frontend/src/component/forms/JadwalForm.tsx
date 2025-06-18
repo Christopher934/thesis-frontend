@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import InputField from "../InputField";
 import { joinUrl } from "@/lib/urlUtils";
-import { fetchWithAuth, getValidToken } from "@/utils/authUtils";
+import { fetchWithAuthAndFallback } from "@/utils/authUtils";
 
 
 // Type for User data 
@@ -107,7 +107,7 @@ const JadwalForm = ({
                 try {
                     // Try to fetch from the API server first
                     let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-                    if (!apiUrl) apiUrl = 'http://localhost:3004';
+                    if (!apiUrl) apiUrl = 'http://localhost:3001';
                     
                     console.log('Using API URL for fetching users:', apiUrl);
                     const url = joinUrl(apiUrl, '/users');
@@ -214,7 +214,7 @@ const JadwalForm = ({
             try {
                 // Try to use the real API first
                 let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-                if (!apiUrl) apiUrl = 'http://localhost:3004';
+                if (!apiUrl) apiUrl = 'http://localhost:3001';
                 
                 console.log('Using API URL for shifts:', apiUrl);
                 const endpoint = type === "create" 

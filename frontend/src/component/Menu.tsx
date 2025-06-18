@@ -12,7 +12,7 @@ const menuItems = [
       { icon: "/home.png", label: "Dashboard", href: "/", visible: ["admin", "perawat","staf","dokter"] },
       { icon: "/tenagakerja.png", label: "Pegawai", href: "/list/pegawai", visible: ["admin"] },
       { icon: "/subject.png", label: "Managemen Jadwal", href: "/list/managemenjadwal", visible: ["admin"] },
-      { icon: "/class.png", label: "Jadwal Saya", href: "/list/jadwalsaya", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/class.png", label: "Jadwal Saya", href: "/list/jadwalsaya", visible: ["perawat","staf","dokter"] },
       { icon: "/assignment.png", label: "Ajukan Tukar Shift", href: "/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { icon: "/attendance.png", label: "Absensi", href: "/list/absensi", visible: ["admin", "perawat","staf","dokter"] },
       { icon: "/calendar.png", label: "Events", href: "/list/events", visible: ["admin", "perawat","staf","dokter"] },

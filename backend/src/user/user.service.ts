@@ -1,7 +1,11 @@
 /* eslint-disable prettier/prettier */
 // src/user/user.service.ts
 // eslint-disable-next-line prettier/prettier
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
@@ -13,7 +17,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-   async countByRole(): Promise<Record<string, number>> {
+  async countByRole(): Promise<Record<string, number>> {
     // Enum Role di Prisma: ADMIN, DOKTER, PERAWAT, STAF, SUPERVISOR
     const roles: Role[] = ['ADMIN', 'DOKTER', 'PERAWAT', 'STAF', 'SUPERVISOR'];
 
@@ -25,10 +29,10 @@ export class UserService {
       // Make sure the role is included in the result even if count is 0
       result[role] = cnt;
     }
-    
+
     // Log the result to verify SUPERVISOR is included
     console.log('Count by role result:', result);
-    
+
     return result;
   }
 

@@ -8,6 +8,6 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
-  await app.listen(3004, '0.0.0.0'); // Bind ke semua interface jaringan
+  await app.listen(3001, '0.0.0.0'); // Bind ke semua interface jaringan
 }
 bootstrap();

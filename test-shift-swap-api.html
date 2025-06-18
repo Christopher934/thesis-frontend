@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Shift Swap API</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>Shift Swap Request API Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Test GET All Shift Swap Requests</h3>
+        <button onclick="testGetAllRequests()">Test GET /shift-swap-requests</button>
+        <div id="get-all-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Test Create Shift Swap Request</h3>
+        <button onclick="testCreateRequest()">Test POST /shift-swap-requests</button>
+        <div id="create-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Test GET My Requests</h3>
+        <button onclick="testGetMyRequests()">Test GET /shift-swap-requests/my-requests</button>
+        <div id="my-requests-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Test GET Pending Approvals</h3>
+        <button onclick="testGetPendingApprovals()">Test GET /shift-swap-requests/pending-approvals</button>
+        <div id="pending-approvals-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001';
+
+        async function testGetAllRequests() {
+            const resultDiv = document.getElementById('get-all-result');
+            resultDiv.innerHTML = '<div class="loading">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/shift-swap-requests`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success</h4>
+                            <p>Found ${data.length} shift swap requests</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Network Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testCreateRequest() {
+            const resultDiv = document.getElementById('create-result');
+            resultDiv.innerHTML = '<div class="loading">Testing...</div>';
+            
+            const requestData = {
+                toUserId: 2,
+                shiftId: 1,
+                alasan: 'Need to attend family event',
+                fromUserId: 1 // For testing without auth
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/shift-swap-requests`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success</h4>
+                            <p>Created shift swap request with ID: ${data.id}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Network Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testGetMyRequests() {
+            const resultDiv = document.getElementById('my-requests-result');
+            resultDiv.innerHTML = '<div class="loading">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/shift-swap-requests/my-requests?userId=1`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success</h4>
+                            <p>Found ${data.length} my requests</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Network Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testGetPendingApprovals() {
+            const resultDiv = document.getElementById('pending-approvals-result');
+            resultDiv.innerHTML = '<div class="loading">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/shift-swap-requests/pending-approvals?userId=3`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success</h4>
+                            <p>Found ${data.length} pending approvals</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Network Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

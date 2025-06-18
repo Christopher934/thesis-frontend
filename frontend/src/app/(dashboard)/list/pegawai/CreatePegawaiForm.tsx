@@ -100,7 +100,7 @@ export default function CreatePegawaiForm({
 
       let res: Response;
       if (type === 'create') {
-        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         console.log('Using API URL:', apiUrl);
         res = await fetch(apiUrl + '/users', {
           method: 'POST',
@@ -112,7 +112,7 @@ export default function CreatePegawaiForm({
         });
       } else {
         if (!data) throw new Error('Tidak ada data untuk update.');
-        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         console.log('Using API URL:', apiUrl);
         res = await fetch(apiUrl + '/users/' + data.id, {
           method: 'PUT',

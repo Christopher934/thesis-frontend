@@ -12,7 +12,7 @@ const testUsers = [
 ];
 
 // API URL from environment or default
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 async function testLogin(user) {
   console.log(`\nTesting login with ${user.email}...`);

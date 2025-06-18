@@ -28,8 +28,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       // Verify and decode token
       const decoded = this.jwtService.verify(token);
 
-      // Add user info to request object
-      request.user = decoded;
+      // Add user info to request object with proper format
+      request.user = {
+        id: decoded.sub,
+        role: decoded.role,
+      };
 
       return true;
     } catch (error) {

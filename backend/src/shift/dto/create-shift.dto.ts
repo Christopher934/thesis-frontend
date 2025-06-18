@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+} from 'class-validator';
 
 // Match the LokasiShift enum from the Prisma schema
 enum LokasiShift {
@@ -38,7 +44,7 @@ export class CreateShiftDto {
   @IsNotEmpty()
   @IsString()
   lokasishift: string;
-  
+
   @IsOptional()
   @IsEnum(LokasiShift)
   lokasiEnum?: LokasiShift;

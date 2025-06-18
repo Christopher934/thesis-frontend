@@ -107,7 +107,10 @@ export class UserService {
     // 3.a) Periksa apakah username atau email sudah terpakai
     const existing = await this.prisma.user.findFirst({
       where: {
-        OR: [{ username: data.username }, { email: data.email }],
+        OR: [
+          ...(data.username ? [{ username: data.username }] : []),
+          { email: data.email },
+        ],
       },
     });
     if (existing) {
@@ -117,22 +120,25 @@ export class UserService {
     // 3.b) Hash password
     const hashed = await bcrypt.hash(data.password, 10);
 
-    // 3.c) Convert tanggalLahir ke Date object
-    const tanggal = new Date(data.tanggalLahir);
+    // 3.c) Convert tanggalLahir ke Date object (only if provided)
+    let tanggal: Date | undefined = undefined;
+    if (data.tanggalLahir) {
+      tanggal = new Date(data.tanggalLahir);
+    }
 
     // 3.d) Simpan ke database
     const createdUser = await this.prisma.user.create({
       data: {
-        username: data.username,
-        email: data.email,
+        username: data.username ?? '',
+        email: data.email ?? '',
         password: hashed,
-        namaDepan: data.namaDepan,
-        namaBelakang: data.namaBelakang,
+        namaDepan: data.namaDepan ?? '',
+        namaBelakang: data.namaBelakang ?? '',
         alamat: data.alamat ?? null,
-        noHp: data.noHp,
-        jenisKelamin: data.jenisKelamin,
-        tanggalLahir: tanggal,
-        role: data.role,
+        noHp: data.noHp ?? '',
+        jenisKelamin: data.jenisKelamin ?? '',
+        tanggalLahir: tanggal ?? new Date('1970-01-01'),
+        role: data.role ?? 'STAF',
         status: data.status ?? 'ACTIVE',
       },
       // 3.e) Hanya return field yang diperlukan, tanpa password

@@ -89,7 +89,7 @@ model Shift {
   tipeEnum     TipeShift?  // New enum field for type safety
   idpegawai    String
   userId       Int
-  user         User        @relation("ShiftPegawai", fields: [userId], references: [id])
+  user         User        @relation("ShiftPegawai", fields: [userId], references: [id], onDelete: Cascade)
   absensi      Absensi?
   swap         ShiftSwap?
   createdAt    DateTime    @default(now())
@@ -105,7 +105,7 @@ model Absensi {
   jamMasuk     DateTime?
   jamKeluar    DateTime?
   status       AbsensiStatus
-  user         User           @relation(fields: [userId], references: [id])
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   shift        Shift          @relation(fields: [shiftId], references: [id])
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -121,9 +121,9 @@ model ShiftSwap {
   status                SwapStatus  @default(PENDING)
   alasan                String?
   tanggalSwap           DateTime
-  fromUser              User        @relation("SwapFrom", fields: [fromUserId], references: [id])
-  toUser                User        @relation("SwapTo", fields: [toUserId], references: [id])
-  shift                 Shift       @relation(fields: [shiftId], references: [id])
+  fromUser              User        @relation("SwapFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser                User        @relation("SwapTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  shift                 Shift       @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   requiresUnitHead      Boolean     @default(false)  // For special units like ICU, NICU, IGD
   targetApprovedAt      DateTime?   // When target employee approved/rejected
   unitHeadApprovedAt    DateTime?   // When unit head approved/rejected
@@ -154,7 +154,7 @@ model Token {
   userId       Int
   token        String   @unique
   expiredAt    DateTime
-  user         User     @relation(fields: [userId], references: [id])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
 
   @@map("tokens")
@@ -163,7 +163,7 @@ model Token {
 model LoginLog {
   id          Int      @id @default(autoincrement())
   userId      Int
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   ipAddress   String?
   userAgent   String?
   loginAt     DateTime @default(now())

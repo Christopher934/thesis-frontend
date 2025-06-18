@@ -18,6 +18,19 @@ export class ShiftSwapRequestService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createDto: CreateShiftSwapRequestDto, fromUserId: number) {
+    // Ambil data user yang mengajukan
+    const fromUser = await this.prisma.user.findUnique({
+      where: { id: fromUserId },
+    });
+    if (!fromUser) {
+      throw new NotFoundException('User not found');
+    }
+    if (fromUser.role === Role.ADMIN || fromUser.role === Role.SUPERVISOR) {
+      throw new ForbiddenException(
+        'Admin dan supervisor tidak boleh mengajukan permintaan tukar shift',
+      );
+    }
+
     // Validate that the shift exists and belongs to the requesting user
     const shift = await this.prisma.shift.findFirst({
       where: {

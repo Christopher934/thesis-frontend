@@ -7,6 +7,7 @@ import { PrismaService } from './prisma/prisma.service';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ShiftModule } from './shift/shift.module'; // Import ShiftModule
+import { KegiatanModule } from './kegiatan/kegiatan.module'; // Import KegiatanModule
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { ShiftModule } from './shift/shift.module'; // Import ShiftModule
     UserModule,
     PrismaModule,
     ShiftModule,
-  ], // Tambahkan ShiftModule
+    KegiatanModule,
+  ], // Tambahkan ShiftModule dan KegiatanModule
   controllers: [AppController],
   providers: [PrismaService, AppService],
 })

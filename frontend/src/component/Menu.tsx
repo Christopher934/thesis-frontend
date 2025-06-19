@@ -23,7 +23,7 @@ const menuItems = [
   {
     title: "OTHER",
     items: [
-      { icon: "/profile.png", label: "Profile", href: "/profile", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: "/profile.png", label: "Profile", href: "/list/profile", visible: ["admin", "perawat","staf","dokter"] },
       { icon: "/logout.png", label: "Logout", href: "/logout", visible: ["admin", "perawat","staf","dokter","supervisor"] },
     ],
   },

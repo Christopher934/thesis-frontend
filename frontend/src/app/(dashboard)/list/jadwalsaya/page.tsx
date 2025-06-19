@@ -33,10 +33,10 @@ interface ShiftData {
 }
 
 const columns = [
-  { headers: "Lokasi & Shift", accessor: "lokasishift", className: "table-cell" },
-  { headers: "Tanggal", accessor: "tanggal", className: "hidden md:table-cell" },
-  { headers: "Jam Mulai", accessor: "jammulai", className: "hidden md:table-cell" },
-  { headers: "Jam Selesai", accessor: "jamselesai", className: "hidden md:table-cell" },
+  { headers: "Jadwal Shift", accessor: "lokasishift", className: "table-cell" },
+  { headers: "Tanggal", accessor: "tanggal", className: "hidden lg:table-cell" },
+  { headers: "Jam Mulai", accessor: "jammulai", className: "hidden lg:table-cell" },
+  { headers: "Jam Selesai", accessor: "jamselesai", className: "hidden lg:table-cell" },
 ];
 
 const JadwalSayaPage = () => {
@@ -72,7 +72,7 @@ const JadwalSayaPage = () => {
   // Sort options
   const sortOptions = [
     { label: "Tanggal", value: "tanggal" },
-    { label: "Lokasi", value: "lokasishift" },
+    { label: "Unit Kerja", value: "lokasishift" },
     { label: "Jam Mulai", value: "jammulai" },
   ];
 
@@ -152,12 +152,6 @@ const JadwalSayaPage = () => {
         const storedId = localStorage.getItem("idpegawai");
         const storedNameDepan = localStorage.getItem("nameDepan");
         
-        console.log("Raw localStorage data:", { 
-          role: storedRole, 
-          idpegawai: storedId,
-          nameDepan: storedNameDepan 
-        });
-        
         // Handle case where idpegawai is not in localStorage
         let userIdentifier = storedId;
         
@@ -165,7 +159,6 @@ const JadwalSayaPage = () => {
           // If no idpegawai but we have a name, use default username
           userIdentifier = "jojostaf"; 
           localStorage.setItem("idpegawai", userIdentifier);
-          console.log("Set missing idpegawai to:", userIdentifier);
         }
         
         // Update state with user info
@@ -180,7 +173,6 @@ const JadwalSayaPage = () => {
           setError("User ID not found. Please log out and log in again.");
         }
       } catch (err) {
-        console.error("Error initializing:", err);
         setLoading(false);
         setError("Failed to initialize: " + (err instanceof Error ? err.message : String(err)));
       }
@@ -194,12 +186,8 @@ const JadwalSayaPage = () => {
     try {
       setLoading(true);
       
-      console.log("Fetching shifts for user:", userIdentifier);
-      
       let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      console.log('Using API URL:', apiUrl);
       const url = joinUrl(apiUrl, '/shifts');
-      console.log('Full API URL:', url);
       
       // Using fetchWithAuthAndFallback for better error handling
       const data = await fetchWithAuthAndFallback<ShiftData[]>(
@@ -207,14 +195,11 @@ const JadwalSayaPage = () => {
         '/mock-shifts.json'
       );
         
-        console.log("Shifts data:", data);
-        
         // Determine the data source based on API or mock
         const source = Array.isArray(data) && data.length > 0 && data[0].hasOwnProperty('mockData') 
           ? 'Mock Data' 
           : 'Backend API';
         setDataSource(source);
-        console.log(`Data source identified: ${source}`);
         
         // Get all shifts if admin, filter by userId if staff
         // Get all shifts if admin, filter by userId if staff
@@ -223,20 +208,16 @@ const JadwalSayaPage = () => {
         userShifts = [];
       } else if (userRole?.toLowerCase() === 'admin') {
         userShifts = data;
-        console.log("Admin user, showing all shifts");
       } else {
         // Debug the filtering process
-        console.log("Filtering shifts for user:", userIdentifier);
-        
         // For testing/debugging, show all shifts in console
         data.forEach((shift: ShiftData) => {
-          console.log(`Shift: id=${shift.id}, idpegawai=${shift.idpegawai}`);
+          // console.log(`Shift: id=${shift.id}, idpegawai=${shift.idpegawai}`);
         });
         
         // Compare username/idpegawai to find matches, with improved robustness
         userShifts = data.filter((shift: ShiftData) => {
           if (!shift.idpegawai || !userIdentifier) {
-            console.log(`Skipping shift ${shift.id}: Missing idpegawai or userIdentifier`);
             return false;
           }
           
@@ -255,20 +236,12 @@ const JadwalSayaPage = () => {
           
           const isMatch = exactMatch || caseInsensitiveMatch || numericIdMatch;
           
-          console.log(
-            `Checking shift ${shift.id}: ${shift.idpegawai} against ${userIdentifier}: ` + 
-            `${isMatch ? "MATCH" : "no match"} ` +
-            `(exact: ${exactMatch}, case-insensitive: ${caseInsensitiveMatch}, numericId: ${numericIdMatch})`
-          );
-          
           return isMatch;
         });
         
-        console.log("Filtered shifts for user:", userShifts);
-        
         // No longer adding test shift data if no shifts were found
         if (userShifts.length === 0) {
-          console.log("No shifts found for user");
+          // console.log("No shifts found for user");
         }
       }
       
@@ -276,8 +249,6 @@ const JadwalSayaPage = () => {
       const formattedShifts = userShifts.map((shift: ShiftData) => {
         // First store the original ISO date for calendar processing
         const originalDate = shift.tanggal;
-        
-        console.log(`Processing shift in jadwalSaya: id=${shift.id}, date=${originalDate}, location=${shift.lokasishift}`);
         
         // Parse the date with timezone handling for consistent results
         let date;
@@ -287,11 +258,9 @@ const JadwalSayaPage = () => {
           const [year, month, day] = originalDate.split('-').map(Number);
           // Create date using local timezone
           date = new Date(year, month - 1, day);
-          console.log(`Parsed ISO date ${originalDate} to ${date.toString()}`);
         } else {
           // For other formats, use standard parsing
           date = new Date(originalDate);
-          console.log(`Parsed date ${originalDate} to ${date.toString()}`);
         }
         
         // Format the date for display in the table
@@ -313,8 +282,6 @@ const JadwalSayaPage = () => {
             .join(' ');
         };
         
-        console.log(`Formatted date for shift ${shift.id}: ${formattedDate}, original date: ${originalDate}`);
-        
         return {
           ...shift,
           tanggal: formattedDate,
@@ -323,12 +290,6 @@ const JadwalSayaPage = () => {
         };
       });
       
-      console.log(`Total formatted shifts: ${formattedShifts.length}`);
-      formattedShifts.forEach(shift => {
-        console.log(`Shift ID: ${shift.id}, User: ${shift.idpegawai}, Date: ${shift.tanggal}, Original Date: ${shift.originalDate}`);
-      });
-      
-      console.log("Formatted shifts with original dates:", formattedShifts);
       setShifts(formattedShifts);
     } catch (err: any) {
       console.error("Error fetching shifts:", err);
@@ -341,105 +302,244 @@ const JadwalSayaPage = () => {
   const renderRow = (item: ShiftData) => (
     <tr
       key={item.id}
-      className="border-b border-gray-200 even:bg-slate-50 hover:bg-gray-50 transition-colors"
+      className="group border-b last:border-b-0 border-gray-100 hover:bg-pink-50/50 transition-all duration-200"
     >
-      <td className="flex items-center gap-4 p-4">
-        <div className="flex flex-col">
-          <h3 className="font-semibold">{item.formattedLokasi || item.lokasishift}</h3>
-          <p className="text-xs text-gray-500">{item.tipeshift || "Regular"}</p>
+      <td className="px-4 sm:px-6 py-4 sm:py-5">
+        <div className="flex flex-col space-y-3">
+          {/* Unit kerja dan tipe shift */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 text-center lg:text-left">
+              <h3 className="font-bold text-gray-900 text-base sm:text-lg group-hover:text-pink-600 transition-colors leading-tight">
+                {item.formattedLokasi || item.lokasishift || "Unit tidak tersedia"}
+              </h3>
+              <div className="flex items-center justify-center lg:justify-start gap-2 mt-2">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-700 border border-pink-200">
+                  {item.tipeshift || "Tidak ada tipe"}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Informasi tambahan untuk mobile/tablet */}
+          <div className="lg:hidden space-y-3">
+            <div className="flex items-center justify-center text-sm">
+              <div className="flex items-center gap-2 text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="font-medium">{item.tanggal}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center text-sm">
+              <div className="flex items-center gap-3 bg-gradient-to-r from-pink-50 to-purple-50 px-4 py-2 rounded-lg border border-pink-100">
+                <div className="flex items-center gap-1 text-gray-600">
+                  <svg className="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-semibold">{item.jammulai}</span>
+                </div>
+                <div className="w-8 h-px bg-gradient-to-r from-pink-300 to-purple-300"></div>
+                <div className="flex items-center gap-1 text-gray-600">
+                  <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-semibold">{item.jamselesai}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </td>
-      <td className="hidden md:table-cell">{item.tanggal}</td>
-      <td className="hidden md:table-cell">{item.jammulai}</td>
-      <td className="hidden md:table-cell">{item.jamselesai}</td>
-      <td className="table-cell md:hidden px-4 py-2">
-        <div className="flex flex-col">
-          <span>{item.tanggal}</span>
-          <span className="text-xs text-gray-500">
-            {item.jammulai} - {item.jamselesai}
-          </span>
+      
+      {/* Desktop columns */}
+      <td className="hidden lg:table-cell px-6 py-5 text-gray-700 font-medium whitespace-nowrap text-left">
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {item.tanggal}
+        </div>
+      </td>
+      <td className="hidden lg:table-cell px-6 py-5 text-gray-700 font-medium whitespace-nowrap text-left">
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {item.jammulai}
+        </div>
+      </td>
+      <td className="hidden lg:table-cell px-6 py-5 text-gray-700 font-medium whitespace-nowrap text-left">
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {item.jamselesai}
         </div>
       </td>
     </tr>
   );
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <h1 className="hidden md:block text-lg font-semibold">Jadwal Saya</h1>
-          {dataSource !== "Unknown" && (
-            <div className="text-xs text-gray-500 mt-1">
-              Source: {dataSource}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-pink-50 to-purple-100">
+      {/* Modern header with glassmorphism */}
+      <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between py-3 sm:py-4 gap-3 sm:gap-4">
+            {/* Title section */}
+            <div className="flex items-center gap-4 text-center lg:text-left w-full lg:w-auto">
+              <div className="w-full lg:w-auto">
+                <h1 className="text-xl sm:text-xl lg:text-2xl font-bold text-gray-900 tracking-tight">Jadwal Saya</h1>
+              </div>
             </div>
-          )}
-        </div>
-        <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
-          {viewMode === 'table' && (
-            <TableSearch 
-              placeholder="Cari jadwal..." 
-              value={searchValue} 
-              onChange={setSearchValue} 
-            />
-          )}
-          <div className="flex items-center gap-2">
-            <button 
-              className="px-3 py-1 flex items-center justify-center bg-gray-100 rounded-md hover:bg-gray-200 transition"
-              onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
-            >
-              {viewMode === 'table' ? 'Lihat Kalender' : 'Lihat Tabel'}
-            </button>
-            {viewMode === 'table' && (
-              <>
-                <FilterButton 
-                  options={filterOptions} 
-                  onFilter={handleFilter}
-                />
-                <SortButton 
-                  options={sortOptions} 
-                  onSort={handleSort} 
-                />
-              </>
-            )}
+
+            {/* Controls section */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+              {viewMode === 'table' && (
+                <div className="w-full sm:w-64 lg:w-72">
+                  <TableSearch 
+                    placeholder="Cari berdasarkan unit kerja, tanggal, atau tipe shift..." 
+                    value={searchValue} 
+                    onChange={setSearchValue} 
+                  />
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-center lg:justify-start">
+                {/* View toggle button */}
+                <button 
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl hover:from-pink-700 hover:to-purple-700 transition-all duration-200 text-xs sm:text-sm"
+                  onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
+                  type="button"
+                >
+                  {viewMode === 'table' ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="hidden sm:inline">Kalender</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span className="hidden sm:inline">Tabel</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Filter and sort buttons for table view */}
+                {viewMode === 'table' && (
+                  <div className="flex items-center gap-2">
+                    <FilterButton 
+                      options={filterOptions} 
+                      onFilter={handleFilter}
+                    />
+                    <SortButton 
+                      options={sortOptions} 
+                      onSort={handleSort} 
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-
-      {loading ? (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-        </div>
-      ) : error ? (
-        <div className="text-center py-8 text-red-500">{error}</div>
-      ) : filteredShifts.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">Tidak ada jadwal ditemukan.</div>
-      ) : viewMode === 'table' ? (
-        <>
-          <Table columns={columns} renderRow={renderRow} data={filteredShifts} />
-          <Pagination 
-            totalItems={filteredShifts.length} 
-            itemsPerPage={itemsPerPage} 
-            currentPage={currentPage} 
-            onPageChange={setCurrentPage} 
-          />
-        </>
-      ) : (
-        <div className="h-[600px] mt-4">
-          {/* Only render calendar if we're in calendar view */}
-          {viewMode === 'calendar' && (
-            <Suspense fallback={<div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-            </div>}>
-              <BigCalendar 
-                shifts={memoizedShifts} 
-                useDefaultEvents={false} 
-                key={`calendar-${memoizedShifts.length}`} // Force re-render when shifts change
+      {/* Main content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-purple-600 rounded-full animate-spin animate-reverse"></div>
+            </div>
+            <p className="mt-6 text-lg font-semibold text-gray-700">Memuat jadwal Anda...</p>
+            <p className="mt-2 text-sm text-gray-500">Mohon tunggu sebentar</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="p-4 bg-red-100 rounded-full mb-6">
+              <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Terjadi Kesalahan</h3>
+            <p className="text-gray-600 text-center max-w-md">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-6 px-6 py-3 bg-pink-600 text-white font-semibold rounded-xl hover:bg-pink-700 transition-colors"
+            >
+              Muat Ulang
+            </button>
+          </div>
+        ) : filteredShifts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="p-4 bg-gray-100 rounded-full mb-6">
+              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Belum Ada Jadwal</h3>
+            <p className="text-gray-600 text-center max-w-md">
+              {searchValue || filterValue 
+                ? "Tidak ada jadwal yang sesuai dengan pencarian Anda. Coba ubah kata kunci atau filter."
+                : "Jadwal shift Anda belum tersedia. Hubungi admin untuk informasi lebih lanjut."
+              }
+            </p>
+            {(searchValue || filterValue) && (
+              <button 
+                onClick={() => {
+                  setSearchValue('');
+                  setFilterValue('');
+                }}
+                className="mt-6 px-6 py-3 bg-pink-600 text-white font-semibold rounded-xl hover:bg-pink-700 transition-colors"
+              >
+                Hapus Filter
+              </button>
+            )}
+          </div>
+        ) : viewMode === 'table' ? (
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table 
+                columns={columns} 
+                renderRow={renderRow}
+                data={filteredShifts} 
               />
-            </Suspense>
-          )}
-        </div>
-      )}
+            </div>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50/50">
+              <Pagination 
+                totalItems={filteredShifts.length} 
+                itemsPerPage={itemsPerPage} 
+                currentPage={currentPage} 
+                onPageChange={setCurrentPage} 
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="h-[700px]">
+              {viewMode === 'calendar' && (
+                <Suspense fallback={
+                  <div className="flex justify-center items-center h-full">
+                    <div className="relative">
+                      <div className="w-12 h-12 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin"></div>
+                    </div>
+                  </div>
+                }>
+                  <BigCalendar 
+                    shifts={memoizedShifts} 
+                    useDefaultEvents={false} 
+                    key={`calendar-${memoizedShifts.length}`}
+                  />
+                </Suspense>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

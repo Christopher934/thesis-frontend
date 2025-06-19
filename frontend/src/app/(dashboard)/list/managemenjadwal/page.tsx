@@ -77,12 +77,12 @@ const formatDateForDisplay = (dateStr: string): { formatted: string, original: s
 
 const columns = [
     { headers: "Nama", accessor: "nama" },
-    { headers: "ID Pegawai", accessor: "idpegawai", className: "hidden md:table-cell" },
+    // { headers: "ID Pegawai", accessor: "idpegawai", className: "hidden md:table-cell" }, // HIDE ID PEGAWAI
     { headers: "Tanggal", accessor: "tanggal", className: "hidden md:table-cell" },
     { headers: "Jam Mulai", accessor: "jammulai", className: "hidden md:table-cell" },
     { headers: "Jam Selesai", accessor: "jamselesai", className: "hidden md:table-cell" },
     { headers: "Lokasi", accessor: "lokasishift", className: "hidden md:table-cell" },
-    { headers: "Action", accessor: "action" },
+    { headers: "Aksi", accessor: "action" },
 ];
 
 // Type for User data 
@@ -168,7 +168,6 @@ const ManagemenJadwalPage = () => {
                     setUserRole(role.toLowerCase());
                 }
 
-                console.log('Fetching data...');
                 
                 // Get token from localStorage
                 const token = localStorage.getItem('token');
@@ -178,7 +177,7 @@ const ManagemenJadwalPage = () => {
                 try {
                     // Try to fetch from the API server first
                     let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-                    console.log('Using API URL:', apiUrl);
+                    
                     const [jadwalRes, usersRes] = await Promise.all([
                         fetch(joinUrl(apiUrl, '/shifts'), {
                             headers: {
@@ -201,7 +200,6 @@ const ManagemenJadwalPage = () => {
                         usersRes.json()
                     ]);
                     
-                    console.log('API data loaded:', shiftsData.length, 'shifts and', usersData.length, 'users');
                 } catch (apiError) {
                     console.warn('Error fetching from API, falling back to mock data:', apiError);
                     
@@ -224,7 +222,6 @@ const ManagemenJadwalPage = () => {
                         mockUsersRes.json()
                     ]);
                     
-                    console.log('Mock data loaded:', shiftsData.length, 'shifts and', usersData.length, 'users');
                 }
                 
                 setUsers(usersData);
@@ -246,14 +243,10 @@ const ManagemenJadwalPage = () => {
                     deletedIds = [];
                 }
                 
-                console.log('Previously deleted jadwal IDs:', deletedIds);
-                
                 // Filter out previously deleted items before processing
                 const filteredShiftsData = shiftsData.filter((shift: Jadwal) => 
                     !deletedIds.includes(shift.id.toString())
                 );
-                
-                console.log(`Filtered out ${shiftsData.length - filteredShiftsData.length} deleted items`);
                 
                 // Format dates and map user names to jadwal data
                 const enhancedJadwalData = filteredShiftsData.map((jadwal: Jadwal) => {
@@ -265,9 +258,6 @@ const ManagemenJadwalPage = () => {
                     
                     // Format date for better display
                     const { formatted, original } = formatDateForDisplay(jadwal.tanggal);
-                    
-                    // Log for debugging
-                    console.log(`Formatted date: ${jadwal.tanggal} -> ${formatted}, originalDate: ${original}`);
                     
                     return {
                         ...jadwal,
@@ -292,8 +282,6 @@ const ManagemenJadwalPage = () => {
     
     // Handle successful creation of a new jadwal entry
     const handleJadwalCreated = (newJadwal: Jadwal) => {
-        console.log('Handling created jadwal data:', newJadwal);
-        
         // Find user data to supplement the jadwal entry
         const user = users.find(u => u.username === newJadwal.idpegawai || u.id === newJadwal.userId);
         
@@ -307,7 +295,6 @@ const ManagemenJadwalPage = () => {
             const { formatted, original } = formatDateForDisplay(newJadwal.tanggal);
             newJadwal.tanggal = formatted;
             newJadwal.originalDate = original;
-            console.log('Formatted date for display:', formatted, 'Original:', original);
         }
         
         setJadwalData(prev => [...prev, newJadwal]);
@@ -328,7 +315,6 @@ const ManagemenJadwalPage = () => {
             const { formatted, original } = formatDateForDisplay(updatedJadwal.tanggal);
             updatedJadwal.tanggal = formatted;
             updatedJadwal.originalDate = original;
-            console.log('Updated jadwal - Formatted date:', formatted, 'Original:', original);
         }
         
         setJadwalData(prev => 
@@ -364,7 +350,7 @@ const ManagemenJadwalPage = () => {
             if (!deletedIds.includes(deletedId)) {
                 deletedIds.push(deletedId);
                 localStorage.setItem(storageKey, JSON.stringify(deletedIds));
-                console.log(`Added ID ${deletedId} to deleted jadwal list in localStorage`);
+                // console.log(`Added ID ${deletedId} to deleted jadwal list in localStorage`);
             }
         } catch (storageError) {
             console.error('Error updating localStorage with deleted ID:', storageError);
@@ -498,19 +484,18 @@ const ManagemenJadwalPage = () => {
     };
     
     const renderRow = (item: Jadwal) => {
-        // Get full name for display
-        const fullName = item.nama || 'Nama tidak tersedia';
+        // Get full name for display, capitalize
+        const fullName = (item.nama || 'Nama tidak tersedia').replace(/\b\w/g, c => c.toUpperCase());
         const formattedLocation = formatLokasiShift(item.lokasishift);
-        
         return (
             <tr key={item.id} className="border-b border-gray-500 even:bg-slate-50 text-md hover:bg-gray-50 transition-colors">
                 <td className="flex items-center gap-4 p-4">
                     <div className="flex flex-col">
-                        <h3 className="font-semibold">{fullName}</h3>
+                        <h3 className="font-semibold capitalize">{fullName}</h3>
                         <p className="text-xs text-gray-500">{formattedLocation}</p>
                     </div>
                 </td>
-                <td className="hidden md:table-cell">{item.idpegawai}</td>
+                {/* <td className="hidden md:table-cell">{item.idpegawai}</td> */}
                 <td className="hidden md:table-cell">{item.tanggal}</td>
                 <td className="hidden md:table-cell">{item.jammulai}</td>
                 <td className="hidden md:table-cell">{item.jamselesai}</td>

@@ -21,7 +21,6 @@ const UserCard: React.FC<UserCardProps> = ({ type }) => {
         setLoading(true);
         const res = await axios.get<{ counts: Record<string, number> }>('/api/users/count-by-role');
         const countsObj = res.data.counts;
-        console.log('DEBUG countsObj:', countsObj); // Lihat bentuk object di console
 
         let valueToShow = 0;
 
@@ -45,7 +44,6 @@ const UserCard: React.FC<UserCardProps> = ({ type }) => {
 
           // Special case for SUPERVISOR since it might not be in the counts object
           if (type.toUpperCase() === 'SUPERVISOR') {
-            console.log('Trying to display SUPERVISOR count');
             // Check if server includes SUPERVISOR in the response
             valueToShow = countsObj['SUPERVISOR'] || 0;
             // The API route should handle adding SUPERVISOR if missing

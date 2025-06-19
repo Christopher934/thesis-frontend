@@ -221,6 +221,24 @@ const users = [
   }
 ];
 
+// Mock data for events
+const events = [
+  {
+    id: 1,
+    judul: 'Rapat Evaluasi Bulanan',
+    deskripsi: 'Membahas evaluasi layanan bulan sebelumnya.',
+    tanggal: '2025-06-01',
+    lokasi: 'Ruang Rapat Utama',
+  },
+  {
+    id: 2,
+    judul: 'Pelatihan P3K',
+    deskripsi: 'Pelatihan P3K untuk seluruh staf medis dan nonmedis.',
+    tanggal: '2025-06-03',
+    lokasi: 'Aula RSUD',
+  },
+];
+
 // Token verification middleware (simplified)
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -435,8 +453,37 @@ app.get('/users/:id', verifyToken, (req, res) => {
   res.json(user);
 });
 
-// The validate-user endpoint has been removed as it's no longer needed.
-// User validation is now handled directly in the shifts endpoints.
+// Events endpoint
+app.get('/events', (req, res) => {
+  res.json(events);
+});
+
+// POST /events - Create a new event
+app.post('/events', (req, res) => {
+  const { judul, deskripsi, tanggal, lokasi } = req.body;
+  if (!judul || !deskripsi || !tanggal || !lokasi) {
+    return res.status(400).json({ message: 'Semua field harus diisi.' });
+  }
+  const newId = events.length > 0 ? Math.max(...events.map(e => e.id)) + 1 : 1;
+  const newEvent = { id: newId, judul, deskripsi, tanggal, lokasi };
+  events.push(newEvent);
+  res.status(201).json(newEvent);
+});
+
+// PUT /events/:id - Update an existing event
+app.put('/events/:id', (req, res) => {
+  const eventId = parseInt(req.params.id);
+  const eventIndex = events.findIndex(e => e.id === eventId);
+  if (eventIndex === -1) {
+    return res.status(404).json({ message: 'Event tidak ditemukan.' });
+  }
+  const { judul, deskripsi, tanggal, lokasi } = req.body;
+  if (!judul || !deskripsi || !tanggal || !lokasi) {
+    return res.status(400).json({ message: 'Semua field harus diisi.' });
+  }
+  events[eventIndex] = { id: eventId, judul, deskripsi, tanggal, lokasi };
+  res.json(events[eventIndex]);
+});
 
 // Start the server
 app.listen(PORT, () => {
@@ -451,4 +498,7 @@ app.listen(PORT, () => {
   console.log('GET    /users/count-by-role');
   console.log('GET    /users/count-by-gender');
   console.log('GET    /users/:id');
+  console.log('GET    /events');
+  console.log('POST   /events');
+  console.log('PUT    /events/:id');
 });

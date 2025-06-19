@@ -139,10 +139,25 @@ model ShiftSwap {
 }
 
 model Kegiatan {
-  id           Int       @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   nama         String
+  jenisKegiatan String
   deskripsi    String
-  tanggal      DateTime
+  tanggalMulai DateTime
+  tanggalSelesai DateTime?
+  waktuMulai   String
+  waktuSelesai String?
+  lokasi       String
+  kapasitas    Int?
+  lokasiDetail String?
+  penanggungJawab String
+  kontak       String?
+  departemen   String?
+  prioritas    String
+  targetPeserta String[]
+  anggaran     Int?
+  status       String
+  catatan      String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

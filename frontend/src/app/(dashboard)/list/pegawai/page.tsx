@@ -65,7 +65,6 @@ const formatDateForDisplay = (dateStr: string): string => {
     // If all parsing attempts fail, return the original string
     return dateStr;
   } catch (e) {
-    console.error('Error formatting date:', dateStr, e);
     return '';
   }
 };
@@ -123,7 +122,6 @@ export default function PegawaiPage() {
       try {
         const token = localStorage.getItem('token');
         const apiUrl = getApiUrl();
-        console.log('Using API URL:', apiUrl);
         
         const users = await fetchWithFallback(
           apiUrl,
@@ -146,7 +144,7 @@ export default function PegawaiPage() {
           setPegawaiList(filtered);
         }
       } catch (e) {
-        console.error(e);
+        // Handle error silently
       }
     }
     fetchData();
@@ -217,7 +215,6 @@ export default function PegawaiPage() {
               // Default fallback
               return new Date(dateStr).getTime();
             } catch (e) {
-              console.error('Error parsing date for sorting:', dateStr, e);
               return 0;
             }
           };

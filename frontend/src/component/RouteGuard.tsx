@@ -32,7 +32,6 @@ export default function RouteGuard({ children, fallback }: RouteGuardProps) {
       // Check if user is authenticated
       const authenticated = isAuthenticated();
       if (!authenticated) {
-        console.log('[RouteGuard] User not authenticated, redirecting to sign-in');
         router.push('/sign-in');
         setIsAuthorized(false);
         setIsLoading(false);
@@ -44,7 +43,6 @@ export default function RouteGuard({ children, fallback }: RouteGuardProps) {
       const hasPermission = hasRoutePermission(pathname, userRole);
 
       if (!hasPermission) {
-        console.log(`[RouteGuard] Access denied for role ${userRole} to ${pathname}`);
         // Redirect to appropriate dashboard
         const redirectPath = getRedirectPathForRole(userRole);
         router.push(redirectPath);
@@ -53,7 +51,6 @@ export default function RouteGuard({ children, fallback }: RouteGuardProps) {
         return;
       }
 
-      console.log(`[RouteGuard] Access granted for role ${userRole} to ${pathname}`);
       setIsAuthorized(true);
       setIsLoading(false);
     };

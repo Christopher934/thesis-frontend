@@ -30,7 +30,6 @@ export default function LoginPage() {
       let apiUrl = process.env.NEXT_PUBLIC_API_URL;
       if (!apiUrl) apiUrl = 'http://localhost:3001';
       
-      console.log('Using API URL:', apiUrl); // Debug URL yang digunakan
       const res = await fetch(apiUrl + '/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -90,7 +90,6 @@ export default function FormModal({
       try {
         // Try using the real API first
         let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        console.log('Using API URL:', apiUrl);
         let endpoint = '';
         if (table === 'pegawai') {
           endpoint = '/users/' + id; // gunakan endpoint UserController
@@ -98,7 +97,6 @@ export default function FormModal({
           endpoint = '/' + table + 's/' + id;
         }
         const url = joinUrl(apiUrl, endpoint);
-        console.log('Full API URL:', url);
 
         const res = await fetch(url, {
           method: 'DELETE',
@@ -110,7 +108,6 @@ export default function FormModal({
         }
 
         // Process was successful
-        console.log('Successfully deleted via API');
       } catch (apiError) {
         console.warn('API delete failed, using mock implementation:', apiError);
         // Simulate a delay for the mock delete
@@ -124,11 +121,9 @@ export default function FormModal({
             deletedIds.push(id);
             localStorage.setItem(storageKey, JSON.stringify(deletedIds));
           }
-          console.log(`Added ID ${id} to deleted ${table} list in localStorage`);
         } catch (storageError) {
           console.error('Error updating localStorage with deleted ID:', storageError);
         }
-        console.log('Successfully deleted via mock implementation');
       }
       // In either case, we notify the parent component
       onDeleted(id);
@@ -178,8 +173,6 @@ export default function FormModal({
       const formData = type === 'update' && data?.originalDate 
         ? {...data, tanggal: data.originalDate} 
         : data;
-      
-      console.log(`FormModal: ${type} form for ${table} with data:`, formData);
       
       return (
         <SelectedForm

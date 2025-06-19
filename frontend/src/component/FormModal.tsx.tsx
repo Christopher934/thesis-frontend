@@ -3,24 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import PegawaiForm from '@/app/(dashboard)/list/pegawai/CreatePegawaiForm';
-import JadwalForm from '@/component/for      {/* Render modal jika open=true */}
-      {open && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
-          <div className={`bg-white p-4 rounded-md relative w-full ${
-            table === 'tukarshift' ? 'max-w-4xl max-h-[90vh] overflow-y-auto' : 'max-w-lg'
-          }`}>
-            <RenderForm />
-
-            {/* Tombol "Close" di pojok kanan atas modal */}
-            <div
-              className="absolute top-4 right-4 cursor-pointer z-10"
-              onClick={handleClose}
-            >
-              <Image src="/close.png" alt="Close" width={14} height={14} />
-            </div>
-          </div>
-        </div>
-      )}import TukarShiftForm from '@/component/forms/TukarShiftForm';
+import JadwalForm from '@/component/forms/JadwalForm';
+import TukarShiftForm from '@/component/forms/TukarShiftForm';
 import { joinUrl } from '@/lib/urlUtils';
 
 type CommonFormProps = {
@@ -106,12 +90,10 @@ export default function FormModal({
       try {
         // Try using the real API first
         let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        console.log('Using API URL:', apiUrl);
         
         // Use the URL utility for proper URL construction
         const endpoint = '/' + table + 's/' + id;
         const url = joinUrl(apiUrl, endpoint);
-        console.log('Full API URL:', url);
         
         const res = await fetch(url, {
           method: 'DELETE',
@@ -123,7 +105,6 @@ export default function FormModal({
         }
         
         // Process was successful
-        console.log('Successfully deleted via API');
       } catch (apiError) {
         console.warn('API delete failed, using mock implementation:', apiError);
         
@@ -143,12 +124,10 @@ export default function FormModal({
             localStorage.setItem(storageKey, JSON.stringify(deletedIds));
           }
           
-          console.log(`Added ID ${id} to deleted ${table} list in localStorage`);
         } catch (storageError) {
           console.error('Error updating localStorage with deleted ID:', storageError);
         }
         
-        console.log('Successfully deleted via mock implementation');
       }
 
       // In either case, we notify the parent component
@@ -199,8 +178,6 @@ export default function FormModal({
       const formData = type === 'update' && data?.originalDate 
         ? {...data, tanggal: data.originalDate} 
         : data;
-      
-      console.log(`FormModal: ${type} form for ${table} with data:`, formData);
       
       return (
         <SelectedForm

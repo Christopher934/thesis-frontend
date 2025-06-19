@@ -2,15 +2,21 @@
     "name": "rsud-anugerah-frontend",
     "version": "0.1.0",
     "private": true,
-    "scripts": {
-        "dev": "next dev -p 3000",
-        "dev:network": "next dev -p 3000 -H 0.0.0.0",
-        "build": "next build",
-        "start": "next start",
-        "start:network": "next start -p 3000 -H 0.0.0.0",
-        "lint": "next lint",
-        "test": "jest"
-    },
+  "scripts": {
+    "dev": "next dev -p 3000 --turbo",
+    "dev:network": "next dev -p 3000 -H 0.0.0.0 --turbo",
+    "dev:fast": "next dev -p 3000 --turbo --experimental-https",
+    "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
+    "start": "next start",
+    "start:network": "next start -p 3000 -H 0.0.0.0",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "clean": "rm -rf .next out",
+    "predev": "npm run clean"
+  },
     "dependencies": {
         "@hookform/resolvers": "^5.0.1",
         "@types/react-big-calendar": "^1.16.1",

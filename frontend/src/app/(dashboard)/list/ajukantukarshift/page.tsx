@@ -43,6 +43,29 @@ interface TukarShift {
   createdAt: string;
 }
 
+// Utility functions
+const capitalizeWords = (str: string) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const formatDateWithDay = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const dayName = days[date.getDay()];
+  const formattedDate = date.toLocaleDateString('id-ID', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+  return `${dayName}, ${formattedDate}`;
+};
+
 // Status mapping untuk semua status backend
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Menunggu Persetujuan',
@@ -165,8 +188,8 @@ export default function AjukanTukarShiftPage() {
     // Filter by search
     if (searchValue) {
       filtered = filtered.filter(item =>
-        `${item.fromUser?.namaDepan || ''} ${item.fromUser?.namaBelakang || ''}`.toLowerCase().includes(searchValue.toLowerCase()) ||
-        `${item.toUser?.namaDepan || ''} ${item.toUser?.namaBelakang || ''}`.toLowerCase().includes(searchValue.toLowerCase()) ||
+        capitalizeWords(`${item.fromUser?.namaDepan || ''} ${item.fromUser?.namaBelakang || ''}`.trim()).toLowerCase().includes(searchValue.toLowerCase()) ||
+        capitalizeWords(`${item.toUser?.namaDepan || ''} ${item.toUser?.namaBelakang || ''}`.trim()).toLowerCase().includes(searchValue.toLowerCase()) ||
         item.shift?.lokasishift?.toLowerCase().includes(searchValue.toLowerCase()) ||
         (item.alasan && item.alasan.toLowerCase().includes(searchValue.toLowerCase()))
       );
@@ -189,8 +212,8 @@ export default function AjukanTukarShiftPage() {
             bValue = new Date(b.shift?.tanggal || 0);
             break;
           case 'pengaju':
-            aValue = `${a.fromUser?.namaDepan || ''} ${a.fromUser?.namaBelakang || ''}`;
-            bValue = `${b.fromUser?.namaDepan || ''} ${b.fromUser?.namaBelakang || ''}`;
+            aValue = capitalizeWords(`${a.fromUser?.namaDepan || ''} ${a.fromUser?.namaBelakang || ''}`.trim());
+            bValue = capitalizeWords(`${b.fromUser?.namaDepan || ''} ${b.fromUser?.namaBelakang || ''}`.trim());
             break;
           case 'status':
             aValue = a.status;
@@ -323,11 +346,11 @@ export default function AjukanTukarShiftPage() {
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
             <span className="text-blue-600 text-sm font-medium">
-              {item.fromUser?.namaDepan?.charAt(0) || '?'}
+              {item.fromUser?.namaDepan?.charAt(0)?.toUpperCase() || '?'}
             </span>
           </div>
           <span className="font-medium">
-            {`${item.fromUser?.namaDepan || ''} ${item.fromUser?.namaBelakang || ''}`.trim() || 'Unknown'}
+            {capitalizeWords(`${item.fromUser?.namaDepan || ''} ${item.fromUser?.namaBelakang || ''}`.trim()) || 'Unknown'}
           </span>
         </div>
       </td>
@@ -335,17 +358,17 @@ export default function AjukanTukarShiftPage() {
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
             <span className="text-green-600 text-sm font-medium">
-              {item.toUser?.namaDepan?.charAt(0) || '?'}
+              {item.toUser?.namaDepan?.charAt(0)?.toUpperCase() || '?'}
             </span>
           </div>
           <span className="font-medium">
-            {`${item.toUser?.namaDepan || ''} ${item.toUser?.namaBelakang || ''}`.trim() || 'Unknown'}
+            {capitalizeWords(`${item.toUser?.namaDepan || ''} ${item.toUser?.namaBelakang || ''}`.trim()) || 'Unknown'}
           </span>
         </div>
       </td>
       <td className="p-4">
         <div className="space-y-1">
-          <div className="font-medium">{item.shift?.tanggal ? new Date(item.shift.tanggal).toLocaleDateString() : 'N/A'}</div>
+          <div className="font-medium">{formatDateWithDay(item.shift?.tanggal || '')}</div>
           <div className="text-sm text-gray-600">
             {item.shift?.jammulai || 'N/A'} - {item.shift?.jamselesai || 'N/A'}
           </div>
@@ -445,6 +468,147 @@ export default function AjukanTukarShiftPage() {
     </tr>
   );
 
+  // Mobile Card Component
+  const MobileCard = ({ item }: { item: TukarShift }) => (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
+      {/* Header with status */}
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <div className="flex items-center space-x-2 mb-1">
+            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-blue-600 text-xs font-medium">
+                {item.fromUser?.namaDepan?.charAt(0)?.toUpperCase() || '?'}
+              </span>
+            </div>
+            <span className="text-sm font-medium text-gray-900">
+              {capitalizeWords(`${item.fromUser?.namaDepan || ''} ${item.fromUser?.namaBelakang || ''}`.trim()) || 'Unknown'}
+            </span>
+          </div>
+          <div className="text-xs text-gray-500">
+            → {capitalizeWords(`${item.toUser?.namaDepan || ''} ${item.toUser?.namaBelakang || ''}`.trim()) || 'Unknown'}
+          </div>
+        </div>
+        <StatusBadge status={item.status} />
+      </div>
+
+      {/* Shift details */}
+      <div className="space-y-2 mb-3">
+        <div className="flex items-center text-sm">
+          <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="font-medium">{formatDateWithDay(item.shift?.tanggal || '')}</span>
+        </div>
+        <div className="flex items-center text-sm text-gray-600">
+          <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{item.shift?.jammulai || 'N/A'} - {item.shift?.jamselesai || 'N/A'}</span>
+        </div>
+        <div className="flex items-center text-sm text-gray-600">
+          <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>{item.shift?.lokasishift || 'N/A'}</span>
+        </div>
+      </div>
+
+      {/* Reason */}
+      {item.alasan && (
+        <div className="mb-3">
+          <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+            <span className="font-medium">Alasan: </span>
+            {item.alasan}
+          </p>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <button 
+          className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm"
+          onClick={() => handleShowDetail(item)}
+        >
+          <Image src="/view.png" alt="View" width={14} height={14} />
+          <span>Detail</span>
+        </button>
+        
+        <div className="flex items-center space-x-2">
+          {/* Edit - only for pending requests by current user and in "my-requests" tab */}
+          {item.fromUser?.id === currentUserId && item.status === 'PENDING' && 
+           (currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) || activeTab === 'my-requests') && (
+            <FormModal
+              table="tukarshift"
+              type="update"
+              data={item}
+              id={item.id.toString()}
+              onCreated={handleCreate}
+              onUpdated={handleUpdate}
+              onDeleted={handleDelete}
+              renderTrigger={false}
+            />
+          )}
+          
+          {/* Delete - only for current user's requests and in "my-requests" tab */}
+          {item.fromUser?.id === currentUserId && 
+           (currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) || activeTab === 'my-requests') && (
+            <FormModal
+              table="tukarshift"
+              type="delete"
+              data={item}
+              id={item.id.toString()}
+              nameLabel={`pengajuan tukar shift ke ${capitalizeWords(`${item.toUser?.namaDepan || ''} ${item.toUser?.namaBelakang || ''}`.trim()) || 'Unknown'}`}
+              onCreated={handleCreate}
+              onUpdated={handleUpdate}
+              onDeleted={handleDelete}
+              renderTrigger={false}
+            />
+          )}
+
+          {/* Target User Actions - untuk request yang ditujukan kepada user saat ini dan di tab "requests-to-me" */}
+          {item.toUser?.id === currentUserId && item.status === 'PENDING' && 
+           (currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) || activeTab === 'requests-to-me') && (
+            <>
+              <button
+                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                onClick={() => handleTargetUserAction(item.id, 'approve')}
+                title="Terima permintaan tukar shift"
+              >
+                Terima
+              </button>
+              <button
+                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                onClick={() => handleTargetUserAction(item.id, 'reject')}
+                title="Tolak permintaan tukar shift"
+              >
+                Tolak
+              </button>
+            </>
+          )}
+
+          {/* Supervisor Approve/Reject - hanya untuk supervisor unit terkait */}
+          {currentUser?.role === 'SUPERVISOR' && item.status === 'WAITING_SUPERVISOR' && isSupervisorOfUnit(currentUser, item.shift) && (
+            <>
+              <button
+                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                onClick={() => handleSupervisorAction(item.id, 'approve')}
+              >
+                Setujui
+              </button>
+              <button
+                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                onClick={() => handleSupervisorAction(item.id, 'reject')}
+              >
+                Tolak
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -457,99 +621,123 @@ export default function AjukanTukarShiftPage() {
   }
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
+    <div className="bg-white p-4 md:p-6 rounded-md flex-1 m-2 md:m-4 mt-0">
       {/* Error display */}
       {errorMsg && (
         <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-sm mb-4" role="alert">
           <span className="block font-medium">{errorMsg}</span>
         </div>
       )}
-      {/* Filters and Search */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      
+      {/* Header and Main Actions */}
+      <div className="flex flex-col space-y-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">
             {currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) 
               ? 'Manajemen Tukar Shift' 
               : 'Ajukan Tukar Shift'
             }
           </h1>
+          
+          {/* Tombol Ajukan Baru - Mobile positioned at top right */}
+          {currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && activeTab === 'my-requests' && (
+            <div className="flex justify-end">
+              <FormModal
+                table="tukarshift"
+                type="create"
+                onCreated={handleCreate}
+                onUpdated={handleUpdate}
+                onDeleted={handleDelete}
+              />
+            </div>
+          )}
         </div>
         
-        <div className="flex gap-2">
-          <TableSearch 
-            onChange={handleSearch}
-            placeholder="Cari pengaju, partner, lokasi, atau alasan..."
-            value={searchValue}
-          />
-          <FilterButton
-            onFilter={handleStatusFilter}
-            options={[
-              { value: '', label: 'Semua Status' },
-              { value: 'PENDING', label: 'Menunggu Persetujuan' },
-              { value: 'APPROVED_BY_TARGET', label: 'Menunggu Supervisor' },
-              { value: 'REJECTED_BY_TARGET', label: 'Ditolak Partner' },
-              { value: 'WAITING_SUPERVISOR', label: 'Menunggu Supervisor' },
-              { value: 'APPROVED', label: 'Disetujui' },
-              { value: 'REJECTED_BY_SUPERVISOR', label: 'Ditolak Supervisor' }
-            ]}
-          />
-          
-          <SortButton
-            onSort={handleSort}
-            options={[
-              { value: 'tanggal', label: 'Tanggal Shift' },
-              { value: 'pengaju', label: 'Pengaju' },
-              { value: 'status', label: 'Status' }
-            ]}
-          />
-
-          {/* Tombol Ajukan Baru hanya untuk staff (bukan admin/supervisor) dan di tab "Request Saya" */}
-          {currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && activeTab === 'my-requests' && (
-            <FormModal
-              table="tukarshift"
-              type="create"
-              onCreated={handleCreate}
-              onUpdated={handleUpdate}
-              onDeleted={handleDelete}
+        {/* Filters - Mobile responsive */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex-1">
+            <TableSearch 
+              onChange={handleSearch}
+              placeholder="Cari pengaju, partner, lokasi..."
+              value={searchValue}
             />
-          )}
+          </div>
+          <div className="flex gap-2">
+            <FilterButton
+              onFilter={handleStatusFilter}
+              options={[
+                { value: '', label: 'Semua Status' },
+                { value: 'PENDING', label: 'Menunggu Persetujuan' },
+                { value: 'APPROVED_BY_TARGET', label: 'Menunggu Supervisor' },
+                { value: 'REJECTED_BY_TARGET', label: 'Ditolak Partner' },
+                { value: 'WAITING_SUPERVISOR', label: 'Menunggu Supervisor' },
+                { value: 'APPROVED', label: 'Disetujui' },
+                { value: 'REJECTED_BY_SUPERVISOR', label: 'Ditolak Supervisor' }
+              ]}
+            />
+            
+            <SortButton
+              onSort={handleSort}
+              options={[
+                { value: 'tanggal', label: 'Tanggal Shift' },
+                { value: 'pengaju', label: 'Pengaju' },
+                { value: 'status', label: 'Status' }
+              ]}
+            />
+          </div>
         </div>
       </div>
 
       {/* Tab Navigation - hanya untuk user biasa (bukan admin/supervisor) */}
       {currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && (
-        <div className="flex border-b border-gray-200 mb-6">
+        <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
           <button
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'my-requests'
                 ? 'border-blue-500 text-blue-600 bg-blue-50'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
             onClick={() => setActiveTab('my-requests')}
           >
-            Request Saya ({tukarShiftData.filter(item => item.fromUser?.id === currentUserId).length})
+            <span className="hidden sm:inline">Request Saya</span>
+            <span className="sm:hidden">Saya</span>
+            <span className="ml-1">({tukarShiftData.filter(item => item.fromUser?.id === currentUserId).length})</span>
           </button>
           <button
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'requests-to-me'
                 ? 'border-green-500 text-green-600 bg-green-50'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
             onClick={() => setActiveTab('requests-to-me')}
           >
-            Request untuk Saya ({tukarShiftData.filter(item => item.toUser?.id === currentUserId).length})
+            <span className="hidden sm:inline">Request untuk Saya</span>
+            <span className="sm:hidden">Untuk Saya</span>
+            <span className="ml-1">({tukarShiftData.filter(item => item.toUser?.id === currentUserId).length})</span>
           </button>
         </div>
       )}
 
-      {/* Table */}
+      {/* Table/Card Container */}
       <div className="overflow-hidden">
         {paginatedData.length > 0 ? (
-          <Table 
-            columns={columns} 
-            data={paginatedData}
-            renderRow={renderRow}
-          />
+          <>
+            {/* Desktop Table */}
+            <div className="hidden lg:block">
+              <Table 
+                columns={columns} 
+                data={paginatedData}
+                renderRow={renderRow}
+              />
+            </div>
+            
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-3">
+              {paginatedData.map((item) => (
+                <MobileCard key={item.id} item={item} />
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-12">
             <Image
@@ -569,7 +757,7 @@ export default function AjukanTukarShiftPage() {
                   : 'Tidak ada data tukar shift'
               }
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-gray-500 mb-4 text-sm md:text-base">
               {searchValue || selectedStatus 
                 ? 'Coba ubah filter pencarian atau status'
                 : currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase())
@@ -595,52 +783,14 @@ export default function AjukanTukarShiftPage() {
         </div>
       )}
 
-      {/* Stats Footer with role-based information */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-blue-600">
-            {processedData.filter(item => item.status === 'PENDING').length}
-          </div>
-          <div className="text-sm text-gray-600">
-            {currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) 
-              ? 'Menunggu Review' 
-              : 'Menunggu'
-            }
-          </div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-green-600">
-            {processedData.filter(item => item.status === 'APPROVED' || item.status === 'APPROVED_BY_TARGET').length}
-          </div>
-          <div className="text-sm text-gray-600">Disetujui</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-red-600">
-            {processedData.filter(item => item.status && item.status.startsWith('REJECTED')).length}
-          </div>
-          <div className="text-sm text-gray-600">Ditolak</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-gray-600">
-            {processedData.length}
-          </div>
-          <div className="text-sm text-gray-600">
-            {currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) 
-              ? 'Total Semua' 
-              : 'Total Saya'
-            }
-          </div>
-        </div>
-      </div>
-
       {/* Role information banner for admins */}
       {currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mt-4 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start md:items-center gap-2">
+            <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5 md:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-sm font-medium text-blue-800">
+            <span className="text-xs md:text-sm font-medium text-blue-800">
               Anda masuk sebagai {currentUserRole === 'ADMIN' ? 'Administrator' : 'Supervisor'} - 
               Dapat melihat dan mengelola semua pengajuan tukar shift
             </span>
@@ -650,19 +800,59 @@ export default function AjukanTukarShiftPage() {
 
       {/* Modal detail */}
       {detailItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full relative">
-            <button className="absolute top-2 right-2 p-1" onClick={handleCloseDetail}>
+        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-4 md:p-6 max-w-lg w-full relative max-h-[90vh] overflow-y-auto">
+            <button className="absolute top-3 right-3 p-1 hover:bg-gray-100 rounded" onClick={handleCloseDetail}>
               <Image src="/close.png" alt="Close" width={16} height={16} />
             </button>
-            <h2 className="text-lg font-bold mb-2">Detail Pengajuan Tukar Shift</h2>
-            <div className="mb-2"><b>Status:</b> <StatusBadge status={detailItem.status} /></div>
-            <div className="mb-2"><b>Pengaju:</b> {detailItem.fromUser?.namaDepan} {detailItem.fromUser?.namaBelakang}</div>
-            <div className="mb-2"><b>Partner:</b> {detailItem.toUser?.namaDepan} {detailItem.toUser?.namaBelakang}</div>
-            <div className="mb-2"><b>Tanggal Shift:</b> {detailItem.shift?.tanggal ? new Date(detailItem.shift.tanggal).toLocaleDateString() : '-'}</div>
-            <div className="mb-2"><b>Jam:</b> {detailItem.shift?.jammulai} - {detailItem.shift?.jamselesai}</div>
-            <div className="mb-2"><b>Lokasi:</b> {detailItem.shift?.lokasishift}</div>
-            <div className="mb-2"><b>Alasan:</b> {detailItem.alasan}</div>
+            <h2 className="text-lg font-bold mb-4 pr-8">Detail Pengajuan Tukar Shift</h2>
+            
+            <div className="space-y-3">
+              <div className="flex items-start">
+                <span className="font-medium text-gray-700 w-24 flex-shrink-0">Status:</span>
+                <div className="flex-1">
+                  <StatusBadge status={detailItem.status} />
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <span className="font-medium text-gray-700 w-24 flex-shrink-0">Pengaju:</span>
+                <span className="flex-1 text-gray-900">
+                  {capitalizeWords(`${detailItem.fromUser?.namaDepan || ''} ${detailItem.fromUser?.namaBelakang || ''}`.trim()) || 'Unknown'}
+                </span>
+              </div>
+              
+              <div className="flex items-start">
+                <span className="font-medium text-gray-700 w-24 flex-shrink-0">Partner:</span>
+                <span className="flex-1 text-gray-900">
+                  {capitalizeWords(`${detailItem.toUser?.namaDepan || ''} ${detailItem.toUser?.namaBelakang || ''}`.trim()) || 'Unknown'}
+                </span>
+              </div>
+              
+              <div className="flex items-start">
+                <span className="font-medium text-gray-700 w-24 flex-shrink-0">Tanggal:</span>
+                <span className="flex-1 text-gray-900">
+                  {formatDateWithDay(detailItem.shift?.tanggal || '')}
+                </span>
+              </div>
+              
+              <div className="flex items-start">
+                <span className="font-medium text-gray-700 w-24 flex-shrink-0">Jam:</span>
+                <span className="flex-1 text-gray-900">
+                  {detailItem.shift?.jammulai || 'N/A'} - {detailItem.shift?.jamselesai || 'N/A'}
+                </span>
+              </div>
+              
+              <div className="flex items-start">
+                <span className="font-medium text-gray-700 w-24 flex-shrink-0">Lokasi:</span>
+                <span className="flex-1 text-gray-900">{detailItem.shift?.lokasishift || 'N/A'}</span>
+              </div>
+              
+              <div className="flex items-start">
+                <span className="font-medium text-gray-700 w-24 flex-shrink-0">Alasan:</span>
+                <span className="flex-1 text-gray-900">{detailItem.alasan || 'Tidak ada alasan'}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -20,6 +20,7 @@ interface User {
   namaDepan: string;
   namaBelakang: string;
   role: string;
+  unit?: string; // pastikan backend juga mengirimkan unit/bidang supervisor
 }
 
 interface Shift {
@@ -75,6 +76,8 @@ export default function AjukanTukarShiftPage() {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState<'my-requests' | 'requests-to-me'>('my-requests');
   
   const itemsPerPage = 10;
 
@@ -120,10 +123,11 @@ export default function AjukanTukarShiftPage() {
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
+          setCurrentUser(user);
           setCurrentUserId(user.id);
           setCurrentUserRole(user.role);
         } catch (error) {
-          console.error('Error parsing user data:', error);
+          // Error parsing user data
         }
       }
     }
@@ -143,6 +147,16 @@ export default function AjukanTukarShiftPage() {
 
     // Filter data untuk user biasa (bukan ADMIN/SUPERVISOR)
     if (currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase())) {
+      // Filter berdasarkan tab yang aktif untuk user biasa
+      if (activeTab === 'my-requests') {
+        // Hanya request yang diajukan oleh user
+        filtered = filtered.filter(item => item.fromUser?.id === currentUserId);
+      } else if (activeTab === 'requests-to-me') {
+        // Hanya request yang ditujukan kepada user
+        filtered = filtered.filter(item => item.toUser?.id === currentUserId);
+      }
+    } else {
+      // Admin/Supervisor tetap melihat semua data
       filtered = filtered.filter(item =>
         item.fromUser?.id === currentUserId || item.toUser?.id === currentUserId
       );
@@ -151,9 +165,9 @@ export default function AjukanTukarShiftPage() {
     // Filter by search
     if (searchValue) {
       filtered = filtered.filter(item =>
-        `${item.fromUser.namaDepan} ${item.fromUser.namaBelakang}`.toLowerCase().includes(searchValue.toLowerCase()) ||
-        `${item.toUser.namaDepan} ${item.toUser.namaBelakang}`.toLowerCase().includes(searchValue.toLowerCase()) ||
-        item.shift.lokasishift.toLowerCase().includes(searchValue.toLowerCase()) ||
+        `${item.fromUser?.namaDepan || ''} ${item.fromUser?.namaBelakang || ''}`.toLowerCase().includes(searchValue.toLowerCase()) ||
+        `${item.toUser?.namaDepan || ''} ${item.toUser?.namaBelakang || ''}`.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.shift?.lokasishift?.toLowerCase().includes(searchValue.toLowerCase()) ||
         (item.alasan && item.alasan.toLowerCase().includes(searchValue.toLowerCase()))
       );
     }
@@ -171,12 +185,12 @@ export default function AjukanTukarShiftPage() {
 
         switch (sortConfig.key) {
           case 'tanggal':
-            aValue = new Date(a.shift.tanggal);
-            bValue = new Date(b.shift.tanggal);
+            aValue = new Date(a.shift?.tanggal || 0);
+            bValue = new Date(b.shift?.tanggal || 0);
             break;
           case 'pengaju':
-            aValue = `${a.fromUser.namaDepan} ${a.fromUser.namaBelakang}`;
-            bValue = `${b.fromUser.namaDepan} ${b.fromUser.namaBelakang}`;
+            aValue = `${a.fromUser?.namaDepan || ''} ${a.fromUser?.namaBelakang || ''}`;
+            bValue = `${b.fromUser?.namaDepan || ''} ${b.fromUser?.namaBelakang || ''}`;
             break;
           case 'status':
             aValue = a.status;
@@ -194,7 +208,7 @@ export default function AjukanTukarShiftPage() {
     }
 
     return filtered;
-  }, [tukarShiftData, searchValue, selectedStatus, sortConfig, currentUserId, currentUserRole]);
+  }, [tukarShiftData, searchValue, selectedStatus, sortConfig, currentUserId, currentUserRole, activeTab]);
 
   // Pagination
   const totalPages = Math.ceil(processedData.length / itemsPerPage);
@@ -254,6 +268,54 @@ export default function AjukanTukarShiftPage() {
     { headers: 'Aksi', accessor: 'actions' }
   ];
 
+  // Cek apakah supervisor membawahi unit shift
+  function isSupervisorOfUnit(currentUser: User | null, shift: Shift | undefined) {
+    return currentUser?.role === 'SUPERVISOR' && currentUser?.unit && shift?.lokasishift && currentUser.unit === shift.lokasishift;
+  }
+
+  // Handler supervisor approve/reject
+  const handleSupervisorAction = async (id: number, action: 'approve' | 'reject') => {
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const endpoint = `${apiUrl}/shift-swap-requests/${id}/${action === 'approve' ? 'approve-supervisor' : 'reject-supervisor'}`;
+      const res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        // Notifikasi sukses (bisa diganti dengan toast/modal sesuai preferensi)
+        alert('Berhasil memproses permintaan!');
+        fetchTukarShiftData();
+      } else {
+        alert('Gagal memproses permintaan!');
+      }
+    } catch {
+      alert('Terjadi kesalahan jaringan!');
+    }
+  };
+
+  // Handler untuk target user menerima/menolak request
+  const handleTargetUserAction = async (id: number, action: 'approve' | 'reject') => {
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const endpoint = `${apiUrl}/shift-swap-requests/${id}/${action === 'approve' ? 'approve-target' : 'reject-target'}`;
+      const res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert(action === 'approve' ? 'Request berhasil diterima!' : 'Request berhasil ditolak!');
+        fetchTukarShiftData();
+      } else {
+        alert('Gagal memproses permintaan!');
+      }
+    } catch {
+      alert('Terjadi kesalahan jaringan!');
+    }
+  };
+
   // Render row function for Table component
   const renderRow = (item: TukarShift) => (
     <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 hover:bg-gray-50 transition-colors">
@@ -276,7 +338,7 @@ export default function AjukanTukarShiftPage() {
               {item.toUser?.namaDepan?.charAt(0) || '?'}
             </span>
           </div>
-          <span>
+          <span className="font-medium">
             {`${item.toUser?.namaDepan || ''} ${item.toUser?.namaBelakang || ''}`.trim() || 'Unknown'}
           </span>
         </div>
@@ -309,8 +371,9 @@ export default function AjukanTukarShiftPage() {
             <Image src="/view.png" alt="View" width={16} height={16} />
           </button>
           
-          {/* Edit - only for pending requests by current user */}
-          {item.fromUser?.id === currentUserId && item.status === 'PENDING' && (
+          {/* Edit - only for pending requests by current user and in "my-requests" tab */}
+          {item.fromUser?.id === currentUserId && item.status === 'PENDING' && 
+           (currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) || activeTab === 'my-requests') && (
             <FormModal
               table="tukarshift"
               type="update"
@@ -323,8 +386,9 @@ export default function AjukanTukarShiftPage() {
             />
           )}
           
-          {/* Delete - only for current user's requests */}
-          {item.fromUser?.id === currentUserId && (
+          {/* Delete - only for current user's requests and in "my-requests" tab */}
+          {item.fromUser?.id === currentUserId && 
+           (currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) || activeTab === 'my-requests') && (
             <FormModal
               table="tukarshift"
               type="delete"
@@ -336,6 +400,45 @@ export default function AjukanTukarShiftPage() {
               onDeleted={handleDelete}
               renderTrigger={false}
             />
+          )}
+
+          {/* Target User Actions - untuk request yang ditujukan kepada user saat ini dan di tab "requests-to-me" */}
+          {item.toUser?.id === currentUserId && item.status === 'PENDING' && 
+           (currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) || activeTab === 'requests-to-me') && (
+            <>
+              <button
+                className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs mr-1"
+                onClick={() => handleTargetUserAction(item.id, 'approve')}
+                title="Terima permintaan tukar shift"
+              >
+                Terima
+              </button>
+              <button
+                className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                onClick={() => handleTargetUserAction(item.id, 'reject')}
+                title="Tolak permintaan tukar shift"
+              >
+                Tolak
+              </button>
+            </>
+          )}
+
+          {/* Supervisor Approve/Reject - hanya untuk supervisor unit terkait */}
+          {currentUser?.role === 'SUPERVISOR' && item.status === 'WAITING_SUPERVISOR' && isSupervisorOfUnit(currentUser, item.shift) && (
+            <>
+              <button
+                className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                onClick={() => handleSupervisorAction(item.id, 'approve')}
+              >
+                Setujui
+              </button>
+              <button
+                className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                onClick={() => handleSupervisorAction(item.id, 'reject')}
+              >
+                Tolak
+              </button>
+            </>
           )}
         </div>
       </td>
@@ -364,7 +467,12 @@ export default function AjukanTukarShiftPage() {
       {/* Filters and Search */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Ajukan Tukar Shift</h1> 
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) 
+              ? 'Manajemen Tukar Shift' 
+              : 'Ajukan Tukar Shift'
+            }
+          </h1>
         </div>
         
         <div className="flex gap-2">
@@ -377,9 +485,12 @@ export default function AjukanTukarShiftPage() {
             onFilter={handleStatusFilter}
             options={[
               { value: '', label: 'Semua Status' },
-              { value: 'PENDING', label: 'Menunggu' },
+              { value: 'PENDING', label: 'Menunggu Persetujuan' },
+              { value: 'APPROVED_BY_TARGET', label: 'Menunggu Supervisor' },
+              { value: 'REJECTED_BY_TARGET', label: 'Ditolak Partner' },
+              { value: 'WAITING_SUPERVISOR', label: 'Menunggu Supervisor' },
               { value: 'APPROVED', label: 'Disetujui' },
-              { value: 'REJECTED', label: 'Ditolak' }
+              { value: 'REJECTED_BY_SUPERVISOR', label: 'Ditolak Supervisor' }
             ]}
           />
           
@@ -392,15 +503,44 @@ export default function AjukanTukarShiftPage() {
             ]}
           />
 
-          <FormModal
-            table="tukarshift"
-            type="create"
-            onCreated={handleCreate}
-            onUpdated={handleUpdate}
-            onDeleted={handleDelete}
-          />
+          {/* Tombol Ajukan Baru hanya untuk staff (bukan admin/supervisor) dan di tab "Request Saya" */}
+          {currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && activeTab === 'my-requests' && (
+            <FormModal
+              table="tukarshift"
+              type="create"
+              onCreated={handleCreate}
+              onUpdated={handleUpdate}
+              onDeleted={handleDelete}
+            />
+          )}
         </div>
       </div>
+
+      {/* Tab Navigation - hanya untuk user biasa (bukan admin/supervisor) */}
+      {currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && (
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'my-requests'
+                ? 'border-blue-500 text-blue-600 bg-blue-50'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setActiveTab('my-requests')}
+          >
+            Request Saya ({tukarShiftData.filter(item => item.fromUser?.id === currentUserId).length})
+          </button>
+          <button
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'requests-to-me'
+                ? 'border-green-500 text-green-600 bg-green-50'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setActiveTab('requests-to-me')}
+          >
+            Request untuk Saya ({tukarShiftData.filter(item => item.toUser?.id === currentUserId).length})
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-hidden">
@@ -420,12 +560,23 @@ export default function AjukanTukarShiftPage() {
               className="mx-auto mb-4 opacity-50"
             />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Tidak ada data tukar shift
+              {searchValue || selectedStatus 
+                ? 'Tidak ada data yang sesuai dengan filter'
+                : currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase())
+                  ? (activeTab === 'my-requests' 
+                      ? 'Belum ada request yang Anda ajukan'
+                      : 'Belum ada request yang ditujukan kepada Anda')
+                  : 'Tidak ada data tukar shift'
+              }
             </h3>
             <p className="text-gray-500 mb-4">
               {searchValue || selectedStatus 
-                ? 'Tidak ada data yang sesuai dengan filter yang dipilih'
-                : 'Belum ada pengajuan tukar shift yang dibuat'
+                ? 'Coba ubah filter pencarian atau status'
+                : currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase())
+                  ? (activeTab === 'my-requests'
+                      ? 'Klik tombol "+" untuk mengajukan tukar shift baru'
+                      : 'Request akan muncul ketika ada rekan yang mengajukan tukar shift kepada Anda')
+                  : 'Belum ada pengajuan tukar shift yang dibuat'
               }
             </p>
           </div>
@@ -444,13 +595,18 @@ export default function AjukanTukarShiftPage() {
         </div>
       )}
 
-      {/* Stats Footer */}
+      {/* Stats Footer with role-based information */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-600">
             {processedData.filter(item => item.status === 'PENDING').length}
           </div>
-          <div className="text-sm text-gray-600">Menunggu</div>
+          <div className="text-sm text-gray-600">
+            {currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) 
+              ? 'Menunggu Review' 
+              : 'Menunggu'
+            }
+          </div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-green-600">
@@ -468,9 +624,29 @@ export default function AjukanTukarShiftPage() {
           <div className="text-2xl font-bold text-gray-600">
             {processedData.length}
           </div>
-          <div className="text-sm text-gray-600">Total</div>
+          <div className="text-sm text-gray-600">
+            {currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) 
+              ? 'Total Semua' 
+              : 'Total Saya'
+            }
+          </div>
         </div>
       </div>
+
+      {/* Role information banner for admins */}
+      {currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium text-blue-800">
+              Anda masuk sebagai {currentUserRole === 'ADMIN' ? 'Administrator' : 'Supervisor'} - 
+              Dapat melihat dan mengelola semua pengajuan tukar shift
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Modal detail */}
       {detailItem && (

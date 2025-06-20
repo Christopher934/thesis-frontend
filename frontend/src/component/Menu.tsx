@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
+import ConfirmationModal from './ConfirmationModal';
 import { 
   BarChart3, 
   History, 
@@ -74,6 +75,7 @@ const menuItems = [
 const Menu = () => {
   const [role, setRole] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role")?.toLowerCase() || null;
@@ -82,6 +84,17 @@ const Menu = () => {
 
   const toggleDropdown = (label: string) => {
     setOpenDropdown(openDropdown === label ? null : label);
+  };
+
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
+    import('@/lib/authUtils').then(({ clearAuthData }) => {
+      clearAuthData();
+      window.location.href = "/sign-in";
+    });
   };
 
   // Close dropdown when clicking outside (for mobile)
@@ -120,13 +133,8 @@ const Menu = () => {
               return (
                 <button
                   key={item.label}
-                  onClick={() => {
-                    import('@/lib/authUtils').then(({ clearAuthData }) => {
-                      clearAuthData();
-                      window.location.href = "/sign-in";
-                    });
-                  }}
-                  className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-3 lg:py-2 touch-manipulation"
+                  onClick={handleLogout}
+                  className="flex items-center justify-center lg:justify-start gap-4 text-gray-500 py-3 lg:py-2 touch-manipulation hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <IconComponent className="w-5 h-5" />
                   <span className="hidden lg:block">{item.label}</span>
@@ -211,6 +219,18 @@ const Menu = () => {
           })}
         </div>
       ))}
+      
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={confirmLogout}
+        title="Konfirmasi Logout"
+        message="Apakah Anda yakin ingin keluar dari aplikasi? Anda perlu login ulang untuk mengakses sistem."
+        confirmText="Ya, Logout"
+        cancelText="Batal"
+        type="warning"
+      />
     </div>
   );
 };

@@ -9,7 +9,7 @@ import SortButton from "@/component/SortButton";
 import { useState, useMemo } from "react";
 import FormModal from "@/component/FormModal";
 
-// Mock data for messages
+// Sample data for messages (replace with API call when backend is implemented)
 const messagesData = [
     {
         id: 1,

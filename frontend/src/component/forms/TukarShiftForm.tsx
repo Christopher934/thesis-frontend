@@ -45,6 +45,33 @@ const schema = z.object({
 
 type FormInputs = z.infer<typeof schema>;
 
+// Helper function to format RSUD location names
+const formatLokasiShift = (lokasi: string): string => {
+  if (!lokasi) return '-';
+  
+  // Define mapping for RSUD department names
+  const lokasiMapping: { [key: string]: string } = {
+    'GEDUNG_ADMINISTRASI': 'Gedung Administrasi',
+    'RAWAT_JALAN': 'Rawat Jalan',
+    'RAWAT_INAP': 'Rawat Inap',
+    'GAWAT_DARURAT': 'Gawat Darurat',
+    'LABORATORIUM': 'Laboratorium',
+    'FARMASI': 'Farmasi',
+    'RADIOLOGI': 'Radiologi',
+    'GIZI': 'Gizi',
+    'KEAMANAN': 'Keamanan',
+    'LAUNDRY': 'Laundry',
+    'CLEANING_SERVICE': 'Cleaning Service',
+    'SUPIR': 'Supir',
+    'ICU': 'ICU',
+    'NICU': 'NICU',
+  };
+  
+  return lokasiMapping[lokasi] || lokasi.split('_').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
+};
+
 function TukarShiftForm({
   type,
   data,
@@ -351,7 +378,7 @@ function TukarShiftForm({
                   <option value={0} className="text-gray-500">Pilih shift Anda...</option>
                   {currentUserShifts.map(shift => (
                     <option key={shift.id} value={shift.id} className="text-gray-900">
-                      {shift.tanggal} | {shift.jammulai}-{shift.jamselesai} | {shift.lokasishift}
+                      {shift.tanggal} | {shift.jammulai}-{shift.jamselesai} | {formatLokasiShift(shift.lokasishift)}
                     </option>
                   ))}
                 </select>

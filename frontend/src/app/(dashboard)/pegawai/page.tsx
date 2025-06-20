@@ -147,7 +147,7 @@ function PegawaiPage() {
         const apiUrl = getApiUrl();
         console.log('Using API URL:', apiUrl);
         
-        // Direct fetch to the backend API without mock fallback
+        // Direct fetch to the backend API
         const response = await fetch(`${apiUrl}/shifts`, {
           headers: {
             'Authorization': `Bearer ${token}`,

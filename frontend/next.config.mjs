@@ -1,20 +1,41 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Development optimizations
+  // Output configuration for Docker
+  output: 'standalone',
+  
+  // Build optimizations for Docker
   experimental: {
-    turbo: {
-      // Enable Turbopack for faster builds in development
+    // Disable turbo in production builds to avoid hanging
+    turbo: process.env.NODE_ENV === 'development' ? {
       rules: {
         '*.svg': {
           loaders: ['@svgr/webpack'],
           as: '*.js',
         },
       },
-    },
+    } : undefined,
   },
   
-  // Webpack optimizations for development
+  // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
+    // Production build optimizations
+    if (!dev) {
+      // Faster production builds
+      config.optimization.minimize = true;
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          vendor: {
+            name: 'vendor',
+            chunks: 'all',
+            test: /node_modules/,
+          },
+        },
+      };
+    }
+    
     if (dev && !isServer) {
       // Faster builds in development
       config.devtool = 'eval-cheap-module-source-map';

@@ -122,7 +122,7 @@ export default function PegawaiPage() {
         const token = localStorage.getItem('token');
         const apiUrl = getApiUrl();
         
-        // Direct fetch to the backend API without mock fallback
+        // Direct fetch to the backend API
         const response = await fetch(`${apiUrl}/users`, {
           headers: {
             'Content-Type': 'application/json',

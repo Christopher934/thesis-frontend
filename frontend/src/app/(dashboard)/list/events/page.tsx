@@ -8,7 +8,6 @@ import FormModal from '@/component/FormModal'
 import FilterButton from '@/component/FilterButton'
 import SortButton from '@/component/SortButton'
 import { getApiUrl } from '@/config/api'
-import { fetchWithFallback } from '@/utils/fetchWithFallback'
 import EventForm from '@/component/forms/EventForm'
 
 interface EventItem {

@@ -1,12 +1,12 @@
 'use client'
 
 import { z } from "zod";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import InputField from "../InputField";
 import { joinUrl } from "@/lib/urlUtils";
-import { fetchWithAuthAndFallback } from "@/utils/authUtils";
+import { Calendar, Clock, Users, Building2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 
 // Type for User data 
@@ -21,17 +21,22 @@ type User = {
     jenisKelamin?: string;
 }
 
-// Define the LokasiShift enum to match Prisma schema
+// Define the LokasiShift enum to match updated RSUD Prisma schema
 const LokasiShiftEnum = z.enum([
-    'POLI_UMUM',
-    'POLI_ANAK',
-    'POLI_GIGI',
-    'IGD',
-    'ICU',
+    'GEDUNG_ADMINISTRASI',
+    'RAWAT_JALAN',
+    'RAWAT_INAP',
+    'GAWAT_DARURAT',
     'LABORATORIUM',
-    'RADIOLOGI',
     'FARMASI',
-    'EMERGENCY_ROOM',
+    'RADIOLOGI',
+    'GIZI',
+    'KEAMANAN',
+    'LAUNDRY',
+    'CLEANING_SERVICE',
+    'SUPIR',
+    'ICU',
+    'NICU',
 ]);
 
 // Define the TipeShift enum to match Prisma schema
@@ -42,6 +47,157 @@ const TipeShiftEnum = z.enum([
     'ON_CALL',
     'JAGA',
 ]);
+
+// Helper function to format location names
+const formatLokasiShift = (lokasi: string): string => {
+  const lokasiMapping: { [key: string]: string } = {
+    'GEDUNG_ADMINISTRASI': 'Gedung Administrasi',
+    'RAWAT_JALAN': 'Rawat Jalan',
+    'RAWAT_INAP': 'Rawat Inap',
+    'GAWAT_DARURAT': 'Gawat Darurat',
+    'LABORATORIUM': 'Laboratorium',
+    'FARMASI': 'Farmasi',
+    'RADIOLOGI': 'Radiologi',
+    'GIZI': 'Gizi',
+    'KEAMANAN': 'Keamanan',
+    'LAUNDRY': 'Laundry',
+    'CLEANING_SERVICE': 'Cleaning Service',
+    'SUPIR': 'Supir',
+    'ICU': 'ICU',
+    'NICU': 'NICU',
+  };
+  return lokasiMapping[lokasi] || lokasi;
+};
+
+// RSUD Department configurations with suggested times
+const DEPARTMENT_CONFIGS = {
+  'GEDUNG_ADMINISTRASI': {
+    name: 'Gedung Administrasi',
+    icon: '🏢',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '17:00' },
+    },
+    workdays: 'Sen-Kam: 08:00-17:00, Jum: 08:00-11:30'
+  },
+  'RAWAT_JALAN': {
+    name: 'Rawat Jalan',
+    icon: '🏥',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '15:00' },
+    },
+    workdays: 'Sen-Jum: 08:00-15:00, Sab: 08:00-11:30'
+  },
+  'RAWAT_INAP': {
+    name: 'Rawat Inap',
+    icon: '🛏️',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '15:00' },
+      'SIANG': { start: '15:00', end: '21:00' },
+      'MALAM': { start: '20:00', end: '08:00' },
+    },
+    workdays: '3 Shift - 24/7'
+  },
+  'GAWAT_DARURAT': {
+    name: 'Gawat Darurat',
+    icon: '🚑',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '15:00' },
+      'SIANG': { start: '15:00', end: '21:00' },
+      'MALAM': { start: '20:00', end: '08:00' },
+    },
+    workdays: '3 Shift - 24/7'
+  },
+  'LABORATORIUM': {
+    name: 'Laboratorium',
+    icon: '🔬',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '17:00' },
+      'MALAM': { start: '17:00', end: '08:00' },
+    },
+    workdays: '2 Shift - 24/7'
+  },
+  'FARMASI': {
+    name: 'Farmasi',
+    icon: '💊',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '17:00' },
+      'MALAM': { start: '17:00', end: '08:00' },
+    },
+    workdays: '2 Shift - 24/7'
+  },
+  'RADIOLOGI': {
+    name: 'Radiologi',
+    icon: '📷',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '17:00' },
+      'MALAM': { start: '17:00', end: '08:00' },
+    },
+    workdays: '2 Shift - 24/7'
+  },
+  'GIZI': {
+    name: 'Gizi',
+    icon: '🍽️',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '17:00' },
+      'MALAM': { start: '17:00', end: '08:00' },
+    },
+    workdays: '2 Shift - 24/7'
+  },
+  'KEAMANAN': {
+    name: 'Keamanan',
+    icon: '🛡️',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '17:00' },
+      'MALAM': { start: '17:00', end: '08:00' },
+    },
+    workdays: '2 Shift - 24/7'
+  },
+  'LAUNDRY': {
+    name: 'Laundry',
+    icon: '🧺',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '15:00' },
+    },
+    workdays: 'Sen-Jum: 08:00-15:00, Sab: 08:00-11:30'
+  },
+  'CLEANING_SERVICE': {
+    name: 'Cleaning Service',
+    icon: '🧹',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '15:00' },
+    },
+    workdays: 'Sen-Jum: 08:00-15:00, Sab: 08:00-11:30'
+  },
+  'SUPIR': {
+    name: 'Supir',
+    icon: '🚗',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '17:00' },
+      'MALAM': { start: '17:00', end: '08:00' },
+    },
+    workdays: '2 Shift - 24/7'
+  },
+  'ICU': {
+    name: 'ICU',
+    icon: '⚕️',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '15:00' },
+      'SIANG': { start: '15:00', end: '21:00' },
+      'MALAM': { start: '20:00', end: '08:00' },
+    },
+    workdays: '3 Shift - 24/7'
+  },
+  'NICU': {
+    name: 'NICU',
+    icon: '👶',
+    suggestedTimes: {
+      'PAGI': { start: '08:00', end: '15:00' },
+      'SIANG': { start: '15:00', end: '21:00' },
+      'MALAM': { start: '20:00', end: '08:00' },
+    },
+    workdays: '3 Shift - 24/7'
+  },
+};
 
 const schema = z.object({
     nama: z.string()
@@ -77,6 +233,7 @@ const JadwalForm = ({
 }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     
@@ -92,8 +249,40 @@ const JadwalForm = ({
         defaultValues: data || {}
     });
     
-    // Watch for changes in the idpegawai field
+    // Watch for changes in form fields
     const selectedIdPegawai = watch("idpegawai");
+    const selectedLokasiShift = watch("lokasishift");
+    const selectedTipeShift = watch("tipeshift");
+    
+    // Get suggested times based on location and shift type
+    const suggestedTimes = useMemo(() => {
+        if (selectedLokasiShift && selectedTipeShift) {
+            const config = DEPARTMENT_CONFIGS[selectedLokasiShift as keyof typeof DEPARTMENT_CONFIGS];
+            if (config && config.suggestedTimes[selectedTipeShift as keyof typeof config.suggestedTimes]) {
+                return config.suggestedTimes[selectedTipeShift as keyof typeof config.suggestedTimes];
+            }
+        }
+        return null;
+    }, [selectedLokasiShift, selectedTipeShift]);
+    
+    // Auto-fill times when suggested times are available
+    useEffect(() => {
+        if (suggestedTimes && type === "create") {
+            setValue('jammulai', suggestedTimes.start);
+            setValue('jamselesai', suggestedTimes.end);
+        }
+    }, [suggestedTimes, setValue, type]);
+    
+    // Get available shift types for selected location
+    const availableShiftTypes = useMemo(() => {
+        if (selectedLokasiShift) {
+            const config = DEPARTMENT_CONFIGS[selectedLokasiShift as keyof typeof DEPARTMENT_CONFIGS];
+            if (config) {
+                return Object.keys(config.suggestedTimes);
+            }
+        }
+        return ['PAGI', 'SIANG', 'MALAM', 'ON_CALL', 'JAGA'];
+    }, [selectedLokasiShift]);
     
     // Fetch users when component mounts
     useEffect(() => {
@@ -204,91 +393,39 @@ const JadwalForm = ({
             console.log(`User validated for form submission: ${user.namaDepan} ${user.namaBelakang} (${user.username})`);
             
             
-            try {
-                // Try to use the real API first
-                let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-                if (!apiUrl) apiUrl = 'http://localhost:3001';
+            // Use the real API
+            let apiUrl = process.env.NEXT_PUBLIC_API_URL;
+            if (!apiUrl) apiUrl = 'http://localhost:3001';
+            
+            console.log('Using API URL for shifts:', apiUrl);
+            const endpoint = type === "create" 
+                ? joinUrl(apiUrl, '/shifts')
+                : joinUrl(apiUrl, '/shifts/' + data?.id);
                 
-                console.log('Using API URL for shifts:', apiUrl);
-                const endpoint = type === "create" 
-                    ? joinUrl(apiUrl, '/shifts')
-                    : joinUrl(apiUrl, '/shifts/' + data?.id);
-                    
-                const method = type === "create" ? 'POST' : 'PUT';
-                
-                const response = await fetch(endpoint, {
-                    method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                if (!response.ok) {
-                    throw new Error('API request failed');
-                }
-                
-                const result = await response.json();
-                console.log('Success from API:', result);
-                
-                // Call the appropriate callback
-                if (type === "create") {
-                    onCreate(result);
-                } else if (type === "update" && onUpdate) {
-                    onUpdate(result);
-                }
-            } catch (apiError) {
-                console.warn('API request failed, using local mock implementation:', apiError);
-                
-                // Fallback to mock implementation
-                await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-                
-                // Format date properly for display
-                let formattedDate = formData.tanggal;
-                let originalDate = formData.tanggal;
-                
-                // Handle different date formats
-                if (formData.tanggal) {
-                    try {
-                        // For ISO date format (YYYY-MM-DD)
-                        if (formData.tanggal.includes('-') && !formData.tanggal.includes('T')) {
-                            const [year, month, day] = formData.tanggal.split('-');
-                            formattedDate = `${day}/${month}/${year}`;
-                            originalDate = formData.tanggal; // Keep original ISO format
-                        } 
-                        // For ISO datetime format (with T)
-                        else if (formData.tanggal.includes('T')) {
-                            const date = new Date(formData.tanggal);
-                            if (!isNaN(date.getTime())) {
-                                const day = date.getDate().toString().padStart(2, '0');
-                                const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                                const year = date.getFullYear();
-                                formattedDate = `${day}/${month}/${year}`;
-                                originalDate = `${year}-${month}-${day}`;
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Error formatting date:', e);
-                    }
-                }
-                
-                // Create a new object with formatted data
-                const mockResult = {
-                    ...formData,
-                    id: type === "create" ? Date.now() : data?.id, // Generate a unique ID for new entries
-                    tanggal: formattedDate, // Use formatted date for display
-                    originalDate: originalDate // Store original date format for editing
-                };
-                
-                console.log('Success from mock:', mockResult);
-                
-                // Call the appropriate callback
-                if (type === "create") {
-                    onCreate(mockResult);
-                } else if (type === "update" && onUpdate) {
-                    onUpdate(mockResult);
-                }
+            const method = type === "create" ? 'POST' : 'PUT';
+            
+            const response = await fetch(endpoint, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`API request failed: ${response.status} ${errorData}`);
+            }
+            
+            const result = await response.json();
+            console.log('Success from API:', result);
+            
+            // Call the appropriate callback
+            if (type === "create") {
+                onCreate(result);
+            } else if (type === "update" && onUpdate) {
+                onUpdate(result);
             }
             
             // Reset form after successful submission if creating new
@@ -307,140 +444,341 @@ const JadwalForm = ({
         }
     });
     return (
-        <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-            <h1 className="text-xl font-semibold">{type === "create" ? "Tambah Jadwal Baru" : "Ubah Jadwal"}</h1>
-            
-            {errorMessage && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <span className="block sm:inline">{errorMessage}</span>
-                </div>
-            )}
-            
-            <span className="text-xs text-gray-400 font-medium">Informasi Pegawai</span>
-            <div className="flex justify-between gap-4 flex-wrap">
-                <div className="flex-1 min-w-[200px]">
-                    <label className="text-xs text-gray-500">ID Pegawai (Pilih dari Pengguna Terdaftar)</label>
-                    <select
-                        className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-                        {...register("idpegawai")}
-                        defaultValue={data?.idpegawai || ""}
-                    >
-                        <option value="">-- Pilih Pegawai --</option>
-                        {users.map(user => (
-                            <option key={user.id} value={user.username}>
-                                {user.username} - {user.namaDepan} {user.namaBelakang} ({user.role})
-                            </option>
-                        ))}
-                    </select>
-                    {errors.idpegawai && (
-                        <p className="text-xs text-red-400">{errors.idpegawai.message?.toString()}</p>
-                    )}
-                    {selectedUser && (
-                        <p className="text-xs text-green-600 mt-1">
-                            Pegawai terpilih: {selectedUser.namaDepan} {selectedUser.namaBelakang} (ID: {selectedUser.username})
-                        </p>
-                    )}
-                </div>
-                <InputField
-                    label="Tanggal Shift"
-                    name="tanggal"
-                    type="date"
-                    register={register}
-                    error={errors.tanggal}
-                    defaultValue={data?.originalDate || data?.tanggal}
-                />
-                {(data?.originalDate || data?.tanggal) && (
-                    <div className="text-xs text-green-600 mt-1">
-                        Format tanggal asli: {data?.originalDate || data?.tanggal}
+        <div className="w-full max-w-3xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white p-5">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-xl shadow-lg backdrop-blur-sm">
+                        <Calendar className="h-6 w-6" />
                     </div>
-                )}
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-bold mb-1">
+                            {type === "create" ? "Tambah Jadwal Shift Baru" : "Edit Jadwal Shift"}
+                        </h1>
+                        <p className="text-blue-100 text-xs md:text-sm leading-relaxed">
+                            {type === "create" 
+                                ? "Buat jadwal shift baru untuk pegawai RSUD Anugerah Tomohon" 
+                                : "Perbarui informasi jadwal shift pegawai"
+                            }
+                        </p>
+                    </div>
+                </div>
             </div>
-            <span className="text-xs text-gray-400 font-medium">Informasi Shift</span>
-            <div className="flex justify-between gap-4 flex-wrap">
-                <div className="flex flex-col gap-2 w-full md:w-1/3 pb-4">
-                    <label className="text-xs text-gray-500">Unit Kerja</label>
-                    <select
-                        className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-                        {...register("lokasishift")}
-                        defaultValue={data?.lokasishift || ""}
-                    >
-                        <option value="">-- Pilih Unit --</option>
-                        <option value="POLI_UMUM">Poli Umum</option>
-                        <option value="POLI_ANAK">Poli Anak</option>
-                        <option value="POLI_GIGI">Poli Gigi</option>
-                        <option value="IGD">IGD</option>
-                        <option value="ICU">ICU</option>
-                        <option value="LABORATORIUM">Laboratorium</option>
-                        <option value="RADIOLOGI">Radiologi</option>
-                        <option value="FARMASI">Farmasi</option>
-                        <option value="EMERGENCY_ROOM">Emergency Room</option>
-                    </select>
-                    {errors.lokasishift && (
-                        <p className="text-xs text-red-400">{errors.lokasishift.message?.toString()}</p>
+
+            <form onSubmit={onSubmit} className="bg-white rounded-b-2xl shadow-2xl border border-gray-100">
+                <div className="p-5 space-y-6">
+                    {/* Error Message */}
+                    {errorMessage && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded-lg shadow-sm">
+                            <div className="flex items-center">
+                                <div className="p-1 bg-red-100 rounded-lg mr-2">
+                                    <AlertCircle className="h-4 w-4 text-red-600" />
+                                </div>
+                                <span className="text-red-800 font-medium text-xs md:text-sm">{errorMessage}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Success Message */}
+                    {successMessage && (
+                        <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded-lg shadow-sm">
+                            <div className="flex items-center">
+                                <div className="p-1 bg-green-100 rounded-lg mr-2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                </div>
+                                <span className="text-green-800 font-medium text-xs md:text-sm">{successMessage}</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Employee Information Section */}
+                    <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
+                                <Users className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg md:text-xl font-bold text-gray-900">Informasi Pegawai</h2>
+                                <p className="text-gray-600 text-xs md:text-sm">Data pegawai yang akan dijadwalkan</p>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="block text-xs md:text-sm font-semibold text-gray-800">
+                                    ID Pegawai *
+                                </label>
+                                <select
+                                    className={`w-full px-3 py-2 text-xs md:text-sm border rounded-lg bg-white transition-all duration-200 shadow-sm ${
+                                        errors.idpegawai 
+                                            ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                                            : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
+                                    } focus:ring-2 focus:outline-none hover:border-gray-400`}
+                                    {...register("idpegawai")}
+                                    defaultValue={data?.idpegawai || ""}
+                                >
+                                    <option value="">-- Pilih Pegawai --</option>
+                                    {users.map(user => (
+                                        <option key={user.id} value={user.username}>
+                                            {user.username} - {user.namaDepan} {user.namaBelakang} ({user.role})
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.idpegawai && (
+                                    <p className="mt-1 text-xs text-red-600 font-medium flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{errors.idpegawai.message?.toString()}</span>
+                                    </p>
+                                )}
+                                {selectedUser && (
+                                    <div className="mt-2 p-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg shadow-sm">
+                                        <p className="text-xs text-green-800 font-medium flex items-start gap-2">
+                                            <CheckCircle2 className="h-3 w-3 text-green-600 flex-shrink-0 mt-0.5" />
+                                            <span className="break-words">
+                                                Pegawai terpilih: <strong className="break-words">{selectedUser.namaDepan} {selectedUser.namaBelakang}</strong> 
+                                                <br />
+                                                <span className="text-green-700">(ID: {selectedUser.username})</span>
+                                            </span>
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="block text-xs md:text-sm font-semibold text-gray-800">
+                                    Tanggal Shift *
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="date"
+                                        className={`w-full px-3 py-2 text-xs md:text-sm border rounded-lg bg-white transition-all duration-200 shadow-sm ${
+                                            errors.tanggal 
+                                                ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
+                                        } focus:ring-2 focus:outline-none hover:border-gray-400`}
+                                        {...register("tanggal")}
+                                        defaultValue={data?.originalDate || data?.tanggal}
+                                    />
+                                    <Calendar className="absolute right-2 top-2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                </div>
+                                {errors.tanggal && (
+                                    <p className="mt-1 text-xs text-red-600 font-medium flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{errors.tanggal.message?.toString()}</span>
+                                    </p>
+                                )}
+                                {(data?.originalDate || data?.tanggal) && (
+                                    <p className="mt-1 text-xs text-green-600 font-medium truncate">
+                                        Format tanggal asli: {data?.originalDate || data?.tanggal}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Shift Information Section */}
+                    <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-sm">
+                                <Building2 className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg md:text-xl font-bold text-gray-900">Informasi Shift</h2>
+                                <p className="text-gray-600 text-xs md:text-sm">Detail lokasi dan waktu kerja</p>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* Location Selection */}
+                            <div className="space-y-2">
+                                <label className="block text-xs md:text-sm font-semibold text-gray-800">
+                                    Unit Kerja *
+                                </label>
+                                <select
+                                    className={`w-full px-3 py-2 text-xs md:text-sm border rounded-lg bg-white transition-all duration-200 shadow-sm ${
+                                        errors.lokasishift 
+                                            ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                                            : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
+                                    } focus:ring-2 focus:outline-none hover:border-gray-400`}
+                                    {...register("lokasishift")}
+                                    defaultValue={data?.lokasishift || ""}
+                                >
+                                    <option value="">-- Pilih Unit Kerja --</option>
+                                    {Object.entries(DEPARTMENT_CONFIGS).map(([key, config]) => (
+                                        <option key={key} value={key}>
+                                            {config.icon} {config.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.lokasishift && (
+                                    <p className="mt-1 text-xs text-red-600 font-medium flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{errors.lokasishift.message?.toString()}</span>
+                                    </p>
+                                )}
+                                {selectedLokasiShift && (
+                                    <div className="mt-2 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
+                                        <p className="text-xs text-blue-800 font-medium flex items-center gap-1">
+                                            <Calendar className="h-3 w-3 text-blue-600 flex-shrink-0" />
+                                            <span className="truncate">
+                                                {DEPARTMENT_CONFIGS[selectedLokasiShift as keyof typeof DEPARTMENT_CONFIGS]?.workdays}
+                                            </span>
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Shift Type Selection */}
+                            <div className="space-y-2">
+                                <label className="block text-xs md:text-sm font-semibold text-gray-800">
+                                    Tipe Shift *
+                                </label>
+                                <select
+                                    className={`w-full px-3 py-2 text-xs md:text-sm border rounded-lg bg-white transition-all duration-200 shadow-sm ${
+                                        errors.tipeshift 
+                                            ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                                            : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
+                                    } focus:ring-2 focus:outline-none hover:border-gray-400`}
+                                    {...register("tipeshift")}
+                                    defaultValue={data?.tipeshift || ""}
+                                >
+                                    <option value="">-- Pilih Tipe Shift --</option>
+                                    {availableShiftTypes.map(shiftType => (
+                                        <option key={shiftType} value={shiftType}>
+                                            {shiftType === 'PAGI' ? '🌅 Pagi' :
+                                             shiftType === 'SIANG' ? '☀️ Siang' :
+                                             shiftType === 'MALAM' ? '🌙 Malam' :
+                                             shiftType === 'ON_CALL' ? '📞 On Call' :
+                                             shiftType === 'JAGA' ? '🛡️ Jaga' : shiftType}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.tipeshift && (
+                                    <p className="mt-1 text-xs text-red-600 font-medium flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{errors.tipeshift.message?.toString()}</span>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Time Selection */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                            <div className="space-y-2">
+                                <label className="block text-xs md:text-sm font-semibold text-gray-800">
+                                    Jam Mulai *
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="time"
+                                        className={`w-full px-3 py-2 text-xs md:text-sm border rounded-lg bg-white transition-all duration-200 shadow-sm ${
+                                            errors.jammulai 
+                                                ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
+                                        } focus:ring-2 focus:outline-none hover:border-gray-400`}
+                                        {...register("jammulai")}
+                                        defaultValue={data?.jammulai}
+                                    />
+                                    <Clock className="absolute right-2 top-2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                </div>
+                                {errors.jammulai && (
+                                    <p className="mt-1 text-xs text-red-600 font-medium flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{errors.jammulai.message?.toString()}</span>
+                                    </p>
+                                )}
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="block text-xs md:text-sm font-semibold text-gray-800">
+                                    Jam Selesai *
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="time"
+                                        className={`w-full px-3 py-2 text-xs md:text-sm border rounded-lg bg-white transition-all duration-200 shadow-sm ${
+                                            errors.jamselesai 
+                                                ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
+                                        } focus:ring-2 focus:outline-none hover:border-gray-400`}
+                                        {...register("jamselesai")}
+                                        defaultValue={data?.jamselesai}
+                                    />
+                                    <Clock className="absolute right-2 top-2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                </div>
+                                {errors.jamselesai && (
+                                    <p className="mt-1 text-xs text-red-600 font-medium flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{errors.jamselesai.message?.toString()}</span>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Suggested Times */}
+                        {suggestedTimes && (
+                            <div className="mt-4 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-300 rounded-lg shadow-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-md shadow-sm">
+                                        <Clock className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-xs font-semibold text-yellow-800 block">
+                                            💡 Waktu yang disarankan
+                                        </span>
+                                        <span className="text-xs font-medium text-yellow-700 truncate block">
+                                            {suggestedTimes.start} - {suggestedTimes.end}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Loading State */}
+                    {isSubmitting && (
+                        <div className="bg-blue-50 border border-blue-300 p-4 rounded-lg shadow-sm">
+                            <div className="flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
+                                <span className="text-blue-700 font-semibold text-sm">
+                                    {type === "create" ? "Menyimpan jadwal..." : "Memperbarui jadwal..."}
+                                </span>
+                            </div>
+                        </div>
                     )}
                 </div>
-                <div className="flex flex-col gap-2 w-full md:w-1/3 pb-4">
-                    <label className="text-xs text-gray-500">Tipe Shift</label>
-                    <select
-                        className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-                        {...register("tipeshift")}
-                        defaultValue={data?.tipeshift || ""}
+
+                {/* Footer Actions */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 rounded-b-2xl flex flex-col sm:flex-row gap-3 sm:justify-end border-t border-gray-200">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isSubmitting}
+                        className="px-5 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm shadow-sm"
                     >
-                        <option value="">-- Pilih Tipe --</option>
-                        <option value="PAGI">Pagi</option>
-                        <option value="SIANG">Siang</option>
-                        <option value="MALAM">Malam</option>
-                        <option value="ON_CALL">On Call</option>
-                        <option value="JAGA">Jaga</option>
-                    </select>
-                    {errors.tipeshift && (
-                        <p className="text-xs text-red-400">{errors.tipeshift.message?.toString()}</p>
-                    )}
+                        Batal
+                    </button>
+                    <button 
+                        type="submit"
+                        disabled={isSubmitting}
+                        className={`px-6 py-2 text-white font-semibold text-sm rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md ${
+                            isSubmitting 
+                                ? 'bg-blue-400 cursor-not-allowed' 
+                                : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900'
+                        }`}
+                    >
+                        {isSubmitting ? (
+                            <div className="flex items-center">
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                                {type === "create" ? "Menyimpan..." : "Memperbarui..."}
+                            </div>
+                        ) : (
+                            <>{type === "create" ? "💾 Simpan Jadwal" : "✏️ Update Jadwal"}</>
+                        )}
+                    </button>
                 </div>
-                <InputField
-                    label="Jam Mulai"
-                    name="jammulai"
-                    type="time"
-                    register={register}
-                    error={errors.jammulai}
-                    defaultValue={data?.jammulai}
-                />
-                <InputField
-                    label="Jam Selesai"
-                    name="jamselesai"
-                    type="time"
-                    register={register}
-                    error={errors.jamselesai}
-                    defaultValue={data?.jamselesai}
-                />
-            </div>
-            
-            {/* Success message */}
-            {!errorMessage && isSubmitting && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative" role="alert">
-                    <span className="block sm:inline">Menyimpan data...</span>
-                </div>
-            )}
-            <button 
-                type="submit"
-                disabled={isSubmitting}
-                className={`rounded-md text-white p-2 flex items-center justify-center ${
-                    isSubmitting ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
-                }`}
-            >
-                {isSubmitting ? (
-                    <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        {type === "create" ? "Menyimpan..." : "Memperbarui..."}
-                    </>
-                ) : (
-                    <>{type === "create" ? "Simpan" : "Update"}</>
-                )}
-            </button>
-        </form>
+            </form>
+        </div>
     )
 }
 

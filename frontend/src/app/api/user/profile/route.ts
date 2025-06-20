@@ -150,21 +150,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-    // 4. Return the updated user data
-
-    // For now, we'll just return the same data to simulate a successful update
-    const updatedProfileData = {
-      ...profileData,
-      // You might want to add an updatedAt timestamp
-      updatedAt: new Date().toISOString()
-    };
-
-    return NextResponse.json(updatedProfileData, { status: 200 });
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}

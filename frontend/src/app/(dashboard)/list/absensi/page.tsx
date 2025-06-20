@@ -9,7 +9,7 @@ import SortButton from "@/component/SortButton";
 import { useState, useMemo } from "react";
 import withAuth from "@/lib/withAuth";
 
-// Mock data for absensi
+// Sample data for absensi (replace with API call when backend is implemented)
 const absensiData = [
     {
         id: 1,

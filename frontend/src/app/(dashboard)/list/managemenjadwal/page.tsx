@@ -201,27 +201,8 @@ const ManagemenJadwalPage = () => {
                     ]);
                     
                 } catch (apiError) {
-                    console.warn('Error fetching from API, falling back to mock data:', apiError);
-                    
-                    // Fallback to local mock data files
-                    const [mockShiftsRes, mockUsersRes] = await Promise.all([
-                        fetch('/mock-shifts.json'),
-                        fetch('/mock-users.json')
-                    ]);
-                    
-                    if (!mockShiftsRes.ok) {
-                        throw new Error("Failed to fetch shift data: " + mockShiftsRes.status);
-                    }
-                    
-                    if (!mockUsersRes.ok) {
-                        throw new Error("Failed to fetch user data: " + mockUsersRes.status);
-                    }
-                    
-                    [shiftsData, usersData] = await Promise.all([
-                        mockShiftsRes.json(),
-                        mockUsersRes.json()
-                    ]);
-                    
+                    console.error('Error fetching from API:', apiError);
+                    throw new Error(`Failed to fetch data from backend: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
                 }
                 
                 setUsers(usersData);

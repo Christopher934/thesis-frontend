@@ -12,7 +12,6 @@ import Image from 'next/image';
 import FilterButton from '@/component/FilterButton';
 import SortButton from '@/component/SortButton';
 import { getApiUrl } from '@/config/api';
-import { fetchWithFallback } from '@/utils/fetchWithFallback';
 import RouteGuard from '@/component/RouteGuard';
 import { capitalizeWords } from '@/lib/capitalize';
 
@@ -123,18 +122,19 @@ export default function PegawaiPage() {
         const token = localStorage.getItem('token');
         const apiUrl = getApiUrl();
         
-        const users = await fetchWithFallback(
-          apiUrl,
-          '/users',
-          '/mock-users.json',
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            timeout: 8000
+        // Direct fetch to the backend API without mock fallback
+        const response = await fetch(`${apiUrl}/users`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           }
-        );
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
+        }
+        
+        const users = await response.json();
         
         // Filter for specific roles
         if (users && Array.isArray(users)) {

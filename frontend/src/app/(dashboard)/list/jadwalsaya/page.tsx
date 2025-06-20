@@ -10,7 +10,6 @@ import Table from "@/component/Table";
 import FilterButton from "@/component/FilterButton";
 import SortButton from "@/component/SortButton";
 import { joinUrl } from "@/lib/urlUtils";
-import { fetchWithAuthAndFallback } from "@/utils/authUtils";
 
 // Dynamic import to prevent hydration issues and optimization
 const BigCalendar = lazy(() => import("@/component/BigCalendar"));
@@ -186,35 +185,38 @@ const JadwalSayaPage = () => {
     try {
       setLoading(true);
       
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+      
       let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const url = joinUrl(apiUrl, '/shifts');
       
-      // Using fetchWithAuthAndFallback for better error handling
-      const data = await fetchWithAuthAndFallback<ShiftData[]>(
-        url,
-        '/mock-shifts.json'
-      );
+      // Direct fetch to the backend API without mock fallback
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch shifts: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Set data source
+      setDataSource('Backend API');
         
-        // Determine the data source based on API or mock
-        const source = Array.isArray(data) && data.length > 0 && data[0].hasOwnProperty('mockData') 
-          ? 'Mock Data' 
-          : 'Backend API';
-        setDataSource(source);
-        
-        // Get all shifts if admin, filter by userId if staff
-        // Get all shifts if admin, filter by userId if staff
-        let userShifts: ShiftData[] = [];
+      // Get all shifts if admin, filter by userId if staff
+      let userShifts: ShiftData[] = [];
       if (!Array.isArray(data)) {
         userShifts = [];
       } else if (userRole?.toLowerCase() === 'admin') {
         userShifts = data;
       } else {
-        // Debug the filtering process
-        // For testing/debugging, show all shifts in console
-        data.forEach((shift: ShiftData) => {
-          // console.log(`Shift: id=${shift.id}, idpegawai=${shift.idpegawai}`);
-        });
-        
         // Compare username/idpegawai to find matches, with improved robustness
         userShifts = data.filter((shift: ShiftData) => {
           if (!shift.idpegawai || !userIdentifier) {
@@ -520,7 +522,7 @@ const JadwalSayaPage = () => {
           </div>
         ) : (
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="h-[700px]">
+            <div className="h-[700px] md:h-[700px] sm:h-[500px] xs:h-[400px]">
               {viewMode === 'calendar' && (
                 <Suspense fallback={
                   <div className="flex justify-center items-center h-full">

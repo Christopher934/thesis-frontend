@@ -10,7 +10,6 @@ import withAuth from '@/lib/withAuth';
 import FilterButton from '@/component/FilterButton';
 import SortButton from '@/component/SortButton';
 import { getApiUrl } from '@/config/api';
-import { fetchWithFallback } from '@/utils/fetchWithFallback';
 import Image from 'next/image';
 
 // Load komponen yang butuh browser-only (mis. FullCalendar) tanpa SSR
@@ -148,23 +147,19 @@ function PegawaiPage() {
         const apiUrl = getApiUrl();
         console.log('Using API URL:', apiUrl);
         
-        // Use the fetchWithFallback utility to get shifts with automatic fallback
-        const allShifts = await fetchWithFallback<ShiftData[]>(
-          apiUrl,
-          '/shifts',
-          '/mock-shifts.json',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            },
-            timeout: 8000 // 8 seconds timeout
-          },
-          // Transform mock data to match user ID
-          (mockData) => mockData.map((shift: ShiftData) => ({
-            ...shift,
-            idpegawai: userIdentifier
-          }))
-        );
+        // Direct fetch to the backend API without mock fallback
+        const response = await fetch(`${apiUrl}/shifts`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch shifts: ${response.status} ${response.statusText}`);
+        }
+        
+        const allShifts = await response.json();
         
         // Filter shifts for the current user
         const userShifts = allShifts.filter((shift: ShiftData) => {
@@ -195,9 +190,9 @@ function PegawaiPage() {
     <div className="p-4 flex flex-col xl:flex-row gap-6">
       {/* LEFT: Kalender penuh */}
       <div className="w-full xl:w-2/3 bg-white rounded-lg shadow p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">Jadwal Saya</h2>
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 sm:gap-0">
+          <h2 className="text-xl sm:text-2xl font-semibold">Jadwal Saya</h2>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <FilterButton 
               options={filterOptions} 
               onFilter={handleFilter}
@@ -208,19 +203,21 @@ function PegawaiPage() {
             />
           </div>
         </div>
-        {loading ? (
-          <div className="flex justify-center items-center h-[400px]">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-8 text-red-500">{error}</div>
-        ) : (
-          <BigCalendar 
-            shifts={memoizedShifts}
-            useDefaultEvents={false}
-            key={`calendar-${memoizedShifts.length}`}
-          />
-        )}
+        <div className="h-[400px] sm:h-[500px] lg:h-[600px]">
+          {loading ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">{error}</div>
+          ) : (
+            <BigCalendar 
+              shifts={memoizedShifts}
+              useDefaultEvents={false}
+              key={`calendar-${memoizedShifts.length}`}
+            />
+          )}
+        </div>
       </div>
 
       {/* RIGHT: Event & Pengumuman */}

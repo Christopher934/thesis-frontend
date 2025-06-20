@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Image from 'next/image';
+import { MoreHorizontal } from 'lucide-react';
 
 interface UserCardProps {
   /** "DOKTER" | "PERAWAT" | "STAF" | "TOTAL" */
@@ -100,7 +100,7 @@ const UserCard: React.FC<UserCardProps> = ({ type }) => {
     <div className="relative rounded-2xl odd:bg-lamaPurple even:bg-[#e200de88] p-4 flex-1 min-w-[130px]">
       <div className="flex justify-between items-center">
         <h2 className="capitalize text-sm font-medium text-gray-500">{type}</h2>
-        <Image src="/more.png" alt="more" width={20} height={20} />
+        <MoreHorizontal size={20} className="text-gray-500" />
       </div>
       <h1 className="text-2xl font-semibold my-4">
         {count !== null ? count.toLocaleString() : '0'}

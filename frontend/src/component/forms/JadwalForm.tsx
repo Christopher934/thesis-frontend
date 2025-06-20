@@ -124,15 +124,8 @@ const JadwalForm = ({
                     const usersData = await response.json();
                     setUsers(usersData);
                 } catch (apiError) {
-                    console.warn('API request failed, fetching from mock data:', apiError);
-                    
-                    // Fallback to mock data
-                    const mockResponse = await fetch('/mock-users.json');
-                    if (!mockResponse.ok) {
-                        throw new Error('Failed to fetch mock users data');
-                    }
-                    const mockUsersData = await mockResponse.json();
-                    setUsers(mockUsersData);
+                    console.error('Error fetching users from API:', apiError);
+                    setErrorMessage('Failed to load user data from backend');
                 }
             } catch (error: any) {
                 console.error('Error fetching users:', error);

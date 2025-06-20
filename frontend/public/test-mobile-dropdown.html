@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Dropdown Test - RSUD Anugerah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        /* Mobile menu dropdown improvements */
+        @media (max-width: 1024px) {
+          .dropdown-container {
+            position: relative !important;
+          }
+          
+          .mobile-dropdown {
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            transform: none !important;
+            width: 100% !important;
+            min-width: auto !important;
+            max-width: none !important;
+            max-height: 300px !important;
+            margin-top: 8px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+          }
+          
+          .mobile-dropdown .block {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 12px 16px !important;
+            min-height: 48px !important;
+            width: 100% !important;
+          }
+        }
+
+        /* Touch-friendly improvements */
+        .touch-manipulation {
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Mobile dropdown animation */
+        @media (max-width: 1024px) {
+          .mobile-dropdown {
+            animation: slideDown 0.2s ease-out;
+          }
+          
+          @keyframes slideDown {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          .mobile-backdrop {
+            animation: fadeIn 0.2s ease-out;
+          }
+          
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold text-center mb-6 text-blue-600">
+            Mobile Dropdown Test - RSUD Anugerah (Vertical Icons)
+        </h1>
+        
+        <!-- Mobile viewport size indicator -->
+        <div class="mb-6 p-4 bg-blue-100 rounded-lg">
+            <p class="text-sm font-medium text-blue-800">
+                <span class="lg:hidden">📱 Mobile View (< 1024px) - Vertical Icons</span>
+                <span class="hidden lg:block">🖥️ Desktop View (≥ 1024px) - Text Only</span>
+            </p>
+            <p class="text-xs text-blue-600 mt-1">
+                Mobile shows icons vertically stacked for easy scrolling
+            </p>
+        </div>
+
+        <!-- Simulated menu container -->
+        <div class="bg-white rounded-lg shadow-lg p-4">
+            <h2 class="text-lg font-semibold mb-4">Absensi Menu Test</h2>
+            
+            <!-- Test dropdown -->
+            <div class="relative dropdown-container">
+                <!-- Main dropdown trigger -->
+                <button
+                    id="dropdownTrigger"
+                    class="w-full flex items-center justify-center lg:justify-start gap-4 py-3 lg:py-2 rounded-lg transition-colors touch-manipulation text-gray-500 hover:bg-gray-100 bg-gray-50"
+                >
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                    <span class="hidden lg:block flex-1 text-left">Absensi</span>
+                    <svg 
+                        id="dropdownArrow"
+                        class="w-4 h-4 transition-transform duration-200"
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <!-- Dropdown menu -->
+                <div id="dropdownMenu" class="hidden">
+                    <!-- Dropdown content -->
+                    <div class="lg:ml-6 mt-2 lg:mt-2 space-y-1 bg-white lg:bg-transparent rounded-xl lg:rounded-none shadow-xl lg:shadow-none border lg:border-none p-3 lg:p-0 lg:relative absolute lg:static z-50 lg:z-auto mobile-dropdown overflow-y-auto lg:overflow-visible">
+                        <!-- Dashboard Absensi -->
+                        <a href="#" class="block py-2 lg:py-2 px-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm lg:text-sm touch-manipulation font-medium">
+                            <span class="hidden lg:block">Dashboard Absensi</span>
+                            <div class="lg:hidden flex items-center justify-center">
+                                <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                            </div>
+                        </a>
+                        <!-- Riwayat Absensi -->
+                        <a href="#" class="block py-2 lg:py-2 px-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm lg:text-sm touch-manipulation font-medium">
+                            <span class="hidden lg:block">Riwayat Absensi</span>
+                            <div class="lg:hidden flex items-center justify-center">
+                                <i data-lucide="history" class="w-6 h-6"></i>
+                            </div>
+                        </a>
+                        <!-- Manajemen Absensi -->
+                        <a href="#" class="block py-2 lg:py-2 px-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm lg:text-sm touch-manipulation font-medium">
+                            <span class="hidden lg:block">Manajemen Absensi</span>
+                            <div class="lg:hidden flex items-center justify-center">
+                                <i data-lucide="users" class="w-6 h-6"></i>
+                            </div>
+                        </a>
+                        <!-- Laporan Absensi -->
+                        <a href="#" class="block py-2 lg:py-2 px-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm lg:text-sm touch-manipulation font-medium">
+                            <span class="hidden lg:block">Laporan Absensi</span>
+                            <div class="lg:hidden flex items-center justify-center">
+                                <i data-lucide="file-text" class="w-6 h-6"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mt-6 p-4 bg-green-100 rounded-lg">
+            <h3 class="font-semibold text-green-800 mb-2">✅ All Lucide React Icons:</h3>
+            <ul class="text-sm text-green-700 space-y-1">
+                <li>• Mobile: Icons stacked vertically for easy scrolling</li>
+                <li>• Desktop: Traditional text-only dropdown</li>
+                <li>• All icons now use Lucide React for consistency</li>
+                <li>• Scalable vector icons with crisp rendering</li>
+                <li>• Touch-friendly 48px height per item</li>
+                <li>• Icons: 📊 BarChart3, 🕐 History, 👥 Users, 📄 FileText</li>
+            </ul>
+        </div>
+
+        <!-- Test instructions -->
+        <div class="mt-4 p-4 bg-yellow-100 rounded-lg">
+            <h3 class="font-semibold text-yellow-800 mb-2">🧪 How to Test:</h3>
+            <ol class="text-sm text-yellow-700 space-y-1">
+                <li>1. Click the "Absensi" button above</li>
+                <li>2. On mobile (< 1024px): See icons stacked vertically</li>
+                <li>3. On desktop (≥ 1024px): See traditional text dropdown</li>
+                <li>4. Icons represent: Dashboard📊, History🕐, Management👥, Reports📄</li>
+                <li>5. Vertical layout is easier to scroll and navigate</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        const trigger = document.getElementById('dropdownTrigger');
+        const menu = document.getElementById('dropdownMenu');
+        const arrow = document.getElementById('dropdownArrow');
+        let isOpen = false;
+
+        trigger.addEventListener('click', () => {
+            isOpen = !isOpen;
+            if (isOpen) {
+                menu.classList.remove('hidden');
+                arrow.classList.add('rotate-180');
+                trigger.classList.add('text-blue-600', 'bg-blue-50');
+            } else {
+                menu.classList.add('hidden');
+                arrow.classList.remove('rotate-180');
+                trigger.classList.remove('text-blue-600', 'bg-blue-50');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (isOpen && !trigger.contains(e.target) && !menu.contains(e.target)) {
+                isOpen = false;
+                menu.classList.add('hidden');
+                arrow.classList.remove('rotate-180');
+                trigger.classList.remove('text-blue-600', 'bg-blue-50');
+            }
+        });
+    </script>
+</body>
+</html>

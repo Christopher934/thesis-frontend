@@ -105,6 +105,9 @@ model Absensi {
   jamMasuk     DateTime?
   jamKeluar    DateTime?
   status       AbsensiStatus
+  lokasi       String?        // GPS location or manual location
+  foto         String?        // Optional photo for verification
+  catatan      String?        // Notes or comments
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   shift        Shift          @relation(fields: [shiftId], references: [id])
   createdAt    DateTime       @default(now())

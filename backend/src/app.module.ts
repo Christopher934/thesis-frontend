@@ -8,6 +8,7 @@ import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ShiftModule } from './shift/shift.module'; // Import ShiftModule
 import { KegiatanModule } from './kegiatan/kegiatan.module'; // Import KegiatanModule
+import { AbsensiModule } from './absensi/absensi.module'; // Import AbsensiModule
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { KegiatanModule } from './kegiatan/kegiatan.module'; // Import KegiatanM
     PrismaModule,
     ShiftModule,
     KegiatanModule,
-  ], // Tambahkan ShiftModule dan KegiatanModule
+    AbsensiModule,
+  ], // Tambahkan ShiftModule, KegiatanModule, dan AbsensiModule
   controllers: [AppController],
   providers: [PrismaService, AppService],
 })

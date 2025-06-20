@@ -40,11 +40,11 @@ export default function RouteGuard({ children, fallback }: RouteGuardProps) {
 
       // Check role-based permissions
       const userRole = getUserRole();
-      const hasPermission = hasRoutePermission(pathname, userRole);
+      const hasPermission = hasRoutePermission(pathname || '', userRole || '');
 
       if (!hasPermission) {
         // Redirect to appropriate dashboard
-        const redirectPath = getRedirectPathForRole(userRole);
+        const redirectPath = getRedirectPathForRole(userRole || '');
         router.push(redirectPath);
         setIsAuthorized(false);
         setIsLoading(false);

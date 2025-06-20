@@ -1,0 +1,123 @@
+
+> rsud-anugerah-frontend@0.1.0 predev
+> npm run clean
+
+
+> rsud-anugerah-frontend@0.1.0 clean
+> rm -rf .next out
+
+
+> rsud-anugerah-frontend@0.1.0 dev
+> next dev -p 3000 --turbo
+
+   ▲ Next.js 15.3.3 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://127.0.2.2:3000
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · turbo
+
+ ✓ Starting...
+ ⚠ The config property `experimental.turbo` is deprecated. Move this setting to `config.turbopack` as Turbopack is now stable.
+   Using tsconfig file: ./tsconfig.json
+ ✓ Compiled middleware in 208ms
+ ✓ Ready in 1741ms
+[Middleware] Checking access for: /list/jadwalsaya, role: perawat, token: true
+[Middleware] Access granted for role perawat to /list/jadwalsaya
+ ○ Compiling /list/jadwalsaya ...
+ ✓ Compiled /list/jadwalsaya in 9.6s
+ ⨯ ./src/component/BigCalendar.tsx:5:1
+Export calendarEvents doesn't exist in target module
+[0m [90m 3 |[39m [36mimport[39m { [33mCalendar[39m[33m,[39m momentLocalizer[33m,[39m [33mView[39m[33m,[39m [33mViews[39m } [36mfrom[39m [32m'react-big-calendar'[39m[33m;[39m[0m
+[0m [90m 4 |[39m [36mimport[39m moment [36mfrom[39m [32m'moment'[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { calendarEvents } [36mfrom[39m [32m'@/lib/data'[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[0m
+[0m [90m 6 |[39m [36mimport[39m [32m'react-big-calendar/lib/css/react-big-calendar.css'[39m[33m;[39m[0m
+[0m [90m 7 |[39m [36mimport[39m [32m'moment/locale/id'[39m[33m;[39m [90m// Import the locale you want to use[39m[0m
+[0m [90m 8 |[39m [36mimport[39m { useState[33m,[39m useEffect[33m,[39m useMemo[33m,[39m useCallback } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+
+The export calendarEvents was not found in module [project]/src/lib/data.ts [app-client] (ecmascript).
+Did you mean to import role?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+
+
+./src/component/BigCalendar.tsx:5:1
+Export calendarEvents doesn't exist in target module
+[0m [90m 3 |[39m [36mimport[39m { [33mCalendar[39m[33m,[39m momentLocalizer[33m,[39m [33mView[39m[33m,[39m [33mViews[39m } [36mfrom[39m [32m'react-big-calendar'[39m[33m;[39m[0m
+[0m [90m 4 |[39m [36mimport[39m moment [36mfrom[39m [32m'moment'[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { calendarEvents } [36mfrom[39m [32m'@/lib/data'[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[0m
+[0m [90m 6 |[39m [36mimport[39m [32m'react-big-calendar/lib/css/react-big-calendar.css'[39m[33m;[39m[0m
+[0m [90m 7 |[39m [36mimport[39m [32m'moment/locale/id'[39m[33m;[39m [90m// Import the locale you want to use[39m[0m
+[0m [90m 8 |[39m [36mimport[39m { useState[33m,[39m useEffect[33m,[39m useMemo[33m,[39m useCallback } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+
+The export calendarEvents was not found in module [project]/src/lib/data.ts [app-ssr] (ecmascript).
+Did you mean to import role?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1565ms
+ GET /list/jadwalsaya 500 in 11506ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 1860ms
+ GET /favicon.ico 500 in 1916ms
+[Middleware] Checking access for: /, role: undefined, token: false
+ ○ Compiling / ...
+ ✓ Compiled / in 1004ms
+ HEAD / 500 in 1092ms
+ ✓ Compiled in 680ms
+[Middleware] Checking access for: /list/jadwalsaya, role: perawat, token: true
+[Middleware] Access granted for role perawat to /list/jadwalsaya
+ ✓ Compiled /list/jadwalsaya in 150ms
+ GET /list/jadwalsaya 200 in 2718ms
+ ⚠ The "images.domains" configuration is deprecated. Please use "images.remotePatterns" configuration instead.
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 1540ms
+[Middleware] Checking access for: /, role: undefined, token: false
+ HEAD / 200 in 1171ms
+[Middleware] Checking access for: /, role: undefined, token: false
+ GET /?id=7ab4ddda-f875-4177-94d2-2ed4ad963735&vscodeBrowserReqId=1750369380347 200 in 317ms
+[Middleware] Checking access for: /sign-in, role: undefined, token: false
+ ○ Compiling /sign-in ...
+ ✓ Compiled /sign-in in 5.3s
+ GET /sign-in 200 in 5971ms
+[Middleware] Checking access for: /list/ajukantukarshift, role: undefined, token: false
+[Middleware] Protected path without token, redirecting to: /sign-in
+[Middleware] Checking access for: /sign-in, role: undefined, token: false
+ GET /sign-in 200 in 513ms
+[Middleware] Checking access for: /list/jadwalsaya, role: perawat, token: true
+[Middleware] Access granted for role perawat to /list/jadwalsaya
+ GET /list/jadwalsaya 200 in 459ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 631ms
+[Middleware] Checking access for: /pegawai, role: perawat, token: true
+[Middleware] Access granted for role perawat to /pegawai
+ ○ Compiling /pegawai ...
+ ✓ Compiled /pegawai in 3.9s
+[Middleware] Checking access for: /pegawai, role: perawat, token: true
+[Middleware] Access granted for role perawat to /pegawai
+ GET /pegawai 200 in 4157ms
+ GET /pegawai 200 in 173ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 1445ms
+[Middleware] Checking access for: /list/jadwalsaya, role: perawat, token: true
+[Middleware] Access granted for role perawat to /list/jadwalsaya
+ GET /list/jadwalsaya 200 in 188ms
+[Middleware] Checking access for: /list/ajukantukarshift, role: perawat, token: true
+[Middleware] Access granted for role perawat to /list/ajukantukarshift
+ ○ Compiling /list/ajukantukarshift ...
+ ✓ Compiled /list/ajukantukarshift in 3.8s
+ GET /list/ajukantukarshift 200 in 3856ms
+[Middleware] Checking access for: /list/absensi, role: perawat, token: true
+[Middleware] Access granted for role perawat to /list/absensi
+ ○ Compiling /list/absensi ...
+ ✓ Compiled /list/absensi in 1597ms
+ GET /list/absensi 200 in 1656ms
+[Middleware] Checking access for: /sign-in, role: perawat, token: true
+[Middleware] Sign-in path with token, redirecting to: /pegawai
+[Middleware] Checking access for: /pegawai, role: perawat, token: true
+[Middleware] Access granted for role perawat to /pegawai
+ GET /pegawai 200 in 114ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 310ms
+[Middleware] Checking access for: /list/ajukantukarshift, role: perawat, token: true
+[Middleware] Access granted for role perawat to /list/ajukantukarshift
+ GET /list/ajukantukarshift 200 in 72ms

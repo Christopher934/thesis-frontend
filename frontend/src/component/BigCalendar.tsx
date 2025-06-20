@@ -6,6 +6,15 @@ import { calendarEvents } from '@/lib/data';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'moment/locale/id'; // Import the locale you want to use
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the wrapper to avoid SSR issues
+const MobileCalendarWrapper = dynamic(() => import('./MobileCalendarWrapper'), { 
+  ssr: false,
+  loading: () => <div className="flex justify-center items-center h-[400px]">
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+  </div>
+});
 
 const localizer = momentLocalizer(moment);
 
@@ -38,7 +47,35 @@ interface BigCalendarProps {
 }
 
 const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps) => {
-  const [view, setView] = useState<View>(Views.WEEK);
+  // Mobile-responsive view state - default to month on mobile, week on desktop
+  const [view, setView] = useState<View>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 768 ? Views.MONTH : Views.WEEK;
+    }
+    return Views.WEEK;
+  });
+  
+  // Track window size for responsive behavior
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Handle window resize for responsive view switching
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      
+      // Auto-switch to month view on mobile for better UX
+      if (mobile && (view === Views.WEEK || view === Views.DAY)) {
+        setView(Views.MONTH);
+      }
+    };
+    
+    // Initial check
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [view]);
   
   // Memoize default events to prevent unnecessary recalculations
   const defaultEvents = useMemo(() => {
@@ -220,8 +257,25 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
   
   // Use a callback for view change to avoid rerender issues
   const handleOnChangeView = useCallback((selectedView: View) => {
-    setView(selectedView);
-  }, []);
+    // On mobile, limit to month and day views for better UX
+    if (isMobile && selectedView === Views.WEEK) {
+      setView(Views.MONTH);
+    } else {
+      setView(selectedView);
+    }
+  }, [isMobile]);
+  
+  // Mobile-optimized event tooltip
+  const EventComponent = ({ event }: { event: any }) => (
+    <div className="rbc-event-content">
+      <strong>{event.title}</strong>
+      {!isMobile && (
+        <div style={{ fontSize: '0.8em', opacity: 0.8 }}>
+          {moment(event.start).format('HH:mm')} - {moment(event.end).format('HH:mm')}
+        </div>
+      )}
+    </div>
+  );
   
   // Calculate default date - if we have events, use the date of the first event
   const defaultDate = useMemo(() => {
@@ -250,28 +304,73 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
   moment.locale('id');
   
   return (
-    <Calendar
-      localizer={localizer}
-      events={events}
-      startAccessor="start"
-      endAccessor="end"
-      views={['month', 'week', 'day']}
-      view={view}
-      onView={handleOnChangeView}
-      defaultDate={defaultDate}
-      date={defaultDate} // Explicitly set current date to control displayed month
-      style={{ height: "98%" }}
-      culture="id" // Set calendar to Indonesian locale
-      formats={{
-        dayFormat: (date, culture, localizer) =>
-          localizer?.format(date, 'ddd, D MMM', culture) || '',
-        timeGutterFormat: (date) => moment(date).format('HH:mm'),
-        eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
-          `${moment(start).format('HH:mm')} – ${moment(end).format('HH:mm')}`,
-        monthHeaderFormat: (date, culture, localizer) =>
-          localizer?.format(date, 'MMMM yyyy', culture) || '', // Format for month header
-      }}
-    />
+    <MobileCalendarWrapper className="h-full w-full">
+      <Calendar
+        localizer={localizer}
+        events={events}
+        startAccessor="start"
+        endAccessor="end"
+        views={isMobile ? ['month', 'day'] : ['month', 'week', 'day']} // Limit views on mobile
+        view={view}
+        onView={handleOnChangeView}
+        defaultDate={defaultDate}
+        date={defaultDate} // Explicitly set current date to control displayed month
+        style={{ height: isMobile ? "100%" : "98%" }}
+        culture="id" // Set calendar to Indonesian locale
+        // Mobile-optimized event display
+        components={{
+          event: EventComponent,
+        }}
+        // Mobile-friendly date formats
+        formats={{
+          dayFormat: (date, culture, localizer) => {
+            if (isMobile) {
+              return localizer?.format(date, 'ddd', culture) || '';
+            }
+            return localizer?.format(date, 'ddd, D MMM', culture) || '';
+          },
+          timeGutterFormat: (date) => moment(date).format(isMobile ? 'HH' : 'HH:mm'),
+          eventTimeRangeFormat: ({ start, end }, culture, localizer) => {
+            if (isMobile) {
+              return `${moment(start).format('HH:mm')}`;
+            }
+            return `${moment(start).format('HH:mm')} – ${moment(end).format('HH:mm')}`;
+          },
+          monthHeaderFormat: (date, culture, localizer) =>
+            localizer?.format(date, isMobile ? 'MMM yyyy' : 'MMMM yyyy', culture) || '',
+          dayHeaderFormat: (date, culture, localizer) =>
+            localizer?.format(date, isMobile ? 'ddd D/M' : 'dddd, D MMMM YYYY', culture) || '',
+          agendaHeaderFormat: ({ start, end }, culture, localizer) => {
+            if (isMobile) {
+              return `${localizer?.format(start, 'D MMM', culture)} - ${localizer?.format(end, 'D MMM YYYY', culture)}`;
+            }
+            return `${localizer?.format(start, 'D MMMM', culture)} - ${localizer?.format(end, 'D MMMM YYYY', culture)}`;
+          },
+        }}
+        // Mobile scroll behavior
+        popup={!isMobile} // Disable popup on mobile for better touch interaction
+        selectable={true}
+        // Touch-friendly step and timeslot settings
+        step={isMobile ? 60 : 30} // Larger time steps on mobile
+        timeslots={isMobile ? 1 : 2} // Fewer timeslots on mobile for better readability
+        // Responsive event props
+        eventPropGetter={(event) => ({
+          style: {
+            fontSize: isMobile ? '10px' : '12px',
+            padding: isMobile ? '2px 4px' : '4px 6px',
+            borderRadius: '4px',
+            border: 'none',
+            fontWeight: '500',
+          },
+        })}
+        // Mobile-optimized day/date cell props
+        dayPropGetter={(date) => ({
+          style: {
+            minHeight: isMobile ? '35px' : '50px',
+          },
+        })}
+      />
+    </MobileCalendarWrapper>
   );
 };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import { ArrowUpDown } from 'lucide-react';
 
 interface SortOption {
   label: string;
@@ -54,7 +54,7 @@ const SortButton = ({ options, onSort }: SortButtonProps) => {
         aria-label="Sort"
         title={activeSort ? `Urut: ${activeSort} (${sortDirection === 'asc' ? 'A-Z' : 'Z-A'})` : "Urutkan"}
       >
-        <Image src="/sort.png" alt="Sort" width={14} height={14} />
+        <ArrowUpDown size={14} className={activeSort ? 'text-blue-600' : 'text-gray-600'} />
       </button>
       
       {showDropdown && (

@@ -1,0 +1,46 @@
+[35m🚀 Starting Comprehensive API Test Suite[0m
+[35m==========================================[0m
+[36m
+=== AUTHENTICATION TESTS ===[0m
+[34mℹ️  Testing login...[0m
+[32m✅ Login successful[0m
+[34mℹ️  Token: eyJhbGciOiJIUzI1NiIs...[0m
+[36m
+=== USER API TESTS ===[0m
+[34mℹ️  Testing GET /users...[0m
+[32m✅ GET /users - 5 users found[0m
+[34mℹ️  Testing GET /users/count-by-role...[0m
+[32m✅ GET /users/count-by-role - Success[0m
+[34mℹ️  Roles: {"counts":{"ADMIN":1,"DOKTER":0,"PERAWAT":2,"STAF":2,"SUPERVISOR":0}}[0m
+[34mℹ️  Testing GET /users/count-by-gender...[0m
+[32m✅ GET /users/count-by-gender - Success[0m
+[36m
+=== SHIFTS API TESTS ===[0m
+[34mℹ️  Testing GET /shifts...[0m
+[32m✅ GET /shifts - 6 shifts found[0m
+[34mℹ️  Testing POST /shifts...[0m
+[32m✅ POST /shifts - Shift created successfully[0m
+[36m
+=== EVENTS API TESTS ===[0m
+[34mℹ️  Testing GET /events...[0m
+[32m✅ GET /events - 2 events found[0m
+[36m
+=== ABSENSI API TESTS ===[0m
+[34mℹ️  Testing GET /absensi/today...[0m
+[32m✅ GET /absensi/today - Success[0m
+[34mℹ️  Testing GET /absensi/dashboard-stats...[0m
+[32m✅ GET /absensi/dashboard-stats - Success[0m
+[34mℹ️  Testing GET /absensi/all...[0m
+[32m✅ GET /absensi/all - 1 records found[0m
+[36m
+=== SHIFT SWAP API TESTS ===[0m
+[34mℹ️  Testing GET /shift-swap-requests...[0m
+[32m✅ GET /shift-swap-requests - 2 requests found[0m
+[36m
+=== PROFILE API TESTS ===[0m
+[34mℹ️  Testing GET /api/user/profile (Frontend API)...[0m
+[31m❌ GET /api/user/profile failed: 404[0m
+[35m
+==========================================[0m
+[32m✅ API Test Suite Completed[0m
+[35m==========================================[0m

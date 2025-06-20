@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import { Filter } from 'lucide-react';
 
 interface FilterOption {
   label: string;
@@ -41,7 +41,7 @@ const FilterButton = ({ options, onFilter }: FilterButtonProps) => {
         aria-label="Filter"
         title={activeFilter ? `Filter aktif: ${activeFilter}` : "Filter"}
       >
-        <Image src="/filter.png" alt="Filter" width={14} height={14} />
+        <Filter size={14} className={activeFilter ? 'text-blue-600' : 'text-gray-600'} />
       </button>
       
       {showDropdown && (

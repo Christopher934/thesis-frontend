@@ -27,7 +27,13 @@ const ProfilePage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/user/profile');
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/user/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!res.ok) throw new Error('Gagal memuat profil');
         const data = await res.json();
         setProfileData(data);
@@ -53,9 +59,13 @@ const ProfilePage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(tempData),
       });
       if (!res.ok) throw new Error('Gagal menyimpan profil');

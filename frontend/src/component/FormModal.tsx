@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { Plus, Edit, Trash2, X } from 'lucide-react';
 import PegawaiForm from '@/app/(dashboard)/list/pegawai/CreatePegawaiForm';
 import JadwalForm from '@/component/forms/JadwalForm';
 import TukarShiftForm from '@/component/forms/TukarShiftForm';
@@ -62,6 +62,20 @@ export default function FormModal({
 
   // State internal untuk membuka/menutup modal
   const [open, setOpen] = useState(false);
+
+  // Helper function to get the appropriate icon based on type
+  const getIcon = () => {
+    switch (type) {
+      case 'create':
+        return <Plus size={16} className="text-gray-600" />;
+      case 'update':
+        return <Edit size={16} className="text-white" />;
+      case 'delete':
+        return <Trash2 size={16} className="text-white" />;
+      default:
+        return <Plus size={16} className="text-gray-600" />;
+    }
+  };
 
   // Jika parent meminta initialOpen=true, buka modal otomatis sekali ketika mount
   useEffect(() => {
@@ -196,7 +210,7 @@ export default function FormModal({
           onClick={() => setOpen(true)}
           className={`${size} flex items-center justify-center rounded-full ${bgColor} hover:opacity-90 transition`}
         >
-          <Image src={`/${type}.png`} alt={type} width={16} height={16} />
+          {getIcon()}
         </button>
       )}
 
@@ -215,7 +229,7 @@ export default function FormModal({
               className="absolute top-2 right-2 sm:top-4 sm:right-4 cursor-pointer z-10 bg-white rounded-full p-1 shadow-md"
               onClick={handleClose}
             >
-              <Image src="/close.png" alt="Close" width={14} height={14} />
+              <X size={14} className="text-gray-600" />
             </div>
           </div>
         </div>

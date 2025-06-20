@@ -4,37 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-// Simple SVG icon components
-const CalendarIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-  </svg>
-);
-
-const ClockIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-const UserIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-  </svg>
-);
-
-const FileTextIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
-
-const AlertCircleIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
+import { Calendar, Clock, User, FileText, AlertCircle } from 'lucide-react';
 
 // Types for form props
 type CommonFormProps = {
@@ -125,7 +95,7 @@ function TukarShiftForm({
         let parsedUser: User | null = null;
         if (currentUserStr) {
           parsedUser = JSON.parse(currentUserStr);
-          parsedUserId = parsedUser.id || 0;
+          parsedUserId = parsedUser?.id || 0;
           setCurrentUser(parsedUser); // <-- fix: set currentUser state
         }
 
@@ -312,7 +282,7 @@ function TukarShiftForm({
         <div className="bg-blue-50 p-2 sm:p-3 md:p-4 rounded-lg border border-blue-200 shadow-sm">
           <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4 flex items-center">
             <div className="p-1 sm:p-1.5 md:p-2 bg-blue-500 rounded-md mr-2 sm:mr-3 flex-shrink-0">
-              <UserIcon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
+              <User className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
             </div>
             <span className="truncate">Partner Tukar Shift</span>
           </h3>
@@ -346,7 +316,7 @@ function TukarShiftForm({
               </div>
               {errors.toUserId && (
                 <p className="mt-2 text-xs sm:text-sm text-red-600 flex items-start bg-red-50 p-2 rounded">
-                  <AlertCircleIcon className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
                   <span>{errors.toUserId.message}</span>
                 </p>
               )}
@@ -358,7 +328,7 @@ function TukarShiftForm({
         <div className="bg-yellow-50 p-2 sm:p-3 md:p-4 rounded-lg border border-yellow-200 shadow-sm">
           <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4 flex items-center">
             <div className="p-1 sm:p-1.5 md:p-2 bg-yellow-500 rounded-md mr-2 sm:mr-3 flex-shrink-0">
-              <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
             </div>
             <span className="truncate">Pilih Shift untuk Ditukar</span>
           </h3>
@@ -393,7 +363,7 @@ function TukarShiftForm({
               </div>
               {errors.shiftId && (
                 <p className="mt-2 text-xs sm:text-sm text-red-600 flex items-start bg-red-50 p-2 rounded">
-                  <AlertCircleIcon className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
                   <span>{errors.shiftId.message}</span>
                 </p>
               )}
@@ -405,7 +375,7 @@ function TukarShiftForm({
         <div className="bg-gray-50 p-2 sm:p-3 md:p-4 rounded-lg border border-gray-200 shadow-sm">
           <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4 flex items-center">
             <div className="p-1 sm:p-1.5 md:p-2 bg-gray-600 rounded-md mr-2 sm:mr-3 flex-shrink-0">
-              <FileTextIcon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
             </div>
             <span className="truncate">Alasan dan Catatan</span>
           </h3>
@@ -427,7 +397,7 @@ function TukarShiftForm({
               />
               {errors.alasan && (
                 <p className="mt-2 text-xs sm:text-sm text-red-600 flex items-start bg-red-50 p-2 rounded">
-                  <AlertCircleIcon className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
                   <span>{errors.alasan.message}</span>
                 </p>
               )}

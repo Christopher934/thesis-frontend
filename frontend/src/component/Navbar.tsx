@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import { Search, MessageSquare, Bell, User } from 'lucide-react';
 
 const Navbar = () => {
   const [user, setUser] = useState<{
@@ -21,7 +21,7 @@ const Navbar = () => {
     <div className='flex items-center justify-between p-4'>
       {/* Search Bar */}
       <div className="hidden md:flex items-center gap-2 text-xs ring-[1.5px] ring-gray-300  rounded-full px-2">
-        <Image src="/search.png" alt='' width={14} height={14} />
+        <Search size={14} className="text-gray-400" />
         <input
           type="text"
           placeholder='Search...'
@@ -32,10 +32,10 @@ const Navbar = () => {
       {/* Icon and User */}
       <div className='flex items-center gap-6 justify-end w-full'>
         <div className='bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer'>
-          <Image src="/message.png" alt='' width={20} height={20} />
+          <MessageSquare size={20} className="text-gray-600" />
         </div>
         <div className='bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer'>
-          <Image src="/announcement.png" alt='' width={20} height={20} />
+          <Bell size={20} className="text-gray-600" />
         </div>
 
         <div className="flex flex-col text-right">
@@ -46,10 +46,8 @@ const Navbar = () => {
           </span>
           <span className='text-[10px] text-gray-500 capitalize'>
             {user?.role || '-'}
-          </span>
-        </div>
-
-        <Image src='/avatar.png' alt='' width={36} height={36} className='rounded-full' />
+          </span>        </div>
+        <User size={36} className="text-gray-600 rounded-full bg-gray-100 p-2" />
       </div>
     </div>
   );

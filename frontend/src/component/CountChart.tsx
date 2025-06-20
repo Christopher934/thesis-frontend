@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Image from "next/image";
+import { MoreHorizontal, Users } from 'lucide-react';
 import {
     RadialBarChart,
     RadialBar,
@@ -59,7 +59,7 @@ const CountChart = () => {
             {/* TITLE */}
             <div className="flex justify-between items-center">
                 <h1 className="text-lg font-semibold"></h1>
-                <Image src="/moreDark.png" alt="" width={20} height={20} />
+                <MoreHorizontal size={20} className="text-gray-600" />
             </div>
             {/* CHART */}
             <div className="relative w-full h-[75%]">
@@ -79,12 +79,9 @@ const CountChart = () => {
             </RadialBar>
                     </RadialBarChart>
                 </ResponsiveContainer>
-                <Image
-                    src="/maleFemale.png"
-                    alt=""
-                    width={50}
-                    height={50}
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                <Users
+                    size={50}
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400"
                 />
             </div>
             {/* BOTTOM */}

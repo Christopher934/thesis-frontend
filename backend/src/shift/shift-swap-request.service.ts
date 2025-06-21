@@ -11,7 +11,7 @@ import {
   ResponseShiftSwapRequestDto,
   ResponseAction,
 } from './dto/response-shift-swap-request.dto';
-import { SwapStatus, Role } from '@prisma/client';
+import { SwapStatus, Role, ShiftSwap } from '@prisma/client';
 
 @Injectable()
 export class ShiftSwapRequestService {
@@ -286,6 +286,9 @@ export class ShiftSwapRequestService {
         newStatus = SwapStatus.APPROVED;
         updateData.supervisorApprovedAt = new Date();
         updateData.supervisorApprovedBy = userId;
+
+        // Auto-transfer shift ownership when approved
+        await this.transferShiftOwnership(shiftSwap);
       } else if (responseDto.action === ResponseAction.REJECT) {
         newStatus = SwapStatus.REJECTED_BY_SUPERVISOR;
         updateData.rejectionReason = responseDto.rejectionReason;
@@ -485,5 +488,70 @@ export class ShiftSwapRequestService {
         createdAt: 'desc',
       },
     });
+  }
+
+  /**
+   * Transfer shift ownership when swap request is approved
+   * This method swaps the userId between the requester and target user shifts
+   */
+  private async transferShiftOwnership(shiftSwap: ShiftSwap): Promise<void> {
+    try {
+      // Find the shift being swapped
+      const originalShift = await this.prisma.shift.findUnique({
+        where: { id: shiftSwap.shiftId },
+        include: { user: true },
+      });
+
+      if (!originalShift) {
+        throw new Error(
+          `Original shift with ID ${shiftSwap.shiftId} not found`,
+        );
+      }
+
+      // Find corresponding shift for the target user on the same date
+      const targetShift = await this.prisma.shift.findFirst({
+        where: {
+          userId: shiftSwap.toUserId,
+          tanggal: originalShift.tanggal,
+        },
+        include: { user: true },
+      });
+
+      if (!targetShift) {
+        // If target user doesn't have a shift on the same date, just transfer the shift
+        await this.prisma.shift.update({
+          where: { id: originalShift.id },
+          data: { userId: shiftSwap.toUserId },
+        });
+
+        console.log(
+          `Shift ${originalShift.id} transferred from user ${shiftSwap.fromUserId} to user ${shiftSwap.toUserId}`,
+        );
+      } else {
+        // If both users have shifts on the same date, swap them
+        await this.prisma.$transaction(async (tx) => {
+          // Update original shift to target user
+          await tx.shift.update({
+            where: { id: originalShift.id },
+            data: { userId: shiftSwap.toUserId },
+          });
+
+          // Update target shift to original user
+          await tx.shift.update({
+            where: { id: targetShift.id },
+            data: { userId: shiftSwap.fromUserId },
+          });
+        });
+
+        console.log(
+          `Shifts swapped: Shift ${originalShift.id} (${shiftSwap.fromUserId} → ${shiftSwap.toUserId}), Shift ${targetShift.id} (${shiftSwap.toUserId} → ${shiftSwap.fromUserId})`,
+        );
+      }
+    } catch (error) {
+      console.error('Error transferring shift ownership:', error);
+      throw new Error(
+        `Failed to transfer shift ownership: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 }

@@ -7,6 +7,144 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           Int         @id @default(autoincrement())
+  username     String      @unique
+  email        String      @unique
+  password     String
+  namaDepan    String
+  namaBelakang String
+  alamat       String?
+  noHp         String
+  jenisKelamin String
+  tanggalLahir DateTime
+  role         Role
+  status       String      @default("ACTIVE")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  absensi      Absensi[]
+  loginLogs    LoginLog[]
+  shifts       Shift[]     @relation("ShiftPegawai")
+  swapFrom     ShiftSwap[] @relation("SwapFrom")
+  swapTo       ShiftSwap[] @relation("SwapTo")
+  token        Token[]
+
+  @@map("users")
+}
+
+model Shift {
+  id          Int          @id @default(autoincrement())
+  tanggal     DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  idpegawai   String
+  jammulai    String
+  jamselesai  String
+  lokasishift String
+  userId      Int
+  lokasiEnum  LokasiShift?
+  tipeEnum    TipeShift?
+  tipeshift   String?
+  shiftNumber Int?
+  shiftType   ShiftType?
+  absensi     Absensi?
+  user        User         @relation("ShiftPegawai", fields: [userId], references: [id], onDelete: Cascade)
+  swap        ShiftSwap?
+
+  @@map("shifts")
+}
+
+model Absensi {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  shiftId   Int           @unique
+  jamMasuk  DateTime?
+  jamKeluar DateTime?
+  status    AbsensiStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  catatan   String?
+  foto      String?
+  lokasi    String?
+  shift     Shift         @relation(fields: [shiftId], references: [id])
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("absensis")
+}
+
+model ShiftSwap {
+  id                   Int        @id @default(autoincrement())
+  fromUserId           Int
+  toUserId             Int
+  shiftId              Int        @unique
+  status               SwapStatus @default(PENDING)
+  alasan               String?
+  tanggalSwap          DateTime
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  rejectionReason      String?
+  requiresUnitHead     Boolean    @default(false)
+  supervisorApprovedAt DateTime?
+  supervisorApprovedBy Int?
+  targetApprovedAt     DateTime?
+  targetApprovedBy     Int?
+  unitHeadApprovedAt   DateTime?
+  unitHeadApprovedBy   Int?
+  fromUser             User       @relation("SwapFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  shift                Shift      @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  toUser               User       @relation("SwapTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@map("shiftswaps")
+}
+
+model Kegiatan {
+  id              Int       @id @default(autoincrement())
+  nama            String
+  deskripsi       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  anggaran        Int?
+  catatan         String?
+  departemen      String?
+  jenisKegiatan   String
+  kapasitas       Int?
+  kontak          String?
+  lokasi          String
+  lokasiDetail    String?
+  penanggungJawab String
+  prioritas       String
+  status          String
+  tanggalMulai    DateTime
+  tanggalSelesai  DateTime?
+  targetPeserta   String[]
+  waktuMulai      String
+  waktuSelesai    String?
+
+  @@map("kegiatans")
+}
+
+model Token {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiredAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tokens")
+}
+
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  ipAddress String?
+  userAgent String?
+  loginAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_logs")
+}
+
 enum Role {
   ADMIN
   DOKTER
@@ -23,26 +161,31 @@ enum AbsensiStatus {
 }
 
 enum SwapStatus {
-  PENDING                // Initial status when request is created
-  APPROVED_BY_TARGET     // Target employee approved
-  REJECTED_BY_TARGET     // Target employee rejected
-  WAITING_UNIT_HEAD      // Waiting for unit head approval (for special units)
-  REJECTED_BY_UNIT_HEAD  // Unit head rejected
-  WAITING_SUPERVISOR     // Waiting for supervisor approval
-  REJECTED_BY_SUPERVISOR // Supervisor rejected
-  APPROVED              // Final approved status
+  PENDING
+  APPROVED_BY_TARGET
+  REJECTED_BY_TARGET
+  WAITING_UNIT_HEAD
+  REJECTED_BY_UNIT_HEAD
+  WAITING_SUPERVISOR
+  REJECTED_BY_SUPERVISOR
+  APPROVED
 }
 
 enum LokasiShift {
-  POLI_UMUM
-  POLI_ANAK
-  POLI_GIGI
-  IGD
-  ICU
+  GEDUNG_ADMINISTRASI
+  RAWAT_JALAN
+  RAWAT_INAP
+  GAWAT_DARURAT
   LABORATORIUM
-  RADIOLOGI
   FARMASI
-  EMERGENCY_ROOM
+  RADIOLOGI
+  GIZI
+  KEAMANAN
+  LAUNDRY
+  CLEANING_SERVICE
+  SUPIR
+  ICU
+  NICU
 }
 
 enum TipeShift {
@@ -53,138 +196,17 @@ enum TipeShift {
   JAGA
 }
 
-model User {
-  id            Int           @id @default(autoincrement())
-  username      String        @unique
-  email         String        @unique
-  password      String
-  namaDepan     String
-  namaBelakang  String
-  alamat        String?
-  noHp          String
-  jenisKelamin  String
-  tanggalLahir  DateTime
-  role          Role
-  status        String        @default("ACTIVE")
-  shifts        Shift[]       @relation("ShiftPegawai")
-  absensi       Absensi[]
-  swapFrom      ShiftSwap[]   @relation("SwapFrom")
-  swapTo        ShiftSwap[]   @relation("SwapTo")
-  token         Token[]
-  loginLogs     LoginLog[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  @@map("users")
-}
-
-model Shift {
-  id           Int         @id @default(autoincrement())
-  tanggal      DateTime
-  jammulai     String
-  jamselesai   String
-  lokasishift  String      // Keeping as String for backward compatibility
-  lokasiEnum   LokasiShift? // New enum field for type safety
-  tipeshift    String?     // Keeping as String for backward compatibility
-  tipeEnum     TipeShift?  // New enum field for type safety
-  idpegawai    String
-  userId       Int
-  user         User        @relation("ShiftPegawai", fields: [userId], references: [id], onDelete: Cascade)
-  absensi      Absensi?
-  swap         ShiftSwap?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  @@map("shifts")
-}
-
-model Absensi {
-  id           Int            @id @default(autoincrement())
-  userId       Int
-  shiftId      Int            @unique
-  jamMasuk     DateTime?
-  jamKeluar    DateTime?
-  status       AbsensiStatus
-  lokasi       String?        // GPS location or manual location
-  foto         String?        // Optional photo for verification
-  catatan      String?        // Notes or comments
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shift        Shift          @relation(fields: [shiftId], references: [id])
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@map("absensis")
-}
-
-model ShiftSwap {
-  id                    Int         @id @default(autoincrement())
-  fromUserId            Int
-  toUserId              Int
-  shiftId               Int         @unique
-  status                SwapStatus  @default(PENDING)
-  alasan                String?
-  tanggalSwap           DateTime
-  fromUser              User        @relation("SwapFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser                User        @relation("SwapTo", fields: [toUserId], references: [id], onDelete: Cascade)
-  shift                 Shift       @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  requiresUnitHead      Boolean     @default(false)  // For special units like ICU, NICU, IGD
-  targetApprovedAt      DateTime?   // When target employee approved/rejected
-  unitHeadApprovedAt    DateTime?   // When unit head approved/rejected
-  supervisorApprovedAt  DateTime?   // When supervisor approved/rejected
-  targetApprovedBy      Int?        // User ID who approved/rejected (target employee)
-  unitHeadApprovedBy    Int?        // User ID who approved/rejected (unit head)
-  supervisorApprovedBy  Int?        // User ID who approved/rejected (supervisor)
-  rejectionReason       String?     // Reason if rejected at any stage
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-
-  @@map("shiftswaps")
-}
-
-model Kegiatan {
-  id           Int      @id @default(autoincrement())
-  nama         String
-  jenisKegiatan String
-  deskripsi    String
-  tanggalMulai DateTime
-  tanggalSelesai DateTime?
-  waktuMulai   String
-  waktuSelesai String?
-  lokasi       String
-  kapasitas    Int?
-  lokasiDetail String?
-  penanggungJawab String
-  kontak       String?
-  departemen   String?
-  prioritas    String
-  targetPeserta String[]
-  anggaran     Int?
-  status       String
-  catatan      String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@map("kegiatans")
-}
-
-model Token {
-  id           Int      @id @default(autoincrement())
-  userId       Int
-  token        String   @unique
-  expiredAt    DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-
-  @@map("tokens")
-}
-
-model LoginLog {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ipAddress   String?
-  userAgent   String?
-  loginAt     DateTime @default(now())
-
-  @@map("login_logs")
+enum ShiftType {
+  GEDUNG_ADMINISTRASI
+  RAWAT_JALAN
+  RAWAT_INAP_3_SHIFT
+  GAWAT_DARURAT_3_SHIFT
+  LABORATORIUM_2_SHIFT
+  FARMASI_2_SHIFT
+  RADIOLOGI_2_SHIFT
+  GIZI_2_SHIFT
+  KEAMANAN_2_SHIFT
+  LAUNDRY_REGULER
+  CLEANING_SERVICE
+  SUPIR_2_SHIFT
 }

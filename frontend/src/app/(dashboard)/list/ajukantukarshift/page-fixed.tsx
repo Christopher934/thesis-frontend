@@ -3,16 +3,13 @@
 // Force dynamic rendering for real-time shift swap data
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import React from 'react';
-import Image from "next/image";
 import Link from "next/link";
 import Pagination from "@/component/Pagination";
 import TableSearch from "@/component/TableSearch";
-import Table from "@/component/Table";
 import FilterButton from "@/component/FilterButton";
 import SortButton from "@/component/SortButton";
-import FormModal from "@/component/FormModal";
 import { PageHeader, PrimaryButton, ContentCard, Tabs } from "@/components/ui";
 import { textFormatter } from "@/lib/textFormatter";
 
@@ -119,7 +116,7 @@ export default function AjukanTukarShiftPage() {
     { label: "Status", value: "status" },
   ];
 
-  const fetchTukarShiftData = async () => {
+  const fetchTukarShiftData = useCallback(async () => {
     try {
       if (typeof window === 'undefined') return;
       const token = localStorage.getItem('token');
@@ -150,7 +147,7 @@ export default function AjukanTukarShiftPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUserId, currentUserRole]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -172,7 +169,7 @@ export default function AjukanTukarShiftPage() {
     if (currentUserId !== null && currentUserRole !== null) {
       fetchTukarShiftData();
     }
-  }, [currentUserId, currentUserRole]);
+  }, [currentUserId, currentUserRole, fetchTukarShiftData]);
 
   const processedData = useMemo(() => {
     let filtered = tukarShiftData;
@@ -263,14 +260,14 @@ export default function AjukanTukarShiftPage() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-gray-900 capitalize">
                   {activeTab === 'my-requests' 
                     ? `Ke: ${textFormatter.formatUserName(item.toUser.namaDepan, item.toUser.namaBelakang)}`
                     : `Dari: ${textFormatter.formatUserName(item.fromUser.namaDepan, item.fromUser.namaBelakang)}`
                   }
                 </h3>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium uppercase tracking-wide ${STATUS_BADGE_STYLE[item.status] || 'bg-gray-100 text-gray-800'}`}>
-                  {STATUS_LABELS[item.status] || item.status}
+                  {STATUS_LABELS[item.status] || textFormatter.formatStatus(item.status)}
                 </span>
               </div>
               
@@ -280,7 +277,7 @@ export default function AjukanTukarShiftPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>{formatLokasiShift(item.shift.lokasishift)}</span>
+                  <span className="capitalize">{formatLokasiShift(item.shift.lokasishift)}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -294,7 +291,7 @@ export default function AjukanTukarShiftPage() {
                   <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>{item.shift.jammulai} - {item.shift.jamselesai}</span>
+                  <span className="uppercase font-medium">{item.shift.jammulai} - {item.shift.jamselesai}</span>
                 </div>
                 
                 {item.alasan && (
@@ -302,7 +299,7 @@ export default function AjukanTukarShiftPage() {
                     <svg className="w-4 h-4 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                     </svg>
-                    <span className="text-gray-700 italic">"{item.alasan}"</span>
+                    <span className="text-gray-700 italic">&ldquo;{item.alasan}&rdquo;</span>
                   </div>
                 )}
               </div>
@@ -318,10 +315,10 @@ export default function AjukanTukarShiftPage() {
           {activeTab === 'requests-to-me' && item.status === 'PENDING' && (
             <div className="flex gap-2">
               <PrimaryButton size="sm" variant="primary">
-                Terima
+                TERIMA
               </PrimaryButton>
               <PrimaryButton size="sm" variant="danger">
-                Tolak
+                TOLAK
               </PrimaryButton>
             </div>
           )}
@@ -334,7 +331,7 @@ export default function AjukanTukarShiftPage() {
   const tabs = [
     {
       id: 'my-requests',
-      label: 'Permintaan Saya',
+      label: 'PERMINTAAN SAYA',
       content: (
         <ContentCard padding="none">
           {processedData.length === 0 ? (
@@ -348,7 +345,7 @@ export default function AjukanTukarShiftPage() {
               <p className="text-gray-600 mb-4">Anda belum mengajukan permintaan tukar shift.</p>
               <Link href="/dashboard/shift/tukar">
                 <PrimaryButton>
-                  Ajukan Tukar Shift
+                  AJUKAN TUKAR SHIFT
                 </PrimaryButton>
               </Link>
             </div>
@@ -370,7 +367,7 @@ export default function AjukanTukarShiftPage() {
     },
     {
       id: 'requests-to-me',
-      label: 'Permintaan ke Saya',
+      label: 'PERMINTAAN KE SAYA',
       content: (
         <ContentCard padding="none">
           {processedData.length === 0 ? (
@@ -431,7 +428,7 @@ export default function AjukanTukarShiftPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Terjadi Kesalahan</h3>
               <p className="text-gray-600 text-center mb-4">{errorMsg}</p>
               <PrimaryButton onClick={fetchTukarShiftData}>
-                Coba Lagi
+                COBA LAGI
               </PrimaryButton>
             </div>
           </ContentCard>
@@ -468,7 +465,7 @@ export default function AjukanTukarShiftPage() {
               
               <Link href="/dashboard/shift/tukar">
                 <PrimaryButton>
-                  Ajukan Baru
+                  AJUKAN BARU
                 </PrimaryButton>
               </Link>
             </div>

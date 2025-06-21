@@ -30,8 +30,11 @@ export class AbsensiService {
     }
 
     // Check if already checked in
-    const existingAbsensi = await this.prisma.absensi.findUnique({
-      where: { shiftId: shift.id }
+    const existingAbsensi = await this.prisma.absensi.findFirst({
+      where: { 
+        userId: userId,
+        shiftId: shift.id 
+      }
     });
 
     if (existingAbsensi) {
@@ -151,8 +154,11 @@ export class AbsensiService {
     }
 
     // Get attendance for this shift
-    const absensi = await this.prisma.absensi.findUnique({
-      where: { shiftId: shift.id },
+    const absensi = await this.prisma.absensi.findFirst({
+      where: { 
+        userId: userId,
+        shiftId: shift.id 
+      },
       include: {
         user: {
           select: {

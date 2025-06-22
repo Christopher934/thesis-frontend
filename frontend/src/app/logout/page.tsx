@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import ConfirmationModal from '@/component/ConfirmationModal';
+import ConfirmationModal from '@/components/common/ConfirmationModal';
 import { clearAuthData } from '@/lib/authUtils';
 
 export default function LogoutPage() {
@@ -26,11 +26,11 @@ export default function LogoutPage() {
     // Get user role to redirect to appropriate dashboard
     const role = localStorage.getItem('role')?.toLowerCase();
     if (role === 'admin' || role === 'supervisor') {
-      router.replace('/admin');
+      router.replace('/dashboard/admin');
     } else if (role === 'perawat' || role === 'dokter' || role === 'staf') {
-      router.replace('/pegawai');
+      router.replace('/dashboard/pegawai');
     } else {
-      router.replace('/dashboard');
+      router.replace('/dashboard/dashboard');
     }
   };
 

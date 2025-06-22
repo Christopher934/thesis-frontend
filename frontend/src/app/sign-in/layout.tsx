@@ -16,9 +16,9 @@ export default function SignInLayout({
     if (isAuthenticated()) {
       const role = getUserRole();
       if (role === 'admin' || role === 'supervisor') {
-        router.replace('/admin');
+        router.replace('/dashboard/admin');
       } else {
-        router.replace('/pegawai');
+        router.replace('/dashboard/pegawai');
       }
     }
   }, [router]);

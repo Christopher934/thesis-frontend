@@ -62,8 +62,11 @@ export function clearAuthData(): void {
   localStorage.removeItem('idpegawai');
   localStorage.removeItem('nameDepan');
   localStorage.removeItem('nameBelakang');
-  // Remove any other keys you use for user info
-  // localStorage.clear(); // Uncomment for full wipe if needed
+  
+  // Trigger role change event for Menu component
+  window.dispatchEvent(new CustomEvent('roleChanged', { 
+    detail: { role: null } 
+  }));
 
   // Clear cookies with proper configuration
   try {

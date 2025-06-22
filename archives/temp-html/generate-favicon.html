@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Favicon Generator for RSUD Anugerah</title>
+</head>
+<body>
+    <canvas id="faviconCanvas" width="32" height="32" style="border: 1px solid #ccc; image-rendering: pixelated; width: 128px; height: 128px;"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('faviconCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Clear canvas with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 32, 32);
+        
+        // Add border
+        ctx.strokeStyle = '#2563EB';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, 30, 30);
+        
+        // Draw medical cross in hospital blue
+        ctx.fillStyle = '#2563EB';
+        
+        // Horizontal bar of the cross
+        ctx.fillRect(8, 12, 16, 8);
+        
+        // Vertical bar of the cross
+        ctx.fillRect(12, 8, 8, 16);
+        
+        // Add a small highlight for depth
+        ctx.fillStyle = '#DBEAFE';
+        ctx.fillRect(9, 13, 14, 6);
+        ctx.fillRect(13, 9, 6, 14);
+        
+        // Convert canvas to data URL for download
+        const dataURL = canvas.toDataURL('image/png');
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.download = 'favicon.ico';
+        link.href = dataURL;
+        link.textContent = 'Download Favicon';
+        link.style.display = 'block';
+        link.style.marginTop = '20px';
+        link.style.padding = '10px';
+        link.style.backgroundColor = '#2563EB';
+        link.style.color = 'white';
+        link.style.textDecoration = 'none';
+        link.style.borderRadius = '5px';
+        link.style.textAlign = 'center';
+        document.body.appendChild(link);
+        
+        // Auto-download
+        setTimeout(() => {
+            link.click();
+        }, 1000);
+    </script>
+</body>
+</html>

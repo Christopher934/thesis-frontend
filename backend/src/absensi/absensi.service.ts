@@ -26,7 +26,7 @@ export class AbsensiService {
     });
 
     if (!shift) {
-      throw new Error('Tidak ada shift untuk hari ini');
+      throw new Error('Tidak Ada Shift Untuk Hari Ini');
     }
 
     // Check if already checked in
@@ -38,7 +38,7 @@ export class AbsensiService {
     });
 
     if (existingAbsensi) {
-      throw new Error('Sudah melakukan absen masuk untuk shift ini');
+      throw new Error('Sudah Melakukan Absen Masuk Untuk Shift Ini');
     }
 
     const jamMasuk = new Date();
@@ -71,11 +71,11 @@ export class AbsensiService {
     });
 
     if (!absensi) {
-      throw new Error('Data absensi tidak ditemukan');
+      throw new Error('Data Absensi Tidak Ditemukan');
     }
 
     if (absensi.jamKeluar) {
-      throw new Error('Sudah melakukan absen keluar');
+      throw new Error('Sudah Melakukan Absen Keluar');
     }
 
     const jamKeluar = new Date();

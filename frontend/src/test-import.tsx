@@ -5,7 +5,7 @@ import React from 'react';
 
 // Test if TukarShiftForm can be imported correctly
 try {
-  const TukarShiftForm = require('@/component/forms/TukarShiftForm');
+  const TukarShiftForm = require('@/components/forms/TukarShiftForm');
   console.log('TukarShiftForm import test:', TukarShiftForm);
   console.log('TukarShiftForm.default:', TukarShiftForm.default);
   console.log('typeof TukarShiftForm:', typeof TukarShiftForm);

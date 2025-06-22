@@ -8,7 +8,18 @@ export const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
   '/pegawai': ['perawat', 'staf', 'dokter'],
   '/dashboard': ['admin', 'perawat', 'staf', 'dokter', 'supervisor'],
   
-  // List routes
+  // List routes - updated to match actual structure
+  '/dashboard/list/pegawai': ['admin'],
+  '/dashboard/list/managemenjadwal': ['admin'],
+  '/dashboard/list/jadwalsaya': ['perawat', 'staf', 'dokter'],
+  '/dashboard/list/ajukantukarshift': ['admin', 'perawat', 'staf', 'dokter', 'supervisor'],
+  '/dashboard/list/absensi': ['admin', 'perawat', 'staf', 'dokter'],
+  '/dashboard/list/events': ['admin', 'perawat', 'staf', 'dokter'],
+  '/dashboard/list/messages': ['admin', 'perawat', 'staf', 'dokter'],
+  '/dashboard/list/laporan': ['admin'],
+  '/dashboard/list/profile': ['admin', 'perawat', 'staf', 'dokter'],
+  
+  // Legacy list routes (for backward compatibility)
   '/list/pegawai': ['admin'],
   '/list/managemenjadwal': ['admin'],
   '/list/jadwalsaya': ['perawat', 'staf', 'dokter'],

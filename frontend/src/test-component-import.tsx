@@ -35,7 +35,7 @@ try {
 // Test our component directly
 try {
   console.log('About to import TukarShiftForm...');
-  const TukarShiftForm = require('@/component/forms/TukarShiftForm');
+  const TukarShiftForm = require('@/components/forms/TukarShiftForm');
   console.log('TukarShiftForm import successful:', TukarShiftForm);
   console.log('TukarShiftForm default:', TukarShiftForm.default);
   console.log('TukarShiftForm type:', typeof TukarShiftForm.default);

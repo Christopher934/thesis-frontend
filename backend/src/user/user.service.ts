@@ -216,7 +216,7 @@ export class UserService {
     // 5.a) Periksa dulu apakah user ada
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundException(`User dengan ID ${id} tidak ditemukan`);
+      throw new NotFoundException(`User Dengan ID ${id} Tidak Ditemukan`);
     }
 
     // 5.b) Hapus

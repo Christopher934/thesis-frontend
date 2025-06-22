@@ -3,7 +3,7 @@
 import React from 'react';
 
 // Test TukarShiftForm import
-import TukarShiftForm from '@/component/forms/TukarShiftForm';
+import TukarShiftForm from '@/components/forms/TukarShiftForm';
 
 export default function TestTukarShiftImport() {
   return (

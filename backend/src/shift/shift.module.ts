@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ShiftController } from './shift.controller';
 import { ShiftService } from './shift.service';
+import { ShiftSwapRequestController } from './shift-swap-request.controller';
+import { ShiftSwapRequestService } from './shift-swap-request.service';
 import { JwtModule } from '@nestjs/jwt';
 // import { AuthService } from '../auth/auth.service';
 
@@ -13,7 +15,7 @@ import { JwtModule } from '@nestjs/jwt';
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  controllers: [ShiftController],
-  providers: [ShiftService],
+  controllers: [ShiftController, ShiftSwapRequestController],
+  providers: [ShiftService, ShiftSwapRequestService],
 })
 export class ShiftModule {}

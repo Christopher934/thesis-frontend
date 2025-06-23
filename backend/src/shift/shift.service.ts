@@ -2,6 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
+import { 
+  getShiftTypeConfig, 
+  getAllShiftTypes, 
+  getShiftScheduleForDay, 
+  validateShiftTime,
+  getScheduleForDate,
+  getShiftOptionsForDate
+} from './shift-type.config';
 
 @Injectable()
 export class ShiftService {
@@ -109,136 +117,14 @@ export class ShiftService {
             : undefined,
         }));
       }
-      
-      // Jika tidak ada data, return mock data
-      console.log("No shifts found in database, returning mock data");
-      return this.getMockShifts();
+
+      // Return empty array if no data found
+      return [];
     } catch (error) {
-      console.error("Error fetching shifts:", error);
-      // Return mock data jika terjadi error
-      return this.getMockShifts();
+      console.error('Error fetching shifts:', error);
+      // Return empty array on error
+      return [];
     }
-  }
-  
-  // Helper method untuk menghasilkan data shift dummy
-  private getMockShifts() {
-    const currentDate = new Date();
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    // Generate shifts for current month (10 shifts)
-    return [
-      {
-        id: 1,
-        tanggal: new Date(year, month, 5),
-        jammulai: '07:00',
-        jamselesai: '15:00',
-        lokasishift: 'POLI_UMUM',
-        tipeshift: 'PAGI',
-        idpegawai: 'DOK001',
-        userId: 2,
-        nama: 'Dokter Spesialis'
-      },
-      {
-        id: 2,
-        tanggal: new Date(year, month, 5),
-        jammulai: '15:00',
-        jamselesai: '23:00',
-        lokasishift: 'POLI_UMUM',
-        tipeshift: 'SIANG',
-        idpegawai: 'PER001',
-        userId: 3,
-        nama: 'Perawat Senior'
-      },
-      {
-        id: 3,
-        tanggal: new Date(year, month, 6),
-        jammulai: '07:00',
-        jamselesai: '15:00',
-        lokasishift: 'IGD',
-        tipeshift: 'PAGI',
-        idpegawai: 'DOK001', 
-        userId: 2,
-        nama: 'Dokter Spesialis'
-      },
-      {
-        id: 4,
-        tanggal: new Date(year, month, 6),
-        jammulai: '15:00',
-        jamselesai: '23:00',
-        lokasishift: 'IGD',
-        tipeshift: 'SIANG',
-        idpegawai: 'PER001',
-        userId: 3,
-        nama: 'Perawat Senior'
-      },
-      {
-        id: 5,
-        tanggal: new Date(year, month, 7),
-        jammulai: '07:00',
-        jamselesai: '15:00',
-        lokasishift: 'POLI_ANAK',
-        tipeshift: 'PAGI',
-        idpegawai: 'DOK001',
-        userId: 2,
-        nama: 'Dokter Spesialis'
-      },
-      {
-        id: 6,
-        tanggal: new Date(year, month, 7),
-        jammulai: '15:00',
-        jamselesai: '23:00',
-        lokasishift: 'POLI_ANAK',
-        tipeshift: 'SIANG',
-        idpegawai: 'PER001',
-        userId: 3,
-        nama: 'Perawat Senior'
-      },
-      {
-        id: 7,
-        tanggal: new Date(year, month, 8),
-        jammulai: '07:00',
-        jamselesai: '15:00',
-        lokasishift: 'RUANG_OPERASI',
-        tipeshift: 'PAGI',
-        idpegawai: 'DOK001',
-        userId: 2,
-        nama: 'Dokter Spesialis'
-      },
-      {
-        id: 8,
-        tanggal: new Date(year, month, 8),
-        jammulai: '15:00',
-        jamselesai: '23:00',
-        lokasishift: 'RUANG_OPERASI',
-        tipeshift: 'SIANG',
-        idpegawai: 'PER001',
-        userId: 3,
-        nama: 'Perawat Senior'
-      },
-      {
-        id: 9,
-        tanggal: new Date(year, month, 9),
-        jammulai: '07:00',
-        jamselesai: '15:00',
-        lokasishift: 'POLI_GIGI',
-        tipeshift: 'PAGI',
-        idpegawai: 'DOK001',
-        userId: 2,
-        nama: 'Dokter Spesialis'
-      },
-      {
-        id: 10,
-        tanggal: new Date(year, month, 9),
-        jammulai: '15:00',
-        jamselesai: '23:00',
-        lokasishift: 'POLI_GIGI',
-        tipeshift: 'SIANG',
-        idpegawai: 'PER001',
-        userId: 3,
-        nama: 'Perawat Senior'
-      }
-    ];
   }
 
   async findOne(id: number) {
@@ -378,6 +264,175 @@ export class ShiftService {
       });
 
       return { message: `Shift with ID ${id} has been deleted` };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get all available shift types based on RSUD Anugerah official regulations
+   */
+  async getShiftTypes() {
+    try {
+      const shiftTypes = getAllShiftTypes();
+      return shiftTypes.map(type => ({
+        type: type.type,
+        description: type.description,
+        installasi: type.installasi,
+        hasRotatingBreaks: type.hasRotatingBreaks,
+        notes: type.notes,
+        shiftsCount: type.shifts.length
+      }));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get shift schedules for a specific shift type
+   */
+  async getShiftTypeSchedules(shiftType: string) {
+    try {
+      const config = getShiftTypeConfig(shiftType);
+      if (!config) {
+        throw new NotFoundException(`Shift type ${shiftType} not found`);
+      }
+
+      return {
+        type: config.type,
+        description: config.description,
+        installasi: config.installasi,
+        hasRotatingBreaks: config.hasRotatingBreaks,
+        notes: config.notes,
+        shifts: config.shifts
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get available shift options for a specific date and shift type
+   */
+  async getShiftOptionsForDate(shiftType: string, date: string) {
+    try {
+      const targetDate = new Date(date);
+      const options = getShiftOptionsForDate(shiftType, targetDate);
+      
+      if (options.length === 0) {
+        return {
+          date: date,
+          shiftType: shiftType,
+          message: 'No shifts available for this date and shift type',
+          options: []
+        };
+      }
+
+      return {
+        date: date,
+        shiftType: shiftType,
+        options: options.map(option => ({
+          name: option.name,
+          jammulai: option.startTime,
+          jamselesai: option.endTime,
+          breakTime: option.breakTime
+        }))
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Validate if a shift time is valid for the given shift type and date
+   */
+  async validateShiftForDate(shiftType: string, date: string, jammulai: string, jamselesai: string) {
+    try {
+      const targetDate = new Date(date);
+      const isValid = validateShiftTime(shiftType, jammulai, jamselesai, targetDate);
+      
+      return {
+        valid: isValid,
+        shiftType: shiftType,
+        date: date,
+        jammulai: jammulai,
+        jamselesai: jamselesai,
+        message: isValid 
+          ? 'Shift time is valid for this shift type and date'
+          : 'Shift time is not valid for this shift type and date'
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Create shift using official RSUD shift type system
+   */
+  async createWithShiftType(createShiftDto: CreateShiftDto & { shiftType: string; shiftOption: string }) {
+    try {
+      // Validate the shift type and get available options
+      const targetDate = new Date(createShiftDto.tanggal);
+      const shiftOptions = getShiftOptionsForDate(createShiftDto.shiftType, targetDate);
+      
+      // Find the selected shift option
+      const selectedOption = shiftOptions.find(option => option.name === createShiftDto.shiftOption);
+      if (!selectedOption) {
+        throw new NotFoundException(`Shift option "${createShiftDto.shiftOption}" not available for ${createShiftDto.shiftType} on ${createShiftDto.tanggal}`);
+      }
+
+      // Create the shift with the validated times
+      const shiftData = {
+        ...createShiftDto,
+        jammulai: selectedOption.startTime,
+        jamselesai: selectedOption.endTime,
+        shiftType: createShiftDto.shiftType as any
+      };
+
+      return await this.create(shiftData);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get shifts by installation type
+   */
+  async getShiftsByInstallation(installasi: string, startDate?: string, endDate?: string) {
+    try {
+      const whereClause: any = {
+        OR: [
+          { lokasishift: { contains: installasi, mode: 'insensitive' } },
+          { lokasiEnum: installasi as any }
+        ]
+      };
+
+      if (startDate && endDate) {
+        whereClause.tanggal = {
+          gte: new Date(startDate),
+          lte: new Date(endDate)
+        };
+      }
+
+      const shifts = await this.prisma.shift.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true
+            }
+          }
+        },
+        orderBy: [
+          { tanggal: 'asc' },
+          { jammulai: 'asc' }
+        ]
+      });
+
+      return shifts;
     } catch (error) {
       throw error;
     }

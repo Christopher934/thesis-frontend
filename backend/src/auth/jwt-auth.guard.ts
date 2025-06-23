@@ -1,18 +1,16 @@
 import {
   Injectable,
+  CanActivate,
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private jwtService: JwtService) {
-    super();
-  }
+export class JwtAuthGuard implements CanActivate {
+  constructor(private jwtService: JwtService) {}
 
-  canActivate(context: ExecutionContext) {
+  canActivate(context: ExecutionContext): boolean {
     // Get the request object
     const request = context.switchToHttp().getRequest();
 
@@ -28,8 +26,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       // Verify and decode token
       const decoded = this.jwtService.verify(token);
 
-      // Add user info to request object
-      request.user = decoded;
+      // Add user info to request object with proper format
+      request.user = {
+        userId: decoded.sub,  // Use userId instead of id for consistency
+        id: decoded.sub,      // Keep id for backward compatibility
+        role: decoded.role,
+      };
 
       return true;
     } catch (error) {

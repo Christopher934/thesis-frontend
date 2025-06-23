@@ -12,11 +12,11 @@ export default function SignInRedirectIfLoggedIn() {
 
     if (token && role) {
       if (role === 'admin') {
-        router.push('/admin');
+        router.push('/dashboard/admin');
       } else if (['perawat', 'dokter', 'staf'].includes(role)) {
-        router.push('/pegawai');
+        router.push('/dashboard/pegawai');
       } else {
-        router.push('/dashboard');
+        router.push('/dashboard/dashboard');
       }
     }
   }, [router]);

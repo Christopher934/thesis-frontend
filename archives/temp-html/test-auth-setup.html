@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup Test Authentication</title>
+</head>
+<body>
+    <h1>Setup Test Authentication</h1>
+    <button onclick="setupAuth()">Setup Authentication</button>
+    <button onclick="clearAuth()">Clear Authentication</button>
+    <button onclick="goToApp()">Go to App</button>
+    
+    <script>
+        function setupAuth() {
+            // Set up localStorage items that the app expects
+            localStorage.setItem('token', 'test-token-123');
+            localStorage.setItem('role', 'staf');
+            localStorage.setItem('user', JSON.stringify({ 
+                id: 1, 
+                username: 'testuser', 
+                nama: 'Test User' 
+            }));
+            localStorage.setItem('idpegawai', 'testuser');
+            
+            // Set up cookies that middleware expects
+            document.cookie = 'token=test-token-123; path=/';
+            document.cookie = 'role=staf; path=/';
+            
+            alert('Authentication setup complete!');
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            localStorage.removeItem('user');
+            localStorage.removeItem('idpegawai');
+            
+            document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            
+            alert('Authentication cleared!');
+        }
+        
+        function goToApp() {
+            window.location.href = '/list/ajukantukarshift';
+        }
+    </script>
+</body>
+</html>

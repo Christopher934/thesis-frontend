@@ -1,7 +1,11 @@
 /* eslint-disable prettier/prettier */
 // src/user/user.service.ts
 // eslint-disable-next-line prettier/prettier
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
@@ -13,7 +17,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-   async countByRole(): Promise<Record<string, number>> {
+  async countByRole(): Promise<Record<string, number>> {
     // Enum Role di Prisma: ADMIN, DOKTER, PERAWAT, STAF, SUPERVISOR
     const roles: Role[] = ['ADMIN', 'DOKTER', 'PERAWAT', 'STAF', 'SUPERVISOR'];
 
@@ -25,10 +29,10 @@ export class UserService {
       // Make sure the role is included in the result even if count is 0
       result[role] = cnt;
     }
-    
+
     // Log the result to verify SUPERVISOR is included
     console.log('Count by role result:', result);
-    
+
     return result;
   }
 
@@ -103,7 +107,10 @@ export class UserService {
     // 3.a) Periksa apakah username atau email sudah terpakai
     const existing = await this.prisma.user.findFirst({
       where: {
-        OR: [{ username: data.username }, { email: data.email }],
+        OR: [
+          ...(data.username ? [{ username: data.username }] : []),
+          { email: data.email },
+        ],
       },
     });
     if (existing) {
@@ -113,22 +120,25 @@ export class UserService {
     // 3.b) Hash password
     const hashed = await bcrypt.hash(data.password, 10);
 
-    // 3.c) Convert tanggalLahir ke Date object
-    const tanggal = new Date(data.tanggalLahir);
+    // 3.c) Convert tanggalLahir ke Date object (only if provided)
+    let tanggal: Date | undefined = undefined;
+    if (data.tanggalLahir) {
+      tanggal = new Date(data.tanggalLahir);
+    }
 
     // 3.d) Simpan ke database
     const createdUser = await this.prisma.user.create({
       data: {
-        username: data.username,
-        email: data.email,
+        username: data.username ?? '',
+        email: data.email ?? '',
         password: hashed,
-        namaDepan: data.namaDepan,
-        namaBelakang: data.namaBelakang,
+        namaDepan: data.namaDepan ?? '',
+        namaBelakang: data.namaBelakang ?? '',
         alamat: data.alamat ?? null,
-        noHp: data.noHp,
-        jenisKelamin: data.jenisKelamin,
-        tanggalLahir: tanggal,
-        role: data.role,
+        noHp: data.noHp ?? '',
+        jenisKelamin: data.jenisKelamin ?? '',
+        tanggalLahir: tanggal ?? new Date('1970-01-01'),
+        role: data.role ?? 'STAF',
         status: data.status ?? 'ACTIVE',
       },
       // 3.e) Hanya return field yang diperlukan, tanpa password
@@ -206,7 +216,7 @@ export class UserService {
     // 5.a) Periksa dulu apakah user ada
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundException(`User dengan ID ${id} tidak ditemukan`);
+      throw new NotFoundException(`User Dengan ID ${id} Tidak Ditemukan`);
     }
 
     // 5.b) Hapus

@@ -57,33 +57,45 @@ export function clearAuthData(): void {
   // Clear localStorage items
   localStorage.removeItem('token');
   localStorage.removeItem('role');
+  localStorage.removeItem('user');
+  localStorage.removeItem('userid');
+  localStorage.removeItem('idpegawai');
   localStorage.removeItem('nameDepan');
   localStorage.removeItem('nameBelakang');
   
-  // For complete cleanup, also clear entire localStorage if needed
-  // localStorage.clear();
-  
+  // Trigger role change event for Menu component
+  window.dispatchEvent(new CustomEvent('roleChanged', { 
+    detail: { role: null } 
+  }));
+
   // Clear cookies with proper configuration
   try {
     // First try with js-cookie
     const Cookies = require('js-cookie');
     Cookies.remove('token', { path: '/' });
     Cookies.remove('role', { path: '/' });
-    
+    // Remove other cookies if needed
     // Then also use the native method for backup
     document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
     document.cookie = 'role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
-    document.cookie = 'token=; path=/; max-age=0';
-    document.cookie = 'role=; path=/; max-age=0';
+    document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
+    document.cookie = 'userid=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
+    document.cookie = 'idpegawai=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
+    document.cookie = 'nameDepan=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
+    document.cookie = 'nameBelakang=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
     
     console.log('[AuthUtils] Auth data cleared successfully');
   } catch (e) {
     console.error('[AuthUtils] Failed to clear cookies:', e);
-    
     // Fallback method if js-cookie fails
     try {
       document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
       document.cookie = 'role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'userid=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'idpegawai=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'nameDepan=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'nameBelakang=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     } catch (e2) {
       console.error('[AuthUtils] Fallback cookie clearing also failed:', e2);
     }

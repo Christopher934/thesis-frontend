@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ShiftService } from './shift.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
@@ -27,6 +28,90 @@ export class ShiftController {
   @Get()
   findAll() {
     return this.shiftService.findAll();
+  }
+
+  /**
+   * Get all available shift types based on RSUD Anugerah official regulations
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('types')
+  getShiftTypes() {
+    return this.shiftService.getShiftTypes();
+  }
+
+  /**
+   * Get shift schedules for a specific shift type
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('types/:shiftType')
+  getShiftTypeSchedules(@Param('shiftType') shiftType: string) {
+    return this.shiftService.getShiftTypeSchedules(shiftType);
+  }
+
+  /**
+   * Get available shift options for a specific date and shift type
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('types/:shiftType/options')
+  getShiftOptionsForDate(
+    @Param('shiftType') shiftType: string,
+    @Query('date') date: string,
+  ) {
+    return this.shiftService.getShiftOptionsForDate(shiftType, date);
+  }
+
+  /**
+   * Create shift using official RSUD shift type system
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('with-type')
+  createWithShiftType(
+    @Body()
+    createShiftDto: CreateShiftDto & {
+      shiftType: string;
+      shiftOption: string;
+    },
+  ) {
+    return this.shiftService.createWithShiftType(createShiftDto);
+  }
+
+  /**
+   * Validate if a shift time is valid for the given shift type and date
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('validate')
+  validateShiftForDate(
+    @Body()
+    validateDto: {
+      shiftType: string;
+      date: string;
+      jammulai: string;
+      jamselesai: string;
+    },
+  ) {
+    return this.shiftService.validateShiftForDate(
+      validateDto.shiftType,
+      validateDto.date,
+      validateDto.jammulai,
+      validateDto.jamselesai,
+    );
+  }
+
+  /**
+   * Get shifts by installation type
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('installation/:installasi')
+  getShiftsByInstallation(
+    @Param('installasi') installasi: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.shiftService.getShiftsByInstallation(
+      installasi,
+      startDate,
+      endDate,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

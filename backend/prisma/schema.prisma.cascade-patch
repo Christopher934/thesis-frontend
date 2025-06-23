@@ -1,0 +1,34 @@
+// PATCH: Add onDelete: Cascade to all user-related relations for cascade delete
+// Only the changed lines are shown below for clarity
+
+model Shift {
+  // ...existing code...
+  user         User        @relation("ShiftPegawai", fields: [userId], references: [id], onDelete: Cascade)
+  // ...existing code...
+}
+
+model Absensi {
+  // ...existing code...
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // ...existing code...
+}
+
+model ShiftSwap {
+  // ...existing code...
+  fromUser              User        @relation("SwapFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser                User        @relation("SwapTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  shift                 Shift       @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  // ...existing code...
+}
+
+model Token {
+  // ...existing code...
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // ...existing code...
+}
+
+model LoginLog {
+  // ...existing code...
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // ...existing code...
+}

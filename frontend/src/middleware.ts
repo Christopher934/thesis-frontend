@@ -1,41 +1,104 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { hasRoutePermission, getRedirectPathForRole } from '@/lib/permissions';
+
+// Enhanced cache for better performance
+const authCheckCache = new Map<string, { result: NextResponse; timestamp: number }>();
+const CACHE_DURATION = 10000; // 10 seconds cache for better performance
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
-  const role = request.cookies.get('role')?.value?.toLowerCase();
   const url = request.nextUrl;
-
-  // Handle root path specifically
-  if (url.pathname === '/') {
-    if (token) {
-      const redirectPath = (role === 'admin' || role === 'supervisor') ? '/admin' : '/pegawai';
-      console.log(`[Middleware] Root path with token, redirecting to: ${redirectPath}`);
-      return NextResponse.redirect(new URL(redirectPath, request.url));
-    }
-    // Allow the root route to handle its own redirection if no token
+  
+  // FAST EXIT: Skip middleware for static assets, API routes, and other non-page requests
+  if (
+    url.pathname.startsWith('/_next/') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.includes('.') ||
+    url.pathname.startsWith('/favicon') ||
+    url.pathname.startsWith('/setup-admin') ||
+    url.pathname.startsWith('/quick-admin') ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.svg')
+  ) {
     return NextResponse.next();
   }
+
+  const token = request.cookies.get('token')?.value;
+  const role = request.cookies.get('role')?.value?.toLowerCase();
   
-  // Check if user is accessing sign-in related pages
-  const isAuthPage = url.pathname === '/sign-in';
+  // Cache key for performance - include more specific data
+  const cacheKey = `${url.pathname}-${role || 'none'}-${!!token}`;
+  const cached = authCheckCache.get(cacheKey);
   
-  // If user is logged in and trying to access login pages
-  if (token && isAuthPage) {
-    const redirectPath = (role === 'admin' || role === 'supervisor') ? '/admin' : '/pegawai';
-    console.log(`[Middleware] Sign-in path with token, redirecting to: ${redirectPath}`);
-    return NextResponse.redirect(new URL(redirectPath, request.url));
+  // Use cached result if available and still valid
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.result;
+  }
+
+  let response: NextResponse;
+
+  // Handle root path quickly
+  if (url.pathname === '/') {
+    if (token) {
+      const redirectPath = getRedirectPathForRole(role || null);
+      response = NextResponse.redirect(new URL(redirectPath, request.url));
+    } else {
+      response = NextResponse.next();
+    }
+  }
+  // Handle sign-in page quickly  
+  else if (url.pathname === '/sign-in') {
+    if (token) {
+      const redirectPath = getRedirectPathForRole(role || null);
+      response = NextResponse.redirect(new URL(redirectPath, request.url));
+    } else {
+      response = NextResponse.next();
+    }
+  }
+  // Handle protected routes
+  else {
+    if (!token) {
+      response = NextResponse.redirect(new URL('/sign-in', request.url));
+    } else {
+      const hasPermission = hasRoutePermission(url.pathname, role || null);
+      if (!hasPermission) {
+        const redirectPath = getRedirectPathForRole(role || null);
+        response = NextResponse.redirect(new URL(redirectPath, request.url));
+      } else {
+        response = NextResponse.next();
+      }
+    }
   }
   
-  // If user is not logged in and accessing protected pages
-  if (!token && !isAuthPage && url.pathname !== '/') {
-    console.log(`[Middleware] Protected path without token, redirecting to: /sign-in`);
-    return NextResponse.redirect(new URL('/sign-in', request.url));
+  // Cache the response for future requests
+  authCheckCache.set(cacheKey, {
+    result: response,
+    timestamp: Date.now()
+  });
+  
+  // Clean up old cache entries periodically (every 100 requests)
+  if (authCheckCache.size > 100) {
+    const now = Date.now();
+    for (const [key, value] of authCheckCache.entries()) {
+      if (now - value.timestamp > CACHE_DURATION) {
+        authCheckCache.delete(key);
+      }
+    }
   }
   
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
-  matcher: ['/', '/sign-in', '/admin/:path*', '/pegawai/:path*', '/dashboard/:path*'],
+  matcher: [
+    // Only run middleware on essential routes that need immediate redirects
+    '/',
+    '/sign-in',
+    // Remove most /list paths since they're protected by withAuth HOC
+    '/dashboard/admin/:path*',
+  ],
 };

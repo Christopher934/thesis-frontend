@@ -11,9 +11,9 @@ import {
 import { Role } from '@prisma/client';
 
 export class CreateUserDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  username: string;
+  username?: string;
 
   @IsNotEmpty()
   @IsEmail()
@@ -35,24 +35,25 @@ export class CreateUserDto {
   @IsString()
   alamat?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsPhoneNumber('ID')
-  noHp: string;
+  noHp?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @Matches(/^(L|P)$/, {
     message: 'Jenis kelamin harus “L” atau “P”',
   })
-  jenisKelamin: string; // “L” atau “P”
+  jenisKelamin?: string; // “L” atau “P”
 
-  @IsNotEmpty()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+  @IsOptional()
+  @Matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/, {
     message: 'Tanggal lahir harus format YYYY-MM-DD',
   })
-  tanggalLahir: string; // “YYYY-MM-DD”
+  tanggalLahir?: string; // “YYYY-MM-DD”
 
+  @IsOptional()
   @IsEnum(Role)
-  role: Role;
+  role?: Role;
 
   @IsOptional()
   @IsString()

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import RedirectIfLoggedIn from '@/component/RedirectIfLoggedIn';
+import RedirectIfLoggedIn from '@/components/auth/RedirectIfLoggedIn';
 import Cookies from 'js-cookie';
-import AuthDebug from '@/component/AuthDebug';
-import LoginFooter from '@/component/LoginFooter';
-import SystemNotifications from '@/component/SystemNotifications';
+import AuthDebug from '@/components/auth/AuthDebug';
+import LoginFooter from '@/components/common/LoginFooter';
+import SystemNotifications from '@/components/common/SystemNotifications';
 import { useAuthErrors } from '@/lib/useAuthErrors';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -28,9 +28,8 @@ export default function LoginPage() {
     try {
       // Pastikan bahwa apiUrl diproses dengan benar dan tidak undefined
       let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) apiUrl = 'http://localhost:3004';
+      if (!apiUrl) apiUrl = 'http://localhost:3001';
       
-      console.log('Using API URL:', apiUrl); // Debug URL yang digunakan
       const res = await fetch(apiUrl + '/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,19 +65,20 @@ export default function LoginPage() {
       localStorage.setItem('nameDepan', data.user.namaDepan || '');
       localStorage.setItem('nameBelakang', data.user.namaBelakang || '');
       localStorage.setItem('idpegawai', data.user.username || ''); // Store username as idpegawai
+      localStorage.setItem('user', JSON.stringify(data.user)); // <-- Tambahkan baris ini
       localStorage.setItem('userId', data.user.id ? data.user.id.toString() : '');
 
       // Normalize role to lowercase for consistent comparison
       const role = data.user.role.toLowerCase();
       
       if (role === 'perawat' || role === 'dokter' || role === 'staf') {
-        router.push('/pegawai');
+        router.push('/dashboard/pegawai');
       } else {
-        router.push('/admin');
+        router.push('/dashboard/admin');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Terjadi kesalahan saat masuk. Silakan coba lagi.');
+      setError('Terjadi Kesalahan Saat Masuk. Silakan Coba Lagi.');
       setIsLoading(false);
     }
   };

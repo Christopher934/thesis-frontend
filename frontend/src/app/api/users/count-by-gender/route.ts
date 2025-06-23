@@ -5,9 +5,9 @@ import axios from 'axios';
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization') || '';
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     
-    // Pastikan backend NestJS berjalan di port 3004
+    // Pastikan backend NestJS berjalan di port 3001
     const response = await axios.get(`${apiUrl}/users/count-by-gender`, {
       headers: { Authorization: authHeader },
     });

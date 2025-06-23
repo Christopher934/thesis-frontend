@@ -167,6 +167,9 @@ const AdminPage: React.FC = () => {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-8">
+            {/* Notifications */}
+            <NotificationCenter userRole={user?.role} userId={user?.id?.toString()} />
+
             {/* Today's Schedule - Admin Overview */}
             <TodaySchedule userRole={user?.role} userId={user?.id?.toString()} />
 

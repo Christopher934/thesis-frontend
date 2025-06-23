@@ -8,26 +8,29 @@ datasource db {
 }
 
 model User {
-  id           Int         @id @default(autoincrement())
-  username     String      @unique
-  email        String      @unique
-  password     String
-  namaDepan    String
-  namaBelakang String
-  alamat       String?
-  noHp         String
-  jenisKelamin String
-  tanggalLahir DateTime
-  role         Role
-  status       String      @default("ACTIVE")
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  absensi      Absensi[]
-  loginLogs    LoginLog[]
-  shifts       Shift[]     @relation("ShiftPegawai")
-  swapFrom     ShiftSwap[] @relation("SwapFrom")
-  swapTo       ShiftSwap[] @relation("SwapTo")
-  token        Token[]
+  id             Int              @id @default(autoincrement())
+  username       String           @unique
+  email          String           @unique
+  password       String
+  namaDepan      String
+  namaBelakang   String
+  alamat         String?
+  noHp           String
+  jenisKelamin   String
+  tanggalLahir   DateTime
+  role           Role
+  status         String           @default("ACTIVE")
+  telegramChatId String?          // Telegram Chat ID untuk notifikasi
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  absensi        Absensi[]
+  loginLogs      LoginLog[]
+  shifts         Shift[]          @relation("ShiftPegawai")
+  swapFrom       ShiftSwap[]      @relation("SwapFrom")
+  swapTo         ShiftSwap[]      @relation("SwapTo")
+  token          Token[]
+  notifications  Notifikasi[]     // Relasi ke notifikasi lama
+  userNotifications Notification[] @relation("UserNotifications") // Relasi ke notifikasi baru
 
   @@map("users")
 }
@@ -209,4 +212,67 @@ enum ShiftType {
   LAUNDRY_REGULER
   CLEANING_SERVICE
   SUPIR_2_SHIFT
+}
+
+// Model Notifikasi untuk sistem pemberitahuan
+model Notifikasi {
+  id          Int               @id @default(autoincrement())
+  userId      Int               // Penerima notifikasi
+  judul       String            // Judul notifikasi
+  pesan       String            // Isi pesan notifikasi
+  jenis       JenisNotifikasi   // Jenis notifikasi
+  status      StatusNotifikasi  @default(UNREAD) // Status baca
+  data        Json?             // Data tambahan (JSON)
+  sentVia     String            @default("WEB") // WEB, TELEGRAM, atau BOTH
+  telegramSent Boolean         @default(false) // Apakah sudah dikirim via Telegram
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifikasi")
+}
+
+// Enum untuk jenis notifikasi
+enum JenisNotifikasi {
+  REMINDER_SHIFT
+  KONFIRMASI_TUKAR_SHIFT
+  PERSETUJUAN_CUTI
+  KEGIATAN_HARIAN
+  ABSENSI_TERLAMBAT
+  SHIFT_BARU_DITAMBAHKAN
+  SISTEM_INFO
+  PENGUMUMAN
+  INFORMASI_EVENT
+}
+
+// Enum untuk status notifikasi
+enum StatusNotifikasi {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+// Enhanced Notification Model with role-based access
+model Notification {
+  id          Int               @id @default(autoincrement())
+  userId      Int               // Penerima notifikasi
+  title       String            // Judul notifikasi
+  message     String            // Isi pesan notifikasi
+  type        NotificationType  // Jenis notifikasi
+  isRead      Boolean           @default(false) // Status baca
+  data        Json?             // Data tambahan (JSON)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// Enum untuk jenis notifikasi baru
+enum NotificationType {
+  APPROVAL
+  SHIFT
+  ABSENSI
+  EVENT
+  SYSTEM
 }

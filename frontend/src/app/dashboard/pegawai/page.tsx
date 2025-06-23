@@ -264,7 +264,7 @@ function PegawaiPage() {
             <TodaySchedule userRole={user?.role} userId={user?.id?.toString()} />
 
             {/* Notifications */}
-            <NotificationCenter userRole={user?.role} isAdmin={false} />
+            <NotificationCenter userRole={user?.role} userId={user?.id?.toString()} />
 
             {/* Event Calendar */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">

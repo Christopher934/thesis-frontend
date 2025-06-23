@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, MessageSquare, Bell, User } from 'lucide-react';
+import { Search, MessageSquare, User } from 'lucide-react';
+import { NotificationCenter } from '@/components/notifications';
 
 const Navbar = () => {
   const [user, setUser] = useState<{
@@ -34,9 +35,9 @@ const Navbar = () => {
         <div className='bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer'>
           <MessageSquare size={20} className="text-gray-600" />
         </div>
-        <div className='bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer'>
-          <Bell size={20} className="text-gray-600" />
-        </div>
+        
+        {/* Notification Center */}
+        <NotificationCenter bellSize={20} />
 
         <div className="flex flex-col text-right">
           <span className='text-xs leading-3 font-medium'>

@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Camera, Edit3, Save, X, User, Mail, Phone, MapPin, Calendar, Briefcase } from 'lucide-react';
+import { Camera, Edit3, Save, X, User, Mail, Phone, MapPin, Calendar, Briefcase, MessageSquare } from 'lucide-react';
+import { TelegramSetup } from '@/components/notifications/TelegramSetup';
 
 interface ProfileData {
+  id?: number;
   name: string;
   email: string;
   phone: string;
@@ -13,6 +15,7 @@ interface ProfileData {
   occupation: string;
   bio: string;
   avatar: string | null;
+  telegramChatId?: string; // Added Telegram Chat ID
 }
 
 const ProfilePage: React.FC = () => {
@@ -280,6 +283,49 @@ const ProfilePage: React.FC = () => {
                     </p>
                   )}
                 </div>
+                
+                {/* Telegram Chat ID */}
+                <div>
+                  <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Telegram Chat ID
+                  </label>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={tempData?.telegramChatId || ''}
+                        onChange={(e) => handleInputChange('telegramChatId', e.target.value)}
+                        placeholder="Masukkan Chat ID Telegram Anda"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-gray-50"
+                        disabled={loading}
+                      />
+                      <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded-lg">
+                        💡 <strong>Cara mendapatkan Chat ID:</strong><br/>
+                        1. Buka bot <strong>@rsud_anugerah_bot</strong> di Telegram<br/>
+                        2. Kirim pesan <code>/myid</code><br/>
+                        3. Copy Chat ID yang diberikan bot<br/>
+                        4. Paste di field ini dan simpan
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-gray-900 font-semibold py-3 px-4 bg-gray-50 rounded-xl">
+                        {profileData.telegramChatId || 'Belum diatur'}
+                      </p>
+                      {!profileData.telegramChatId && (
+                        <div className="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg">
+                          ⚠️ Chat ID Telegram belum diatur. Anda tidak akan menerima notifikasi via Telegram.
+                        </div>
+                      )}
+                      {profileData.telegramChatId && (
+                        <div className="text-xs text-green-600 bg-green-50 p-3 rounded-lg">
+                          ✅ Notifikasi Telegram aktif. Anda akan menerima notifikasi sistem.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {/* Birth Date */}
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
@@ -343,6 +389,20 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
             {/* Stats Section */}
+          </div>
+        )}
+        
+        {/* Telegram Setup Section */}
+        {profileData && (
+          <div className="mt-6">
+            <TelegramSetup 
+              userId={profileData.id || 1}
+              currentChatId={profileData.telegramChatId}
+              onChatIdUpdate={(chatId) => {
+                setProfileData(prev => prev ? {...prev, telegramChatId: chatId} : null);
+                setTempData(prev => prev ? {...prev, telegramChatId: chatId} : null);
+              }}
+            />
           </div>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationIntegrationService } from '../notifikasi/notification-integration.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { 
@@ -13,7 +14,10 @@ import {
 
 @Injectable()
 export class ShiftService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService?: NotificationIntegrationService,
+  ) {}
 
   async create(createShiftDto: CreateShiftDto) {
     try {

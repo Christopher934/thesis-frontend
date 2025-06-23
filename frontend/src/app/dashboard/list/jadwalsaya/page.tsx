@@ -375,6 +375,33 @@ const JadwalSayaPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Telegram Bot Setup Guidance */}
+        <div className="mb-8 p-5 rounded-xl bg-blue-50 border border-blue-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 10V7a5 5 0 0110 0v3" /></svg>
+              <span className="font-semibold text-blue-900 text-lg">Aktifkan Notifikasi Telegram</span>
+            </div>
+            <ol className="list-decimal list-inside text-blue-900 text-sm space-y-1">
+              <li>Klik <b>Buka Bot Telegram</b> di samping atau <a href="https://t.me/rsud_anugerah_notif_bot" target="_blank" rel="noopener noreferrer" className="underline text-blue-700">link ini</a>.</li>
+              <li>Kirim perintah <code className="bg-blue-100 px-1 rounded">/start</code> ke bot.</li>
+              <li>Kirim perintah <code className="bg-blue-100 px-1 rounded">/myid</code> ke bot untuk mendapatkan <b>Chat ID</b> Anda.</li>
+              <li>Buka halaman <b>Profil</b> dan tempel Chat ID pada kolom Telegram, lalu simpan.</li>
+              <li>Setelah tersimpan, Anda bisa klik <b>Test Notifikasi</b> di halaman profil untuk memastikan notifikasi aktif.</li>
+            </ol>
+            <div className="mt-2 text-xs text-blue-700">Notifikasi shift, cuti, dan pengumuman penting akan dikirim ke Telegram Anda.</div>
+          </div>
+          <div className="flex-shrink-0 flex flex-col items-center gap-2">
+            <a href="https://t.me/rsud_anugerah_notif_bot" target="_blank" rel="noopener noreferrer">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow flex items-center gap-2 transition">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 10V7a5 5 0 0110 0v3" /></svg>
+                Buka Bot Telegram
+              </button>
+            </a>
+            <span className="text-xs text-blue-700">@rsud_anugerah_notif_bot</span>
+          </div>
+        </div>
+
         <PageHeader 
           title="Jadwal Saya"
           description="Lihat dan kelola jadwal shift Anda"

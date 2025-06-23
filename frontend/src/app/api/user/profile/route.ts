@@ -51,7 +51,8 @@ export async function GET(request: NextRequest) {
         address: userData.alamat || '',
         occupation: userData.role || '',
         bio: `${userData.role} di RSUD Anugerah`,
-        avatar: null // TODO: Add avatar support if needed
+        avatar: null, // TODO: Add avatar support if needed
+        telegramChatId: userData.telegramChatId || ''
       };
 
       return NextResponse.json(profileData, { status: 200 });
@@ -106,7 +107,8 @@ export async function PUT(request: NextRequest) {
         email: profileData.email || '',
         noHp: profileData.phone || '',
         alamat: profileData.address || '',
-        tanggalLahir: profileData.birthDate ? new Date(profileData.birthDate).toISOString() : null
+        tanggalLahir: profileData.birthDate ? new Date(profileData.birthDate).toISOString() : null,
+        telegramChatId: profileData.telegramChatId || null
       };
 
       // Update user data in backend
@@ -134,7 +136,8 @@ export async function PUT(request: NextRequest) {
         address: updatedUser.alamat || '',
         occupation: updatedUser.role || '',
         bio: `${updatedUser.role} di RSUD Anugerah`,
-        avatar: profileData.avatar || null
+        avatar: profileData.avatar || null,
+        telegramChatId: updatedUser.telegramChatId || ''
       };
 
       return NextResponse.json(updatedProfile, { status: 200 });

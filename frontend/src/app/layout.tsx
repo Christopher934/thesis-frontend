@@ -5,6 +5,8 @@ import './globals.css';
 
 import StorageCleaner from '@/components/common/StorageCleaner'; // ← impor Client Component
 import AuthStateSynchronizer from '@/components/auth/AuthStateSynchronizer';
+import InvalidTokenHandler from '@/components/auth/InvalidTokenHandler';
+import { NotificationProvider } from '@/components/notifications';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -39,14 +41,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* Komponen ini hanya menjalankan efek di client (menghapus localStorage saat unload) */}
-        <StorageCleaner />
-        
-        {/* Synchronize auth state between localStorage and cookies */}
-        <AuthStateSynchronizer />
+        <NotificationProvider>
+          {/* Komponen ini hanya menjalankan efek di client (menghapus localStorage saat unload) */}
+          <StorageCleaner />
+          
+          {/* Synchronize auth state between localStorage and cookies */}
+          <AuthStateSynchronizer />
+          
+          {/* Handle invalid JWT tokens and auto-logout */}
+          <InvalidTokenHandler />
 
-        {/* Konten halaman lain akan dirender di sini */}
-        {children}
+          {/* Konten halaman lain akan dirender di sini */}
+          {children}
+        </NotificationProvider>
       </body>
     </html>
   );

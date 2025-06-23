@@ -61,7 +61,7 @@ const menuItems = [
         ]
       },
       { icon: CalendarDays, label: "Events", href: "/dashboard/list/events", visible: ["admin", "perawat","staf","dokter"] },
-      { icon: MessageSquare, label: "Pesan", href: "/dashboard/list/messages", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: MessageSquare, label: "Pesan", href: "/dashboard/list/notifications", visible: ["admin", "perawat","staf","dokter"] },
       { icon: FileBarChart, label: "Laporan", href: "/dashboard/list/laporan", visible: ["admin"] },
     ],
   },

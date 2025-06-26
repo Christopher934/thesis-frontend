@@ -10,14 +10,25 @@ import withAuth from '@/lib/withAuth';
 // Import dashboard components
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import QuickActions from '@/components/dashboard/QuickActions';
-import NotificationCenter from '@/components/dashboard/NotificationCenter';
-import RecentActivity from '@/components/dashboard/RecentActivity';
-import TodaySchedule from '@/components/dashboard/TodaySchedule';
 
 // Dynamic imports for existing components
 const EventCalendar = nextDynamic(() => import('@/components/common/EventCalendar'), { ssr: false });
 const Announcements = nextDynamic(() => import('@/components/common/Announcement'), { ssr: false });
 const BigCalendar = nextDynamic(() => import('@/components/common/BigCalendar'), { ssr: false });
+
+// Dynamic imports for heavy/rarely-used dashboard components
+const NotificationCenter = nextDynamic(() => import('@/components/dashboard/NotificationCenter'), { 
+  loading: () => <div>Memuat notifikasi...</div>,
+  ssr: false
+});
+const RecentActivity = nextDynamic(() => import('@/components/dashboard/RecentActivity'), {
+  loading: () => <div>Memuat aktivitas terbaru...</div>,
+  ssr: false
+});
+const TodaySchedule = nextDynamic(() => import('@/components/dashboard/TodaySchedule'), {
+  loading: () => <div>Memuat jadwal hari ini...</div>,
+  ssr: false
+});
 
 interface UserInfo {
   id: number;
@@ -255,7 +266,7 @@ function PegawaiPage() {
             </div>
 
             {/* Recent Activity */}
-            <RecentActivity userRole={user?.role} isAdmin={false} />
+            {/* <RecentActivity userRole={user?.role} isAdmin={false} /> */}
           </div>
 
           {/* Right Column - Sidebar */}
@@ -271,7 +282,7 @@ function PegawaiPage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Event & Kegiatan</h2>
                 <a 
-                  href="/list/events" 
+                  href="/dashboard/list/events" 
                   className="text-hospitalBlue hover:text-hospitalBlue/80 text-sm"
                 >
                   Lihat Semua
@@ -285,8 +296,8 @@ function PegawaiPage() {
 
         {/* Footer Info */}
         <div className="mt-12 text-center text-sm text-gray-500 border-t border-gray-200 pt-8">
-          <p>© 2024 RSUD Anugerah Tomohon - Sistem Manajemen Rumah Sakit</p>
-          <p className="mt-1">Untuk bantuan teknis, hubungi IT Support: ext. 1234</p>
+          <p>© 2024 RSUD Anugerah Tomohon - Sistem Manajemen Shift Rumah Sakit</p>
+          {/* <p className="mt-1">Untuk bantuan teknis, hubungi IT Support: ext. 1234</p> */}
         </div>
       </div>
     </div>

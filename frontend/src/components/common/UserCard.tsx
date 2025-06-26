@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, User, Stethoscope, Shield, Users } from 'lucide-react';
 
 interface UserCardProps {
   /** "DOKTER" | "PERAWAT" | "STAF" | "TOTAL" */
@@ -87,36 +87,63 @@ const UserCard: React.FC<UserCardProps> = ({ type }) => {
     fetchCount();
   }, [type]);
 
+  // Icon and color per role
+  const getRoleIcon = () => {
+    switch (type.toUpperCase()) {
+      case 'DOKTER':
+        return <Stethoscope className="w-7 h-7 text-blue-500 bg-blue-100 rounded-full p-1" />;
+      case 'PERAWAT':
+        return <User className="w-7 h-7 text-green-500 bg-green-100 rounded-full p-1" />;
+      case 'STAF':
+        return <Users className="w-7 h-7 text-orange-500 bg-orange-100 rounded-full p-1" />;
+      case 'SUPERVISOR':
+        return <Shield className="w-7 h-7 text-purple-500 bg-purple-100 rounded-full p-1" />;
+      case 'TOTAL':
+        return <Users className="w-7 h-7 text-gray-500 bg-gray-100 rounded-full p-1" />;
+      default:
+        return <User className="w-7 h-7 text-gray-400 bg-gray-100 rounded-full p-1" />;
+    }
+  };
+  const getRoleColor = () => {
+    switch (type.toUpperCase()) {
+      case 'DOKTER': return 'border-blue-200';
+      case 'PERAWAT': return 'border-green-200';
+      case 'STAF': return 'border-orange-200';
+      case 'SUPERVISOR': return 'border-purple-200';
+      case 'TOTAL': return 'border-gray-200';
+      default: return 'border-gray-200';
+    }
+  };
+
   if (loading) {
     return (
-      <div className="rounded-2xl odd:bg-lamaPurple even:bg-[#e200de22] p-4 flex-1 min-w-[130px] h-[120px] flex items-center justify-center">
-        <span className="text-gray-400">Memuat...</span>
+      <div className={`rounded-xl bg-white border ${getRoleColor()} shadow-sm p-4 flex-1 min-w-[120px] h-[100px] flex flex-col items-center justify-center`}>
+        <span className="text-gray-400 text-sm">Memuat...</span>
       </div>
     );
   }
   if (error) {
     return (
-      <div className="rounded-2xl odd:bg-lamaPurple even:bg-[#e200de22] p-4 flex-1 min-w-[130px] h-[120px] flex items-center justify-center">
-        <span className="text-red-500">{error}</span>
+      <div className={`rounded-xl bg-white border ${getRoleColor()} shadow-sm p-4 flex-1 min-w-[120px] h-[100px] flex flex-col items-center justify-center`}>
+        <span className="text-red-500 text-sm">{error}</span>
       </div>
     );
   }
-  
-  // Don't render anything for Admin role
   if (count === -1 || type.toUpperCase() === 'ADMIN') {
     return null;
   }
-
   return (
-    <div className="relative rounded-2xl odd:bg-lamaPurple even:bg-[#e200de88] p-4 flex-1 min-w-[130px]">
-      <div className="flex justify-between items-center">
-        <h2 className="capitalize text-sm font-medium text-gray-500">{type}</h2>
-        <MoreHorizontal size={20} className="text-gray-500" />
+    <div className={`relative rounded-xl bg-white border ${getRoleColor()} shadow-sm p-4 flex-1 min-w-[120px] flex flex-col justify-between h-[100px]`}> 
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-2">
+          {getRoleIcon()}
+          <h2 className="capitalize text-xs font-semibold text-gray-600 tracking-wide">{type}</h2>
+        </div>
+        <MoreHorizontal size={18} className="text-gray-300" />
       </div>
-      <h1 className="text-2xl font-semibold my-4">
+      <h1 className="text-3xl font-bold text-gray-900 text-center mb-0">
         {count !== null ? count.toLocaleString() : '0'}
       </h1>
-      
     </div>
   );
 };

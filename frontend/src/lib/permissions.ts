@@ -74,11 +74,11 @@ export function getRedirectPathForRole(role: string | null): string {
   switch (normalizedRole) {
     case 'admin':
     case 'supervisor':
-      return '/admin';
+      return '/dashboard/admin';
     case 'perawat':
     case 'staf':
     case 'dokter':
-      return '/pegawai';
+      return '/dashboard/pegawai';
     default:
       return '/dashboard';
   }

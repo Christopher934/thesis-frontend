@@ -143,9 +143,6 @@ const AdminPage: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Left Column - Main Content */}
           <div className="xl:col-span-2 space-y-8">
-            {/* Quick Actions */}
-            <QuickActions userRole={user?.role} isAdmin={true} />
-
             {/* User Cards Section */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-6">Statistik Pegawai</h2>
@@ -158,6 +155,9 @@ const AdminPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Quick Actions */}
+            <QuickActions userRole={user?.role} isAdmin={true} />
+
             {/* Recent Activity */}
             <RecentActivity userRole={user?.role} isAdmin={true} />
           </div>
@@ -169,7 +169,7 @@ const AdminPage: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Event & Kegiatan</h2>
                 <a 
-                  href="/list/events" 
+                  href="/dashboard/list/events" 
                   className="text-hospitalBlue hover:text-hospitalBlue/80 text-sm"
                 >
                   Kelola Event

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from './telegram.service';
 import { JenisNotifikasi, StatusNotifikasi } from '@prisma/client';
@@ -32,129 +32,137 @@ export class NotifikasiService {
     status?: StatusNotifikasi,
     type?: string,
   ) {
-    console.log(
-      `🔍 [DEBUG] getNotificationsByRole called with:`,
-      {
-        userId,
-        userRole,
-        status,
-        type,
-      },
-    );
+    if (!userId || !userRole) {
+      throw new BadRequestException('userId and userRole are required');
+    }
+    try {
+      console.log(
+        `🔍 [DEBUG] getNotificationsByRole called with:`,
+        {
+          userId,
+          userRole,
+          status,
+          type,
+        },
+      );
 
-    const whereClause: any = {};
+      const whereClause: any = {};
 
-    // Filter berdasarkan role dan jenis notifikasi
-    switch (userRole?.toUpperCase()) {
-      case 'ADMIN':
-        // ✅ Admin dapat melihat SEMUA notifikasi dari semua user
-        console.log(`🔍 [DEBUG] ADMIN role - can see all notifications`);
-        // Tidak ada filter userId - admin melihat semua
-        break;
+      // Filter berdasarkan role dan jenis notifikasi
+      switch (userRole?.toUpperCase()) {
+        case 'ADMIN':
+          // ✅ Admin dapat melihat SEMUA notifikasi dari semua user
+          console.log(`🔍 [DEBUG] ADMIN role - can see all notifications`);
+          // Tidak ada filter userId - admin melihat semua
+          break;
 
-      case 'SUPERVISOR':
-        // ✅ Supervisor dapat melihat:
-        // - Approval notifications (dari semua user)
-        // - Event/Kegiatan (untuk semua)
-        // - System notifications (untuk semua)
-        // - Shift notifications (yang melibatkan supervisor)
-        console.log(
-          `🔍 [DEBUG] SUPERVISOR role - filtered by notification type`,
-        );
-        whereClause.OR = [
-          // Approval notifications - supervisor bisa lihat dari semua user
-          { jenis: 'PERSETUJUAN_CUTI' },
-          // Event/Kegiatan - semua bisa lihat
-          { jenis: 'KEGIATAN_HARIAN' },
-          { jenis: 'PENGUMUMAN' },
-          // System notifications - semua bisa lihat
-          { jenis: 'SISTEM_INFO' },
-          // Shift notifications yang melibatkan supervisor atau untuk semua
-          {
-            jenis: { in: ['SHIFT_BARU_DITAMBAHKAN', 'KONFIRMASI_TUKAR_SHIFT'] },
-          },
-        ];
-        break;
+        case 'SUPERVISOR':
+          // ✅ Supervisor dapat melihat:
+          // - Approval notifications (dari semua user)
+          // - Event/Kegiatan (untuk semua)
+          // - System notifications (untuk semua)
+          // - Shift notifications (yang melibatkan supervisor)
+          console.log(
+            `🔍 [DEBUG] SUPERVISOR role - filtered by notification type`,
+          );
+          whereClause.OR = [
+            // Approval notifications - supervisor bisa lihat dari semua user
+            { jenis: 'PERSETUJUAN_CUTI' },
+            // Event/Kegiatan - semua bisa lihat
+            { jenis: 'KEGIATAN_HARIAN' },
+            { jenis: 'PENGUMUMAN' },
+            // System notifications - semua bisa lihat
+            { jenis: 'SISTEM_INFO' },
+            // Shift notifications yang melibatkan supervisor atau untuk semua
+            {
+              jenis: { in: ['SHIFT_BARU_DITAMBAHKAN', 'KONFIRMASI_TUKAR_SHIFT'] },
+            },
+          ];
+          break;
 
-      case 'PERAWAT':
-      case 'DOKTER':
-        // 🔐 Staff hanya dapat melihat:
-        // - Notifikasi mereka sendiri (absensi, reminder shift, tukar shift)
-        // - Event/Kegiatan yang bersifat publik
-        // - System notifications yang bersifat publik
-        console.log(
-          `🔍 [DEBUG] PERAWAT/DOKTER role - own notifications + public ones`,
-        );
-        whereClause.OR = [
-          // Notifikasi pribadi mereka sendiri
-          {
-            AND: [
-              { userId: userId },
-              {
-                jenis: {
-                  in: [
-                    'REMINDER_SHIFT', // ✅ Hanya user terkait
-                    'ABSENSI_TERLAMBAT', // ✅ Hanya user terkait
-                    'KONFIRMASI_TUKAR_SHIFT', // ✅ User yang terlibat dalam tukar shift
-                  ],
+        case 'PERAWAT':
+        case 'DOKTER':
+          // 🔐 Staff hanya dapat melihat:
+          // - Notifikasi mereka sendiri (absensi, reminder shift, tukar shift)
+          // - Event/Kegiatan yang bersifat publik
+          // - System notifications yang bersifat publik
+          console.log(
+            `🔍 [DEBUG] PERAWAT/DOKTER role - own notifications + public ones`,
+          );
+          whereClause.OR = [
+            // Notifikasi pribadi mereka sendiri
+            {
+              AND: [
+                { userId: userId },
+                {
+                  jenis: {
+                    in: [
+                      'REMINDER_SHIFT', // ✅ Hanya user terkait
+                      'ABSENSI_TERLAMBAT', // ✅ Hanya user terkait
+                      'KONFIRMASI_TUKAR_SHIFT', // ✅ User yang terlibat dalam tukar shift
+                    ],
+                  },
                 },
-              },
-            ],
-          },
-          // Event/Kegiatan publik - semua staff bisa lihat
-          { jenis: 'KEGIATAN_HARIAN' },
-          { jenis: 'PENGUMUMAN' },
-          // System notifications publik - semua bisa lihat
-          { jenis: 'SISTEM_INFO' },
-          // Shift baru yang ditujukan untuk mereka
-          {
-            AND: [
-              { userId: userId },
-              { jenis: 'SHIFT_BARU_DITAMBAHKAN' },
-            ],
-          },
-        ];
-        break;
+              ],
+            },
+            // Event/Kegiatan publik - semua staff bisa lihat
+            { jenis: 'KEGIATAN_HARIAN' },
+            { jenis: 'PENGUMUMAN' },
+            // System notifications publik - semua bisa lihat
+            { jenis: 'SISTEM_INFO' },
+            // Shift baru yang ditujukan untuk mereka
+            {
+              AND: [
+                { userId: userId },
+                { jenis: 'SHIFT_BARU_DITAMBAHKAN' },
+              ],
+            },
+          ];
+          break;
 
-      default:
-        // Role lain hanya melihat notifikasi mereka sendiri
-        console.log(`🔍 [DEBUG] DEFAULT role - own notifications only`);
-        whereClause.userId = userId;
-    }
+        default:
+          // Role lain hanya melihat notifikasi mereka sendiri
+          console.log(`🔍 [DEBUG] DEFAULT role - own notifications only`);
+          whereClause.userId = userId;
+      }
 
-    // Filter tambahan berdasarkan parameter
-    if (status) {
-      whereClause.status = status;
-    }
+      // Filter tambahan berdasarkan parameter
+      if (status) {
+        whereClause.status = status;
+      }
 
-    if (type) {
-      // Jika ada type filter, override jenis filter
-      whereClause.jenis = type;
-      // Hapus OR clause jika ada type spesifik
-      delete whereClause.OR;
-    }
+      if (type) {
+        // Jika ada type filter, override jenis filter
+        whereClause.jenis = type;
+        // Hapus OR clause jika ada type spesifik
+        delete whereClause.OR;
+      }
 
-    console.log(
-      `🔍 [DEBUG] Final whereClause:`,
-      JSON.stringify(whereClause, null, 2),
-    );
+      console.log(
+        `🔍 [DEBUG] Final whereClause:`,
+        JSON.stringify(whereClause, null, 2),
+      );
 
-    return this.prisma.notifikasi.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: {
-            id: true,
-            namaDepan: true,
-            namaBelakang: true,
-            role: true,
+      return this.prisma.notifikasi.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    } catch (error) {
+      console.error('[NotifikasiService][getNotificationsByRole] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to get notifications');
+    }
   }
 
   // Get unread count berdasarkan role
@@ -162,89 +170,97 @@ export class NotifikasiService {
     userId: number,
     userRole: string,
   ): Promise<number> {
-    const whereClause: any = { status: 'UNREAD' };
+    try {
+      const whereClause: any = { status: 'UNREAD' };
 
-    // Filter berdasarkan role (sama seperti getNotificationsByRole)
-    switch (userRole?.toUpperCase()) {
-      case 'ADMIN':
-        // ✅ Admin dapat melihat SEMUA notifikasi unread
-        break;
+      // Filter berdasarkan role (sama seperti getNotificationsByRole)
+      switch (userRole?.toUpperCase()) {
+        case 'ADMIN':
+          // ✅ Admin dapat melihat SEMUA notifikasi unread
+          break;
 
-      case 'SUPERVISOR':
-        // ✅ Supervisor dapat melihat unread notifications yang relevan
-        whereClause.OR = [
-          // Approval notifications - supervisor bisa lihat dari semua user
-          { jenis: 'PERSETUJUAN_CUTI' },
-          // Event/Kegiatan - semua bisa lihat
-          { jenis: 'KEGIATAN_HARIAN' },
-          { jenis: 'PENGUMUMAN' },
-          // System notifications - semua bisa lihat
-          { jenis: 'SISTEM_INFO' },
-          // Shift notifications yang melibatkan supervisor
-          {
-            jenis: { in: ['SHIFT_BARU_DITAMBAHKAN', 'KONFIRMASI_TUKAR_SHIFT'] },
-          },
-        ];
-        // Hapus status dari OR clause level atas
-        delete whereClause.status;
-        whereClause.AND = [
-          { status: 'UNREAD' },
-          { OR: whereClause.OR },
-        ];
-        delete whereClause.OR;
-        break;
+        case 'SUPERVISOR':
+          // ✅ Supervisor dapat melihat unread notifications yang relevan
+          whereClause.OR = [
+            // Approval notifications - supervisor bisa lihat dari semua user
+            { jenis: 'PERSETUJUAN_CUTI' },
+            // Event/Kegiatan - semua bisa lihat
+            { jenis: 'KEGIATAN_HARIAN' },
+            { jenis: 'PENGUMUMAN' },
+            // System notifications - semua bisa lihat
+            { jenis: 'SISTEM_INFO' },
+            // Shift notifications yang melibatkan supervisor
+            {
+              jenis: { in: ['SHIFT_BARU_DITAMBAHKAN', 'KONFIRMASI_TUKAR_SHIFT'] },
+            },
+          ];
+          // Hapus status dari OR clause level atas
+          delete whereClause.status;
+          whereClause.AND = [
+            { status: 'UNREAD' },
+            { OR: whereClause.OR },
+          ];
+          delete whereClause.OR;
+          break;
 
-      case 'PERAWAT':
-      case 'DOKTER':
-        // 🔐 Staff hanya dapat melihat unread notifications mereka + public ones
-        delete whereClause.status;
-        whereClause.AND = [
-          { status: 'UNREAD' },
-          {
-            OR: [
-              // Notifikasi pribadi mereka sendiri
-              {
-                AND: [
-                  { userId: userId },
-                  {
-                    jenis: {
-                      in: [
-                        'REMINDER_SHIFT',
-                        'ABSENSI_TERLAMBAT',
-                        'KONFIRMASI_TUKAR_SHIFT',
-                      ],
+        case 'PERAWAT':
+        case 'DOKTER':
+          // 🔐 Staff hanya dapat melihat unread notifications mereka + public ones
+          delete whereClause.status;
+          whereClause.AND = [
+            { status: 'UNREAD' },
+            {
+              OR: [
+                // Notifikasi pribadi mereka sendiri
+                {
+                  AND: [
+                    { userId: userId },
+                    {
+                      jenis: {
+                        in: [
+                          'REMINDER_SHIFT',
+                          'ABSENSI_TERLAMBAT',
+                          'KONFIRMASI_TUKAR_SHIFT',
+                        ],
+                      },
                     },
-                  },
-                ],
-              },
-              // Event/Kegiatan publik
-              { jenis: 'KEGIATAN_HARIAN' },
-              { jenis: 'PENGUMUMAN' },
-              // System notifications publik
-              { jenis: 'SISTEM_INFO' },
-              // Shift baru yang ditujukan untuk mereka
-              {
-                AND: [
-                  { userId: userId },
-                  { jenis: 'SHIFT_BARU_DITAMBAHKAN' },
-                ],
-              },
-            ],
-          },
-        ];
-        break;
+                  ],
+                },
+                // Event/Kegiatan publik
+                { jenis: 'KEGIATAN_HARIAN' },
+                { jenis: 'PENGUMUMAN' },
+                // System notifications publik
+                { jenis: 'SISTEM_INFO' },
+                // Shift baru yang ditujukan untuk mereka
+                {
+                  AND: [
+                    { userId: userId },
+                    { jenis: 'SHIFT_BARU_DITAMBAHKAN' },
+                  ],
+                },
+              ],
+            },
+          ];
+          break;
 
-      default:
-        whereClause.userId = userId;
+        default:
+          whereClause.userId = userId;
+      }
+
+      return this.prisma.notifikasi.count({
+        where: whereClause,
+      });
+    } catch (error) {
+      console.error('[NOTIFIKASI] Error getUnreadCountByRole:', error);
+      throw new Error('Gagal mengambil jumlah notifikasi belum dibaca. Pastikan user dan role valid.');
     }
-
-    return this.prisma.notifikasi.count({
-      where: whereClause,
-    });
   }
 
   // Buat notifikasi baru
   async createNotification(dto: CreateNotificationDto) {
+    if (!dto.userId || !dto.judul || !dto.pesan || !dto.jenis) {
+      throw new BadRequestException('userId, judul, pesan, and jenis are required');
+    }
     try {
       const notification = await this.prisma.notifikasi.create({
         data: {
@@ -273,8 +289,9 @@ export class NotifikasiService {
       }
 
       return notification;
-    } catch (error: any) {
-      throw new Error(`Failed to create notification: ${error.message}`);
+    } catch (error) {
+      console.error('[NotifikasiService][createNotification] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to create notification');
     }
   }
 
@@ -302,10 +319,18 @@ export class NotifikasiService {
 
   // Update status notifikasi (mark as read, dll)
   async updateNotification(id: number, dto: UpdateNotificationDto) {
-    return this.prisma.notifikasi.update({
-      where: { id },
-      data: dto,
-    });
+    if (!id) {
+      throw new BadRequestException('Notification id is required');
+    }
+    try {
+      return this.prisma.notifikasi.update({
+        where: { id },
+        data: dto,
+      });
+    } catch (error) {
+      console.error('[NotifikasiService][updateNotification] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to update notification');
+    }
   }
 
   // Mark notification as read (with user verification)
@@ -343,23 +368,31 @@ export class NotifikasiService {
 
   // Delete notification (with user verification)
   async deleteNotification(id: number, userId: number) {
-    // First check if the notification belongs to the user
-    const notification = await this.prisma.notifikasi.findFirst({
-      where: {
-        id: id,
-        userId: userId, // Ensure only the owner can delete their notification
-      },
-    });
-
-    if (!notification) {
-      throw new Error(
-        'Notification not found or you do not have permission to delete it',
-      );
+    if (!id) {
+      throw new BadRequestException('Notification id is required');
     }
+    try {
+      // First check if the notification belongs to the user
+      const notification = await this.prisma.notifikasi.findFirst({
+        where: {
+          id: id,
+          userId: userId, // Ensure only the owner can delete their notification
+        },
+      });
 
-    return this.prisma.notifikasi.delete({
-      where: { id },
-    });
+      if (!notification) {
+        throw new Error(
+          'Notification not found or you do not have permission to delete it',
+        );
+      }
+
+      return this.prisma.notifikasi.delete({
+        where: { id },
+      });
+    } catch (error) {
+      console.error('[NotifikasiService][deleteNotification] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to delete notification');
+    }
   }
 
   // Get unread count for user

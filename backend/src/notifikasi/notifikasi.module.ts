@@ -6,8 +6,8 @@ import { TelegramController } from './telegram.controller';
 import { NotifikasiService } from './notifikasi.service';
 import { TelegramService } from './telegram.service';
 import { TelegramBotService } from './telegram-bot.service';
-// import { ScheduledTasksService } from './scheduled-tasks.service'; // Temporarily commented out
-// import { NotificationGateway } from './notification.gateway'; // Temporarily commented out
+import { ScheduledTasksService } from './scheduled-tasks.service';
+import { NotificationGateway } from './notification.gateway';
 import { NotificationIntegrationService } from './notification-integration.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -25,15 +25,15 @@ import { PrismaModule } from '../prisma/prisma.module';
     NotifikasiService,
     TelegramService,
     TelegramBotService,
-    // ScheduledTasksService, // Temporarily commented out
-    // NotificationGateway, // Temporarily commented out
+    NotificationGateway,
+    ScheduledTasksService,
     NotificationIntegrationService,
   ],
   exports: [
     NotifikasiService,
     TelegramService,
-    // NotificationGateway, // Temporarily commented out
+    NotificationGateway,
     NotificationIntegrationService,
-  ], // Export untuk digunakan di module lain
+  ],
 })
 export class NotifikasiModule {}

@@ -106,6 +106,8 @@ export default function FormModal({
       let endpoint = '';
       if (table === 'pegawai') {
         endpoint = '/users/' + id; // gunakan endpoint UserController
+      } else if (table === 'jadwal') {
+        endpoint = '/shifts/' + id; // gunakan endpoint ShiftController
       } else {
         endpoint = '/' + table + 's/' + id;
       }

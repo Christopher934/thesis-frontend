@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAbsensiDto, UpdateAbsensiDto, AbsensiQueryDto } from './dto/absensi.dto';
 import { AbsensiStatus } from '@prisma/client';
@@ -8,94 +8,110 @@ export class AbsensiService {
   constructor(private prisma: PrismaService) {}
 
   async absenMasuk(userId: number, createAbsensiDto: CreateAbsensiDto) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-
-    // Find today's shift for this user
-    const shift = await this.prisma.shift.findFirst({
-      where: {
-        userId: userId,
-        tanggal: {
-          gte: today,
-          lt: tomorrow
-        }
-      }
-    });
-
-    if (!shift) {
-      throw new Error('Tidak Ada Shift Untuk Hari Ini');
+    if (!userId || !createAbsensiDto) {
+      throw new BadRequestException('userId and absensi data are required');
     }
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
 
-    // Check if already checked in
-    const existingAbsensi = await this.prisma.absensi.findFirst({
-      where: { 
-        userId: userId,
-        shiftId: shift.id 
-      }
-    });
-
-    if (existingAbsensi) {
-      throw new Error('Sudah Melakukan Absen Masuk Untuk Shift Ini');
-    }
-
-    const jamMasuk = new Date();
-    const status = this.determineStatus(shift.jammulai, jamMasuk);
-
-    return this.prisma.absensi.create({
-      data: {
-        userId: userId,
-        shiftId: shift.id,
-        jamMasuk: jamMasuk,
-        status: status,
-        ...createAbsensiDto
-      },
-      include: {
-        user: {
-          select: {
-            namaDepan: true,
-            namaBelakang: true
+      // Find today's shift for this user
+      const shift = await this.prisma.shift.findFirst({
+        where: {
+          userId: userId,
+          tanggal: {
+            gte: today,
+            lt: tomorrow
           }
-        },
-        shift: true
+        }
+      });
+
+      if (!shift) {
+        throw new Error('Tidak Ada Shift Untuk Hari Ini');
       }
-    });
+
+      // Check if already checked in
+      const existingAbsensi = await this.prisma.absensi.findFirst({
+        where: { 
+          userId: userId,
+          shiftId: shift.id 
+        }
+      });
+
+      if (existingAbsensi) {
+        throw new Error('Sudah Melakukan Absen Masuk Untuk Shift Ini');
+      }
+
+      const jamMasuk = new Date();
+      const status = this.determineStatus(shift.jammulai, jamMasuk);
+
+      return this.prisma.absensi.create({
+        data: {
+          userId: userId,
+          shiftId: shift.id,
+          jamMasuk: jamMasuk,
+          status: status,
+          ...createAbsensiDto
+        },
+        include: {
+          user: {
+            select: {
+              namaDepan: true,
+              namaBelakang: true
+            }
+          },
+          shift: true
+        }
+      });
+    } catch (error) {
+      console.error('[AbsensiService][absenMasuk] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to absen masuk');
+    }
   }
 
   async absenKeluar(absensiId: number, updateAbsensiDto: UpdateAbsensiDto) {
-    const absensi = await this.prisma.absensi.findUnique({
-      where: { id: absensiId },
-      include: { shift: true }
-    });
-
-    if (!absensi) {
-      throw new Error('Data Absensi Tidak Ditemukan');
+    if (!absensiId || !updateAbsensiDto) {
+      throw new BadRequestException('absensiId and update data are required');
     }
+    try {
+      const absensi = await this.prisma.absensi.findUnique({
+        where: { id: absensiId },
+        include: { shift: true }
+      });
 
-    if (absensi.jamKeluar) {
-      throw new Error('Sudah Melakukan Absen Keluar');
-    }
-
-    const jamKeluar = new Date();
-
-    return this.prisma.absensi.update({
-      where: { id: absensiId },
-      data: {
-        jamKeluar: jamKeluar,
-        ...updateAbsensiDto
-      },
-      include: {
-        user: {
-          select: {
-            namaDepan: true,
-            namaBelakang: true
-          }
-        },
-        shift: true
+      if (!absensi) {
+        throw new Error('Data Absensi Tidak Ditemukan');
       }
-    });
+
+      if (absensi.jamKeluar) {
+        throw new Error('Sudah Melakukan Absen Keluar');
+      }
+
+      const jamKeluar = new Date();
+
+      return this.prisma.absensi.update({
+        where: { id: absensiId },
+        data: {
+          jamKeluar: jamKeluar,
+          ...updateAbsensiDto
+        },
+        include: {
+          user: {
+            select: {
+              namaDepan: true,
+              namaBelakang: true
+            }
+          },
+          shift: true
+        }
+      });
+    } catch (error) {
+      console.error('[AbsensiService][absenKeluar] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to absen keluar');
+    }
   }
 
   async getUserAttendance(userId: number, query: AbsensiQueryDto) {

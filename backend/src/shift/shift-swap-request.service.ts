@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShiftSwapRequestDto } from './dto/create-shift-swap-request.dto';
@@ -12,115 +13,142 @@ import {
   ResponseAction,
 } from './dto/response-shift-swap-request.dto';
 import { SwapStatus, Role, ShiftSwap } from '@prisma/client';
+import { NotificationIntegrationService } from '../notifikasi/notification-integration.service';
+import { JenisNotifikasi } from '@prisma/client';
 
 @Injectable()
 export class ShiftSwapRequestService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationIntegrationService, // inject notification service
+  ) {}
 
   async create(createDto: CreateShiftSwapRequestDto, fromUserId: number) {
-    // Ambil data user yang mengajukan
-    const fromUser = await this.prisma.user.findUnique({
-      where: { id: fromUserId },
-    });
-    if (!fromUser) {
-      throw new NotFoundException('User not found');
+    if (!createDto || !fromUserId) {
+      throw new BadRequestException('Shift swap data and fromUserId are required');
     }
-    if (fromUser.role === Role.ADMIN || fromUser.role === Role.SUPERVISOR) {
-      throw new ForbiddenException(
-        'Admin dan supervisor tidak boleh mengajukan permintaan tukar shift',
-      );
-    }
+    try {
+      // Ambil data user yang mengajukan
+      const fromUser = await this.prisma.user.findUnique({
+        where: { id: fromUserId },
+      });
+      if (!fromUser) {
+        throw new NotFoundException('User not found');
+      }
+      if (fromUser.role === Role.ADMIN || fromUser.role === Role.SUPERVISOR) {
+        throw new ForbiddenException(
+          'Admin dan supervisor tidak boleh mengajukan permintaan tukar shift',
+        );
+      }
 
-    // Validate that the shift exists and belongs to the requesting user
-    const shift = await this.prisma.shift.findFirst({
-      where: {
-        id: createDto.shiftId,
-        userId: fromUserId,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    if (!shift) {
-      throw new NotFoundException('Shift not found or does not belong to you');
-    }
-
-    // Validate that target user exists
-    const targetUser = await this.prisma.user.findUnique({
-      where: { id: createDto.toUserId },
-    });
-
-    if (!targetUser) {
-      throw new NotFoundException('Target user not found');
-    }
-
-    // Check if there's already a pending swap request for this shift
-    const existingSwap = await this.prisma.shiftSwap.findFirst({
-      where: {
-        shiftId: createDto.shiftId,
-        status: {
-          in: [
-            SwapStatus.PENDING,
-            SwapStatus.APPROVED_BY_TARGET,
-            SwapStatus.WAITING_UNIT_HEAD,
-            SwapStatus.WAITING_SUPERVISOR,
-          ],
+      // Validate that the shift exists and belongs to the requesting user
+      const shift = await this.prisma.shift.findFirst({
+        where: {
+          id: createDto.shiftId,
+          userId: fromUserId,
         },
-      },
-    });
+        include: {
+          user: true,
+        },
+      });
 
-    if (existingSwap) {
-      throw new BadRequestException(
-        'There is already a pending swap request for this shift',
-      );
-    }
+      if (!shift) {
+        throw new NotFoundException('Shift not found or does not belong to you');
+      }
 
-    // Determine if unit head approval is required based on shift location
-    const specialUnits = ['ICU', 'NICU', 'IGD', 'EMERGENCY_ROOM'];
-    const requiresUnitHead =
-      specialUnits.includes(shift.lokasishift) || createDto.requiresUnitHead;
+      // Validate that target user exists
+      const targetUser = await this.prisma.user.findUnique({
+        where: { id: createDto.toUserId },
+      });
 
-    return this.prisma.shiftSwap.create({
-      data: {
-        fromUserId,
-        toUserId: createDto.toUserId,
-        shiftId: createDto.shiftId,
-        alasan: createDto.alasan,
-        tanggalSwap: shift.tanggal,
-        requiresUnitHead,
-        status: SwapStatus.PENDING,
-      },
-      include: {
-        fromUser: {
-          select: {
-            id: true,
-            namaDepan: true,
-            namaBelakang: true,
-            role: true,
+      if (!targetUser) {
+        throw new NotFoundException('Target user not found');
+      }
+
+      // Check if there's already a pending swap request for this shift
+      const existingSwap = await this.prisma.shiftSwap.findFirst({
+        where: {
+          shiftId: createDto.shiftId,
+          status: {
+            in: [
+              SwapStatus.PENDING,
+              SwapStatus.APPROVED_BY_TARGET,
+              SwapStatus.WAITING_UNIT_HEAD,
+              SwapStatus.WAITING_SUPERVISOR,
+            ],
           },
         },
-        toUser: {
-          select: {
-            id: true,
-            namaDepan: true,
-            namaBelakang: true,
-            role: true,
-          },
+      });
+
+      if (existingSwap) {
+        throw new BadRequestException(
+          'Sudah ada permintaan tukar shift yang masih menunggu persetujuan untuk shift ini. Silakan tunggu proses sebelumnya selesai.',
+        );
+      }
+
+      // Determine if unit head approval is required based on shift location
+      const specialUnits = ['ICU', 'NICU', 'IGD', 'EMERGENCY_ROOM'];
+      const requiresUnitHead =
+        specialUnits.includes(shift.lokasishift) || createDto.requiresUnitHead;
+
+      // Setelah swap berhasil dibuat, kirim notifikasi ke user B (toUser)
+      const swap = await this.prisma.shiftSwap.create({
+        data: {
+          fromUserId,
+          toUserId: createDto.toUserId,
+          shiftId: createDto.shiftId,
+          alasan: createDto.alasan,
+          tanggalSwap: shift.tanggal,
+          requiresUnitHead,
+          status: SwapStatus.PENDING,
         },
-        shift: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                namaDepan: true,
-                namaBelakang: true,
+        include: {
+          fromUser: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
+          },
+          toUser: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
+          },
+          shift: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  namaDepan: true,
+                  namaBelakang: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
+
+      // Kirim notifikasi ke user B (toUser)
+      await this.notificationService.sendNotification(
+        createDto.toUserId,
+        JenisNotifikasi.KONFIRMASI_TUKAR_SHIFT,
+        'Permintaan Tukar Shift',
+        `Ada permintaan tukar shift dari ${fromUser.namaDepan} ${fromUser.namaBelakang} untuk shift tanggal ${shift.tanggal instanceof Date ? shift.tanggal.toISOString().split('T')[0] : shift.tanggal}.`,
+        { shiftId: shift.id, fromUserId, toUserId: createDto.toUserId },
+      );
+
+      return swap;
+    } catch (error) {
+      console.error('[ShiftSwapRequestService][create] Error:', error);
+      throw new InternalServerErrorException(
+        error.message || 'Failed to create shift swap request',
+      );
+    }
   }
 
   async findAll(userId?: number, status?: SwapStatus) {
@@ -303,7 +331,7 @@ export class ShiftSwapRequestService {
 
     updateData.status = newStatus;
 
-    return this.prisma.shiftSwap.update({
+    const updatedSwap = await this.prisma.shiftSwap.update({
       where: { id },
       data: updateData,
       include: {
@@ -336,6 +364,45 @@ export class ShiftSwapRequestService {
         },
       },
     });
+
+    // Kirim notifikasi ke supervisor jika status WAITING_SUPERVISOR
+    if (newStatus === SwapStatus.WAITING_SUPERVISOR) {
+      // Cari semua supervisor di unit terkait
+      const supervisors = await this.prisma.user.findMany({
+        where: { role: Role.SUPERVISOR },
+      });
+      for (const supervisor of supervisors) {
+        await this.notificationService.sendNotification(
+          supervisor.id,
+          JenisNotifikasi.PERSETUJUAN_CUTI,
+          'Permintaan Persetujuan Tukar Shift',
+          `Ada permintaan tukar shift yang perlu disetujui untuk shift tanggal ${shiftSwap.tanggalSwap instanceof Date ? shiftSwap.tanggalSwap.toISOString().split('T')[0] : shiftSwap.tanggalSwap}.`,
+          { shiftSwapId: id },
+        );
+      }
+    }
+
+    // Setelah shift swap disetujui oleh supervisor, kirim notifikasi ke kedua user
+    if (newStatus === SwapStatus.APPROVED) {
+      // Notifikasi ke pengaju (fromUser)
+      await this.notificationService.sendNotification(
+        shiftSwap.fromUserId,
+        JenisNotifikasi.KONFIRMASI_TUKAR_SHIFT,
+        'Tukar Shift Disetujui',
+        `Permintaan tukar shift Anda dengan ${shiftSwap.toUser?.namaDepan || ''} ${shiftSwap.toUser?.namaBelakang || ''} pada tanggal ${shiftSwap.tanggalSwap instanceof Date ? shiftSwap.tanggalSwap.toISOString().split('T')[0] : shiftSwap.tanggalSwap} telah disetujui dan jadwal sudah diperbarui.`,
+        { shiftSwapId: id },
+      );
+      // Notifikasi ke partner (toUser)
+      await this.notificationService.sendNotification(
+        shiftSwap.toUserId,
+        JenisNotifikasi.KONFIRMASI_TUKAR_SHIFT,
+        'Tukar Shift Disetujui',
+        `Anda telah menerima shift dari ${shiftSwap.fromUser?.namaDepan || ''} ${shiftSwap.fromUser?.namaBelakang || ''} pada tanggal ${shiftSwap.tanggalSwap instanceof Date ? shiftSwap.tanggalSwap.toISOString().split('T')[0] : shiftSwap.tanggalSwap}. Jadwal Anda sudah diperbarui.`,
+        { shiftSwapId: id },
+      );
+    }
+
+    return updatedSwap;
   }
 
   async update(
@@ -426,68 +493,78 @@ export class ShiftSwapRequestService {
   }
 
   async getPendingApprovals(userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (!userId) {
+      throw new BadRequestException('userId is required');
     }
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
-    const where: {
-      OR?: Array<{
-        status: SwapStatus;
-        requiresUnitHead?: boolean;
-      }>;
-      toUserId?: number;
-      status?: SwapStatus;
-    } = {};
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
 
-    if (user.role === Role.SUPERVISOR) {
-      // Supervisors see requests waiting for their approval or unit head approval
-      where.OR = [
-        { status: SwapStatus.WAITING_SUPERVISOR },
-        { status: SwapStatus.WAITING_UNIT_HEAD, requiresUnitHead: true },
-      ];
-    } else {
-      // Regular users see requests directed to them
-      where.toUserId = userId;
-      where.status = SwapStatus.PENDING;
-    }
+      const where: {
+        OR?: Array<{
+          status: SwapStatus;
+          requiresUnitHead?: boolean;
+        }>;
+        toUserId?: number;
+        status?: SwapStatus;
+      } = {};
 
-    return this.prisma.shiftSwap.findMany({
-      where,
-      include: {
-        fromUser: {
-          select: {
-            id: true,
-            namaDepan: true,
-            namaBelakang: true,
-            role: true,
+      if (user.role === Role.SUPERVISOR) {
+        // Supervisors see requests waiting for their approval or unit head approval
+        where.OR = [
+          { status: SwapStatus.WAITING_SUPERVISOR },
+          { status: SwapStatus.WAITING_UNIT_HEAD, requiresUnitHead: true },
+        ];
+      } else {
+        // Regular users see requests directed to them
+        where.toUserId = userId;
+        where.status = SwapStatus.PENDING;
+      }
+
+      return this.prisma.shiftSwap.findMany({
+        where,
+        include: {
+          fromUser: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
           },
-        },
-        toUser: {
-          select: {
-            id: true,
-            namaDepan: true,
-            namaBelakang: true,
-            role: true,
+          toUser: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
           },
-        },
-        shift: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                namaDepan: true,
-                namaBelakang: true,
+          shift: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  namaDepan: true,
+                  namaBelakang: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    } catch (error) {
+      console.error('[ShiftSwapRequestService][getPendingApprovals] Error:', error);
+      throw new InternalServerErrorException(
+        error.message || 'Failed to get pending approvals',
+      );
+    }
   }
 
   /**

@@ -24,11 +24,15 @@ export class UserTelegramController {
    */
   @Put('telegram-chat-id')
   async updateTelegramChatId(
-    @Request() req,
+    @Request() req: any,
     @Body() dto: UpdateTelegramChatIdDto,
   ) {
-    const userId = req.user.sub;
-
+    // Ambil userId dari user.userId atau user.id (sesuai JwtAuthGuard)
+    const userId = req.user?.userId ?? req.user?.id;
+    if (!userId) {
+      console.error('No user ID found in request', req.user);
+      throw new Error('User not authenticated');
+    }
     try {
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
@@ -40,13 +44,15 @@ export class UserTelegramController {
           telegramChatId: true,
         },
       });
-
       return {
         message: 'Telegram Chat ID berhasil diperbarui',
         user: updatedUser,
       };
-    } catch (error) {
-      throw new Error('Gagal memperbarui Telegram Chat ID');
+    } catch (error: any) {
+      console.error('Error updating Telegram Chat ID:', error);
+      throw new Error(
+        'Gagal memperbarui Telegram Chat ID: ' + (error && error.message ? error.message : 'Unknown error')
+      );
     }
   }
 

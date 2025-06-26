@@ -10,8 +10,8 @@ let authToken = null;
 
 // Test credentials
 const testCredentials = {
-  email: 'admin@example.com',
-  password: 'admin123'
+  email: 'admin@rsud.id',
+  password: 'password123'
 };
 
 // ANSI color codes for output

@@ -93,7 +93,7 @@ echo -e "${GREEN}✅ Backend is running${NC}"
 echo -e "\n=== 🔐 AUTHENTICATION TESTS ==="
 
 # 1. AUTH - Login (Valid)
-login_response=$(test_endpoint "POST" "/auth/login" '{"email": "admin@example.com", "password": "admin123"}' "" "Auth - Valid Login" "200")
+login_response=$(test_endpoint "POST" "/auth/login" '{"email": "admin@rsud.id", "password": "password123"}' "" "Auth - Valid Login" "200")
 ADMIN_TOKEN=$(echo "$login_response" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
 
 if [ -n "$ADMIN_TOKEN" ]; then
@@ -225,7 +225,15 @@ if [ -n "$SHIFT_ID" ] && [ -n "$NEW_USER_ID" ]; then
 fi
 
 # 21. SHIFT SWAP - Get Pending Approvals
-test_endpoint "GET" "/shift-swap-requests/pending-approvals/2" "" "" "Shift Swap - Pending Approvals" "200"
+# Perbaiki: login sebagai supervisor dan gunakan endpoint yang benar
+supervisor_login_response=$(test_endpoint "POST" "/auth/login" '{"email": "supervisor1@rsud.id", "password": "password123"}' "" "Auth - Supervisor Login for Approvals" "200")
+SUPERVISOR_TOKEN=$(echo "$supervisor_login_response" | grep -o '"access_token":"[^\"]*"' | cut -d'"' -f4)
+if [ -n "$SUPERVISOR_TOKEN" ]; then
+    SUPERVISOR_AUTH_HEADER="Authorization: Bearer $SUPERVISOR_TOKEN"
+    test_endpoint "GET" "/shift-swap-requests/pending-approvals" "" "$SUPERVISOR_AUTH_HEADER" "Shift Swap - Pending Approvals" "200"
+else
+    echo -e "${RED}❌ Failed to get supervisor token for pending approvals${NC}"
+fi
 
 echo -e "\n=== 📅 EVENT/KEGIATAN TESTS ==="
 
@@ -277,7 +285,7 @@ test_endpoint "GET" "/absensi/my-attendance" "" "$AUTH_HEADER" "Absensi - My Att
 if [ -n "$NEW_USER_ID" ]; then
     # Login as the new user first
     user_login_response=$(test_endpoint "POST" "/auth/login" '{"email": "testuser001@hospital.com", "password": "test123"}' "" "Auth - User Login for Absensi" "200")
-    USER_TOKEN=$(echo "$user_login_response" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+    USER_TOKEN=$(echo "$user_login_response" | grep -o '"access_token":"[^\"]*"' | cut -d'"' -f4)
     
     if [ -n "$USER_TOKEN" ]; then
         USER_AUTH_HEADER="Authorization: Bearer $USER_TOKEN"

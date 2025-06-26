@@ -32,14 +32,17 @@ export class TelegramBotService {
 
     try {
       const commands = [
-        { command: 'start', description: 'Mulai menggunakan bot RSUD Anugerah' },
+        {
+          command: 'start',
+          description: 'Mulai menggunakan bot RSUD Anugerah',
+        },
         { command: 'help', description: 'Bantuan penggunaan bot' },
         { command: 'myid', description: 'Dapatkan Chat ID Telegram Anda' },
-        { command: 'notifications', description: 'Status notifikasi' }
+        { command: 'notifications', description: 'Status notifikasi' },
       ];
 
       const response = await axios.post(`${this.baseUrl}/setMyCommands`, {
-        commands: commands
+        commands: commands,
       });
 
       if (response.data.ok) {
@@ -63,7 +66,9 @@ export class TelegramBotService {
 
       const chatId = message.chat.id;
       const text = message.text;
-      const userName = message.from.first_name + (message.from.last_name ? ` ${message.from.last_name}` : '');
+      const userName =
+        message.from.first_name +
+        (message.from.last_name ? ` ${message.from.last_name}` : '');
 
       this.logger.log(`Received message from ${userName} (${chatId}): ${text}`);
 
@@ -80,7 +85,6 @@ export class TelegramBotService {
       } else {
         await this.handleUnknownCommand(chatId);
       }
-
     } catch (error) {
       this.logger.error('Error handling incoming message:', error);
     }
@@ -89,7 +93,11 @@ export class TelegramBotService {
   /**
    * Handle /start command
    */
-  private async handleStartCommand(chatId: number, userName: string, startParam?: string) {
+  private async handleStartCommand(
+    chatId: number,
+    userName: string,
+    startParam?: string,
+  ) {
     let message = `
 🏥 <b>Selamat datang di RSUD Anugerah Notification Bot!</b>
 
@@ -247,7 +255,11 @@ Atau ketik /help untuk panduan lengkap.
   /**
    * Send message via Telegram API
    */
-  private async sendMessage(chatId: number, text: string, parseMode: 'HTML' | 'Markdown' = 'HTML') {
+  private async sendMessage(
+    chatId: number,
+    text: string,
+    parseMode: 'HTML' | 'Markdown' = 'HTML',
+  ) {
     try {
       await axios.post(`${this.baseUrl}/sendMessage`, {
         chat_id: chatId,
@@ -278,7 +290,7 @@ Atau ketik /help untuk panduan lengkap.
   async setWebhook(webhookUrl: string) {
     try {
       const response = await axios.post(`${this.baseUrl}/setWebhook`, {
-        url: webhookUrl
+        url: webhookUrl,
       });
       return response.data;
     } catch (error) {

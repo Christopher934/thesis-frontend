@@ -44,25 +44,25 @@ const menuItems = [
   {
     title: "MENU",
     items: [
-      { icon: Home, label: "Dashboard", href: "/", visible: ["admin", "perawat","staf","dokter"] },
+      { icon: Home, label: "Dashboard", href: "/", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { icon: UserPlus, label: "Pegawai", href: "/dashboard/list/pegawai", visible: ["admin"] },
       { icon: Calendar, label: "Managemen Jadwal", href: "/dashboard/list/managemenjadwal", visible: ["admin"] },
-      { icon: ClipboardList, label: "Jadwal Saya", href: "/dashboard/list/jadwalsaya", visible: ["perawat","staf","dokter"] },
+      { icon: ClipboardList, label: "Jadwal Saya", href: "/dashboard/list/jadwalsaya", visible: ["perawat","staf","dokter","supervisor"] },
       { icon: RefreshCw, label: "Ajukan Tukar Shift", href: "/dashboard/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { 
         icon: CalendarDays, 
         label: "Absensi", 
-        visible: ["admin", "perawat","staf","dokter"],
+        visible: ["admin", "perawat","staf","dokter","supervisor"],
         dropdown: [
-          { label: "Dashboard Absensi", href: "/dashboard/list/dashboard-absensi", visible: ["perawat","staf","dokter"], icon: BarChart3 },
-          { label: "Riwayat Absensi", href: "/dashboard/list/riwayat-absensi", visible: ["perawat","staf","dokter"], icon: History },
+          { label: "Dashboard Absensi", href: "/dashboard/list/dashboard-absensi", visible: ["perawat","staf","dokter","supervisor"], icon: BarChart3 },
+          { label: "Riwayat Absensi", href: "/dashboard/list/riwayat-absensi", visible: ["perawat","staf","dokter","supervisor"], icon: History },
           { label: "Manajemen Absensi", href: "/dashboard/list/manajemen-absensi", visible: ["admin"], icon: Users },
           { label: "Laporan Absensi", href: "/dashboard/list/laporan-absensi", visible: ["admin"], icon: FileText },
         ]
       },
-      { icon: CalendarDays, label: "Events", href: "/dashboard/list/events", visible: ["admin", "perawat","staf","dokter"] },
-      { icon: MessageSquare, label: "Pesan", href: "/dashboard/list/notifications", visible: ["admin", "perawat","staf","dokter"] },
-      { icon: FileBarChart, label: "Laporan", href: "/dashboard/list/laporan", visible: ["admin"] },
+      { icon: CalendarDays, label: "Events", href: "/dashboard/list/events", visible: ["admin", "perawat","staf","dokter","supervisor"] },
+      { icon: MessageSquare, label: "Pesan", href: "/dashboard/list/notifications", visible: ["admin", "perawat","staf","dokter","supervisor"] },
+      { icon: FileBarChart, label: "Laporan", href: "/dashboard/list/laporan", visible: ["admin","supervisor"] },
     ],
   },
   {
@@ -160,7 +160,7 @@ const Menu = memo(() => {
               item.label === "Dashboard"
                 ? role === "admin"
                   ? "/admin"
-                  : "/pegawai"
+                  : "/dashboard/pegawai"
                 : item.href;
 
             if (item.label === "Logout") {

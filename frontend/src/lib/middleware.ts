@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
   
   // If user is logged in and trying to access login pages
   if (token && isAuthPage) {
-    const redirectPath = role === 'admin' ? '/admin' : '/pegawai';
+    const redirectPath = role === 'admin' ? '/admin' : '/dashboard/pegawai';
     return NextResponse.redirect(new URL(redirectPath, request.url));
   }
   

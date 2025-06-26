@@ -248,7 +248,7 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
             <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">Tidak ada jadwal hari ini</p>
             <a 
-              href="/list/jadwalsaya" 
+              href="/dashboard/list/jadwalsaya" 
               className="text-hospitalBlue text-sm mt-2 hover:text-hospitalBlue/80 inline-block"
             >
               Lihat Semua Jadwal
@@ -316,7 +316,7 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
               </span>
             </div>
             <a 
-              href="/list/jadwalsaya" 
+              href="/dashboard/list/jadwalsaya" 
               className="text-hospitalBlue hover:text-hospitalBlue/80"
             >
               Lihat Semua Jadwal

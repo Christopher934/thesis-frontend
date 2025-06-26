@@ -38,7 +38,7 @@ export function shouldRedirectFromSignIn(): { redirect: boolean; path: string } 
   if (role === 'admin' || role === 'supervisor') {
     return { redirect: true, path: '/admin' };
   } else if (role === 'perawat' || role === 'dokter' || role === 'staf') {
-    return { redirect: true, path: '/pegawai' };
+    return { redirect: true, path: '/dashboard/pegawai' };
   } else if (role) {
     return { redirect: true, path: '/dashboard' };
   }

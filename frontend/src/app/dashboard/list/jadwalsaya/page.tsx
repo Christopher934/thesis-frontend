@@ -53,6 +53,7 @@ const JadwalSayaPage = () => {
   const [filterValue, setFilterValue] = useState<string>("");
   const [sortValue, setSortValue] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'past'>('today');
   const itemsPerPage = 10;
   
   const memoizedShifts = useMemo(() => shifts, [shifts]);
@@ -132,6 +133,25 @@ const JadwalSayaPage = () => {
     return filtered;
   }, [shifts, searchValue, filterValue, sortValue, sortDirection]);
 
+  // Fungsi untuk dapatkan tanggal hari ini (format YYYY-MM-DD)
+  const getToday = () => {
+    const now = new Date();
+    return now.toISOString().slice(0, 10);
+  };
+  const todayDate = getToday();
+
+  // Filter shift sesuai tab aktif
+  const filteredByTab = useMemo(() => {
+    return filteredShifts.filter((item) => {
+      // item.originalDate harus format YYYY-MM-DD
+      if (!item.originalDate) return false;
+      if (activeTab === 'today') return item.originalDate === todayDate;
+      if (activeTab === 'upcoming') return item.originalDate > todayDate;
+      if (activeTab === 'past') return item.originalDate < todayDate;
+      return true;
+    });
+  }, [filteredShifts, activeTab, todayDate]);
+
   useEffect(() => {
     async function initialize() {
       try {
@@ -196,23 +216,20 @@ const JadwalSayaPage = () => {
       } else if (userRole?.toLowerCase() === 'admin') {
         userShifts = data;
       } else {
+        // Ambil userId numeric dari localStorage (hasil login)
+        const storedNumericId = localStorage.getItem("userId");
         userShifts = data.filter((shift: ShiftData) => {
-          if (!shift.idpegawai || !userIdentifier) {
-            return false;
+          // Jika ada userId di data shift dan di localStorage, gunakan itu
+          if (shift.userId && storedNumericId) {
+            return shift.userId.toString() === storedNumericId;
           }
-          
-          const exactMatch = shift.idpegawai === userIdentifier;
-          const caseInsensitiveMatch = !exactMatch && 
-                                      shift.idpegawai.toLowerCase() === userIdentifier.toLowerCase();
-          
-          const storedNumericId = localStorage.getItem("userId");
-          const numericIdMatch = storedNumericId && 
-                                shift.userId && 
-                                shift.userId.toString() === storedNumericId;
-          
-          const isMatch = exactMatch || caseInsensitiveMatch || numericIdMatch;
-          
-          return isMatch;
+          // Jika tidak ada userId, fallback ke idpegawai/username
+          if (shift.idpegawai && userIdentifier) {
+            const exactMatch = shift.idpegawai === userIdentifier;
+            const caseInsensitiveMatch = !exactMatch && shift.idpegawai.toLowerCase() === userIdentifier.toLowerCase();
+            return exactMatch || caseInsensitiveMatch;
+          }
+          return false;
         });
       }
       
@@ -450,7 +467,29 @@ const JadwalSayaPage = () => {
           }
         />
 
-        {filteredShifts.length === 0 ? (
+        {/* Tab untuk filter jadwal */}
+        <div className="mb-4 flex gap-2">
+          <button
+            className={`px-4 py-2 rounded-t-lg font-medium border-b-2 transition-all ${activeTab === 'today' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 bg-gray-100'}`}
+            onClick={() => setActiveTab('today')}
+          >
+            Jadwal Hari Ini
+          </button>
+          <button
+            className={`px-4 py-2 rounded-t-lg font-medium border-b-2 transition-all ${activeTab === 'upcoming' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 bg-gray-100'}`}
+            onClick={() => setActiveTab('upcoming')}
+          >
+            Jadwal Mendatang
+          </button>
+          <button
+            className={`px-4 py-2 rounded-t-lg font-medium border-b-2 transition-all ${activeTab === 'past' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 bg-gray-100'}`}
+            onClick={() => setActiveTab('past')}
+          >
+            Jadwal Lewat
+          </button>
+        </div>
+
+        {filteredByTab.length === 0 ? (
           <ContentCard>
             <div className="flex flex-col items-center justify-center py-12">
               <div className="p-3 bg-gray-100 rounded-full mb-4">
@@ -484,12 +523,12 @@ const JadwalSayaPage = () => {
               <Table 
                 columns={columns} 
                 renderRow={renderRow}
-                data={filteredShifts} 
+                data={filteredByTab} 
               />
             </div>
             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
               <Pagination 
-                totalItems={filteredShifts.length} 
+                totalItems={filteredByTab.length} 
                 itemsPerPage={itemsPerPage} 
                 currentPage={currentPage} 
                 onPageChange={setCurrentPage} 

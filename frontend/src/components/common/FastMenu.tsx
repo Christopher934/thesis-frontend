@@ -128,7 +128,7 @@ const FastMenu = memo(() => {
               item.label === "Dashboard"
                 ? role === "admin"
                   ? "/admin"
-                  : "/pegawai"
+                  : "/dashboard/pegawai"
                 : item.href;
 
             // Handle logout button

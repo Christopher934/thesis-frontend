@@ -1,7 +1,15 @@
-import Menu from "@/components/common/Menu";
-import Navbar from "@/components/common/Navbar";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+// Lazy load heavy components for faster initial load
+const Menu = dynamic(() => import("@/components/common/Menu"), {
+  loading: () => <div className="w-full h-64 bg-gray-100 animate-pulse rounded"></div>
+});
+
+const Navbar = dynamic(() => import("@/components/common/Navbar"), {
+  loading: () => <div className="w-full h-16 bg-gray-100 animate-pulse"></div>
+});
 
 export default function DashboardLayout({
     children,

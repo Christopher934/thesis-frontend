@@ -20,15 +20,6 @@ const Navbar = () => {
 
   return (
     <div className='flex items-center justify-between p-4'>
-      {/* Search Bar */}
-      <div className="hidden md:flex items-center gap-2 text-xs ring-[1.5px] ring-gray-300  rounded-full px-2">
-        <Search size={14} className="text-gray-400" />
-        <input
-          type="text"
-          placeholder='Search...'
-          className='w-[200px] p-2 bg-transparent outline-none'
-        />
-      </div>
 
       {/* Icon and User */}
       <div className='flex items-center gap-6 justify-end w-full'>

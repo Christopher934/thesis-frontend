@@ -2,14 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import RedirectIfLoggedIn from '@/components/auth/RedirectIfLoggedIn';
 import Cookies from 'js-cookie';
-import AuthDebug from '@/components/auth/AuthDebug';
-import LoginFooter from '@/components/common/LoginFooter';
-import SystemNotifications from '@/components/common/SystemNotifications';
-import { useAuthErrors } from '@/lib/useAuthErrors';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
+
+// Lazy load heavy components for performance
+const RedirectIfLoggedIn = dynamic(() => import('@/components/auth/RedirectIfLoggedIn'), {
+  ssr: false
+});
+
+const AuthDebug = dynamic(() => import('@/components/auth/AuthDebug'), {
+  ssr: false,
+  loading: () => null
+});
+
+const LoginFooter = dynamic(() => import('@/components/common/LoginFooter'), {
+  loading: () => <div className="w-full h-16 bg-gray-100"></div>
+});
+
+const SystemNotifications = dynamic(() => import('@/components/common/SystemNotifications'), {
+  loading: () => null
+});
+
+import { useAuthErrors } from '@/lib/useAuthErrors';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -86,18 +101,12 @@ export default function LoginPage() {
   return (
     <RedirectIfLoggedIn>
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 px-4 sm:px-6 lg:px-8">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+        <div 
           className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden"
         >
           {/* Hospital Logo and Header */}
           <div className="bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-8 text-center">
-            <motion.div 
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+            <div 
               className="flex justify-center"
             >
               <Image 
@@ -108,7 +117,7 @@ export default function LoginPage() {
                 className="h-16 w-auto mb-4 drop-shadow-lg"
                 priority
               />
-            </motion.div>
+            </div>
             <h2 className="text-2xl font-bold text-white">RSUD ANUGERAH</h2>
             <p className="mt-1 text-blue-100">Sistem Informasi Manajemen</p>
           </div>
@@ -170,9 +179,7 @@ export default function LoginPage() {
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
-                      <motion.svg 
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
+                      <svg 
                         xmlns="http://www.w3.org/2000/svg" 
                         className="h-5 w-5" 
                         viewBox="0 0 20 20" 
@@ -180,11 +187,9 @@ export default function LoginPage() {
                       >
                         <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                         <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                      </motion.svg>
+                      </svg>
                     ) : (
-                      <motion.svg 
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
+                      <svg 
                         xmlns="http://www.w3.org/2000/svg" 
                         className="h-5 w-5" 
                         viewBox="0 0 20 20" 
@@ -193,7 +198,7 @@ export default function LoginPage() {
                         <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
                         <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
 
-                      </motion.svg>
+                      </svg>
                     )}
                   </button>
                 </div>
@@ -222,9 +227,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
+                <div 
                   className="bg-red-50 border-l-4 border-red-500 p-3 rounded shadow-sm"
                 >
                   <div className="flex items-center">
@@ -239,7 +242,7 @@ export default function LoginPage() {
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               <div>
@@ -266,7 +269,7 @@ export default function LoginPage() {
             </form>
             <LoginFooter />
           </div>
-        </motion.div>
+        </div>
         
         {/* System Notifications */}
         <SystemNotifications />

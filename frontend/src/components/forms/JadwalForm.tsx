@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import InputField from "../common/InputField";
 import { joinUrl } from "@/lib/urlUtils";
-import { Calendar, Clock, Users, Building2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Calendar, Clock, Users, Building2, AlertCircle, CheckCircle2, Info, User, MapPin } from "lucide-react";
 
 
 // Type for User data 
@@ -199,22 +199,56 @@ const DEPARTMENT_CONFIGS = {
   },
 };
 
+// Enhanced validation schema with Employee ID integration
 const schema = z.object({
     nama: z.string()
         .min(3, { message: 'Nama pegawai minimal 3 karakter' })
         .max(50, { message: 'Nama pegawai maksimal 50 karakter' }),
     idpegawai: z.string()
-        .min(3, { message: 'ID pegawai dibutuhkan' }),
+        .min(3, { message: 'ID pegawai dibutuhkan' })
+        .refine((val) => /^(ADM|DOK|PER|STF|SUP)\d{3}$/.test(val), {
+            message: 'Format Employee ID harus: ADM001, DOK001, PER001, STF001, atau SUP001'
+        }),
     userId: z.number().optional(),
     lokasishift: LokasiShiftEnum,
     tipeshift: TipeShiftEnum,
     tanggal: z.string()
-        .min(1, { message: 'Tanggal dibutuhkan!' }),
+        .min(1, { message: 'Tanggal dibutuhkan!' })
+        .refine((date) => new Date(date) >= new Date(new Date().toDateString()), {
+            message: 'Tanggal tidak boleh sebelum hari ini'
+        }),
     jammulai: z.string()
-        .min(1, { message: 'Jam mulai dibutuhkan!' }),
+        .min(1, { message: 'Jam mulai dibutuhkan!' })
+        .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Format jam: HH:MM (24 jam)' }),
     jamselesai: z.string()
-        .min(1, { message: 'Jam selesai dibutuhkan!' }),
+        .min(1, { message: 'Jam selesai dibutuhkan!' })
+        .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Format jam: HH:MM (24 jam)' }),
+})
+.refine((data) => {
+    // Validate time logic for normal shifts (not overnight)
+    if (data.jammulai && data.jamselesai) {
+        const startMinutes = timeToMinutes(data.jammulai);
+        const endMinutes = timeToMinutes(data.jamselesai);
+        
+        // Allow overnight shifts (end time next day)
+        if (endMinutes < startMinutes) {
+            return true; // Overnight shift is valid
+        }
+        
+        return endMinutes > startMinutes;
+    }
+    return true;
+}, {
+    message: 'Jam selesai harus setelah jam mulai (kecuali shift malam lintas hari)',
+    path: ['jamselesai']
 });
+
+// Helper function to convert time to minutes
+const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+};
+
 type Inputs = z.infer<typeof schema>;
 
 

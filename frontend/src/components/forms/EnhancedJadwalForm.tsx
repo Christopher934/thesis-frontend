@@ -372,18 +372,18 @@ const EnhancedJadwalForm = ({
         : null;
 
     return (
-        <div className="w-full max-w-5xl mx-auto">
+        <div className="w-full max-w-3xl mx-auto max-h-[85vh] overflow-y-auto">
             {/* Enhanced Header */}
-            <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 text-white rounded-t-2xl p-6 shadow-xl">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                        <Calendar className="h-8 w-8" />
+            <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 text-white rounded-t-2xl p-3 shadow-xl">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <Calendar className="h-6 w-6" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold">
-                            {type === 'create' ? '📅 Tambah Jadwal Shift Baru' : '✏️ Update Jadwal Shift'}
+                        <h2 className="text-lg font-bold">
+                            {type === 'create' ? 'Tambah Jadwal Shift Baru' : 'Update Jadwal Shift'}
                         </h2>
-                        <p className="text-blue-100 mt-1">
+                        <p className="text-blue-100 mt-1 text-sm">
                             Sistem terintegrasi dengan RSUD Anugerah shift management
                         </p>
                     </div>
@@ -391,7 +391,7 @@ const EnhancedJadwalForm = ({
             </div>
 
             <form onSubmit={onSubmit} className="bg-white rounded-b-2xl shadow-xl border-x border-b border-gray-200">
-                <div className="p-6 space-y-6">
+                <div className="p-3 space-y-3">
                     {/* Error & Success Messages */}
                     {errorMessage && (
                         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
@@ -429,7 +429,7 @@ const EnhancedJadwalForm = ({
                             </label>
                             <select
                                 {...register("idpegawai")}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             >
                                 <option value="">-- Pilih Employee --</option>
                                 {users.map(user => (
@@ -464,7 +464,7 @@ const EnhancedJadwalForm = ({
                     </div>
 
                     {/* Shift Location & Type Selection */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Shift Location */}
                         <div className="space-y-3">
                             <label className="block text-sm font-semibold text-gray-800">
@@ -473,7 +473,7 @@ const EnhancedJadwalForm = ({
                             </label>
                             <select
                                 {...register("shiftLocation")}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             >
                                 <option value="">-- Pilih Lokasi --</option>
                                 {Object.entries(RSUD_SHIFT_TYPES).map(([key, config]) => (
@@ -498,7 +498,7 @@ const EnhancedJadwalForm = ({
                             </label>
                             <select
                                 {...register("shiftType")}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                 disabled={!selectedShiftLocation}
                             >
                                 <option value="">-- Pilih Shift --</option>
@@ -532,7 +532,7 @@ const EnhancedJadwalForm = ({
                     )}
 
                     {/* Date and Time */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Date */}
                         <div className="space-y-3">
                             <label className="block text-sm font-semibold text-gray-800">
@@ -543,7 +543,7 @@ const EnhancedJadwalForm = ({
                                 type="date"
                                 {...register("tanggal")}
                                 min={new Date().toISOString().split('T')[0]}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             />
                             {errors.tanggal && (
                                 <p className="text-red-600 text-sm flex items-center gap-1">
@@ -562,7 +562,7 @@ const EnhancedJadwalForm = ({
                             <input
                                 type="time"
                                 {...register("jammulai")}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             />
                             {errors.jammulai && (
                                 <p className="text-red-600 text-sm flex items-center gap-1">
@@ -581,7 +581,7 @@ const EnhancedJadwalForm = ({
                             <input
                                 type="time"
                                 {...register("jamselesai")}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             />
                             {errors.jamselesai && (
                                 <p className="text-red-600 text-sm flex items-center gap-1">

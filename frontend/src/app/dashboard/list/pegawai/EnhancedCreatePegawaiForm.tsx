@@ -241,18 +241,18 @@ export default function EnhancedCreatePegawaiForm({
   const selectedRoleInfo = selectedRole ? roleDescriptions[selectedRole as keyof typeof roleDescriptions] : null;
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-2xl mx-auto max-h-[85vh] overflow-y-auto">
       {/* Header with gradient background */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-t-2xl p-6 shadow-lg">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-            <User className="h-8 w-8" />
+      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-t-2xl p-3 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+            <User className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">
-              {type === 'create' ? '➕ Tambah Pegawai Baru' : '✏️ Update Data Pegawai'}
+            <h2 className="text-lg font-bold">
+              {type === 'create' ? 'Tambah Pegawai Baru' : 'Update Data Pegawai'}
             </h2>
-            <p className="text-blue-100 mt-1">
+            <p className="text-blue-100 mt-1 text-sm">
               {type === 'create' 
                 ? 'Sistem akan otomatis generate Employee ID berdasarkan role'
                 : 'Perbarui informasi pegawai'
@@ -263,7 +263,7 @@ export default function EnhancedCreatePegawaiForm({
       </div>
 
       <form onSubmit={onSubmit} className="bg-white rounded-b-2xl shadow-xl border-x border-b border-gray-200">
-        <div className="p-6 space-y-6">
+        <div className="p-3 space-y-3">
           {/* Error & Success Messages */}
           {errorMessage && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
@@ -304,7 +304,7 @@ export default function EnhancedCreatePegawaiForm({
             </label>
             <select
               {...register('role')}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             >
               <option value="">-- Pilih Role --</option>
               {Object.entries(roleDescriptions).map(([role, info]) => (
@@ -345,7 +345,7 @@ export default function EnhancedCreatePegawaiForm({
               <input
                 type="text"
                 {...register('namaDepan')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 placeholder="Masukkan nama depan"
               />
               {errors.namaDepan && (
@@ -365,7 +365,7 @@ export default function EnhancedCreatePegawaiForm({
               <input
                 type="text"
                 {...register('namaBelakang')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 placeholder="Masukkan nama belakang"
               />
               {errors.namaBelakang && (
@@ -388,7 +388,7 @@ export default function EnhancedCreatePegawaiForm({
               <input
                 type="email"
                 {...register('email')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 placeholder="contoh@email.com"
               />
               {errors.email && (
@@ -408,7 +408,7 @@ export default function EnhancedCreatePegawaiForm({
               <input
                 type="tel"
                 {...register('noHp')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 placeholder="08xxxxxxxxxx"
               />
               {errors.noHp && (
@@ -430,7 +430,7 @@ export default function EnhancedCreatePegawaiForm({
               <input
                 type={showPassword ? 'text' : 'password'}
                 {...register('password')}
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 placeholder="Masukkan password"
               />
               <button
@@ -460,7 +460,7 @@ export default function EnhancedCreatePegawaiForm({
               <input
                 type="date"
                 {...register('tanggalLahir')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
               {errors.tanggalLahir && (
                 <p className="text-red-600 text-sm flex items-center gap-1">
@@ -477,7 +477,7 @@ export default function EnhancedCreatePegawaiForm({
               </label>
               <select
                 {...register('jenisKelamin')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
                 <option value="">Pilih</option>
                 <option value="L">👨 Laki-laki</option>
@@ -499,7 +499,7 @@ export default function EnhancedCreatePegawaiForm({
               </label>
               <select
                 {...register('status')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
                 <option value="ACTIVE">✅ ACTIVE</option>
                 <option value="INACTIVE">❌ INACTIVE</option>
@@ -522,7 +522,7 @@ export default function EnhancedCreatePegawaiForm({
             <textarea
               {...register('alamat')}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
               placeholder="Masukkan alamat lengkap..."
             />
             {errors.alamat && (

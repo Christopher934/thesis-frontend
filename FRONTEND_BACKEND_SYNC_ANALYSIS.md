@@ -70,6 +70,7 @@ interface Shift {
 ### **4. Frontend Components - Belum Menggunakan employeeId**
 
 File yang perlu diupdate:
+
 - `/frontend/src/components/forms/TukarShiftForm.tsx`
 - `/frontend/src/app/dashboard/list/ajukantukarshift/page.tsx`
 - `/frontend/src/app/dashboard/list/ajukantukarshift/page-*.tsx` (semua variants)
@@ -153,6 +154,7 @@ async findOne(id: number) {
 ### **3. Update Frontend Type Definitions**
 
 Buat file global types:
+
 ```typescript
 // ✅ frontend/src/types/user.ts
 export interface User {
@@ -181,6 +183,7 @@ export interface Shift {
 ### **4. Update Frontend Components**
 
 #### **A. User Selection Dropdown**
+
 ```typescript
 // ✅ YANG HARUS DIUBAH
 // Dari:
@@ -191,6 +194,7 @@ export interface Shift {
 ```
 
 #### **B. Display Components**
+
 ```typescript
 // ✅ YANG HARUS DIUBAH
 // Dari:
@@ -201,13 +205,14 @@ export interface Shift {
 ```
 
 #### **C. Notification Components**
+
 ```typescript
 // ✅ YANG HARUS DIUBAH
 // Dari:
-message: `Shift assigned to: ${user.namaDepan} ${user.namaBelakang}`
+message: `Shift assigned to: ${user.namaDepan} ${user.namaBelakang}`;
 
 // Menjadi:
-message: `Shift assigned to: ${user.employeeId} - ${user.namaDepan} ${user.namaBelakang}`
+message: `Shift assigned to: ${user.employeeId} - ${user.namaDepan} ${user.namaBelakang}`;
 ```
 
 ---
@@ -215,25 +220,31 @@ message: `Shift assigned to: ${user.employeeId} - ${user.namaDepan} ${user.namaB
 ## 📋 **DAFTAR FILE YANG PERLU DIUBAH**
 
 ### **Backend Files:**
+
 1. `/backend/src/user/user.service.ts` - Add employeeId to all select statements
 2. `/backend/src/shift/shift.service.ts` - Add employeeId to user includes
 3. `/backend/src/shift/shift.controller.ts` - Verify response structure
 
 ### **Frontend Files:**
+
 1. **Type Definitions:**
+
    - Create `/frontend/src/types/user.ts` (new file)
    - Create `/frontend/src/types/shift.ts` (new file)
 
 2. **Forms:**
+
    - `/frontend/src/components/forms/TukarShiftForm.tsx`
    - `/frontend/src/components/forms/JadwalForm.tsx`
 
 3. **Pages:**
+
    - `/frontend/src/app/dashboard/list/ajukantukarshift/page.tsx`
    - `/frontend/src/app/dashboard/list/ajukantukarshift/page-*.tsx` (all variants)
    - `/frontend/src/app/dashboard/list/manajemen-absensi/page.tsx`
 
 4. **Components:**
+
    - `/frontend/src/components/dashboard/ShiftManagementDashboard.tsx`
    - `/frontend/src/components/notifications/UserNotificationAdmin.tsx`
    - All notification components
@@ -246,16 +257,19 @@ message: `Shift assigned to: ${user.employeeId} - ${user.namaDepan} ${user.namaB
 ## 🎯 **PRIORITAS IMPLEMENTASI**
 
 ### **Phase 1 - Backend API Updates (CRITICAL)**
+
 1. ✅ Update User Service findAll() and findOne()
 2. ✅ Update Shift Service includes
 3. ✅ Test API responses
 
 ### **Phase 2 - Frontend Type System**
+
 1. ✅ Create shared type definitions
 2. ✅ Update all User interfaces
 3. ✅ Update all Shift interfaces
 
 ### **Phase 3 - Frontend Component Updates**
+
 1. ✅ Update user selection dropdowns
 2. ✅ Update display components
 3. ✅ Update notification components
@@ -266,19 +280,22 @@ message: `Shift assigned to: ${user.employeeId} - ${user.namaDepan} ${user.namaB
 ## 💡 **CONTOH PENGGUNAAN SETELAH UPDATE**
 
 ### **User Dropdown Display:**
+
 ```
 ADM001 - Admin Utama
-PER004 - Siti Nurhaliza  
+PER004 - Siti Nurhaliza
 DOK002 - Dr. Ahmad Wijaya
 STF003 - Staff Support
 ```
 
 ### **Shift Assignment Display:**
+
 ```
 Shift 08:00-16:00 assigned to PER004 - Siti Nurhaliza
 ```
 
 ### **Notification Message:**
+
 ```
 "Tukar shift request: PER004 → DOK002"
 "PER004 - Siti Nurhaliza telah mengajukan tukar shift"
@@ -298,7 +315,9 @@ Shift 08:00-16:00 assigned to PER004 - Siti Nurhaliza
 ## PROGRESS UPDATE - July 4, 2025
 
 ### COMPLETED BACKEND UPDATES ✅
+
 1. **User Service (`/backend/src/user/user.service.ts`)**
+
    - ✅ `findAll()` method now includes `employeeId` in response
    - ✅ `findOne()` method now includes `employeeId` in response
    - ✅ API verified returning correct format: `{"employeeId": "ADM001", ...}`
@@ -309,7 +328,9 @@ Shift 08:00-16:00 assigned to PER004 - Siti Nurhaliza
    - ✅ Backward compatibility maintained with `idpegawai` field
 
 ### COMPLETED FRONTEND UPDATES ✅
+
 1. **Shared Types Created**
+
    - ✅ `/frontend/src/types/index.ts` - Centralized TypeScript interfaces with `employeeId`
    - ✅ `/frontend/src/utils/userFormatting.ts` - Utility functions for consistent user display
 
@@ -320,21 +341,27 @@ Shift 08:00-16:00 assigned to PER004 - Siti Nurhaliza
    - ✅ All shift management pages (`page.tsx`, `page-backup.tsx`, `page-fixed.tsx`, `page-improved.tsx`, `page-working.tsx`)
 
 ### VERIFIED API RESPONSES ✅
+
 - ✅ Backend API `/users` endpoint confirmed returning `employeeId` field
 - ✅ Sample response: `{"id": 1, "employeeId": "ADM001", "username": "admin", ...}`
 
 ### IMPLEMENTATION STATUS
-**Backend: 100% COMPLETE** 
+
+**Backend: 100% COMPLETE**
+
 - All API responses now include `employeeId` field
 - Database has `employeeId` populated with proper format (ADM001, PER004, etc.)
 
 **Frontend: 95% COMPLETE**
+
 - Core components updated with new User interfaces
 - Shared types and utilities created for consistency
 - User display format standardized to show employeeId
 
 ### REMAINING TASKS (5%)
+
 1. **Frontend Integration Testing**
+
    - Test actual API consumption with authentication
    - Verify dropdown displays work correctly with real data
    - Test shift swap functionality with new employeeId format
@@ -345,6 +372,7 @@ Shift 08:00-16:00 assigned to PER004 - Siti Nurhaliza
    - Confirm backward compatibility with existing data
 
 ### CRITICAL SUCCESS
+
 ✅ **The backend-frontend synchronization for employeeId is now COMPLETE**
 ✅ **All User interfaces now include the employeeId field**
 ✅ **API responses verified to include employeeId**

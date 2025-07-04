@@ -8,21 +8,21 @@ datasource db {
 }
 
 model User {
-  id             Int          @id @default(autoincrement())
-  employeeId     String       @unique
-  username       String       @unique
-  email          String       @unique
+  id             Int        @id @default(autoincrement())
+  employeeId     String     @unique
+  username       String     @unique
+  email          String     @unique
   password       String
   namaDepan      String
   namaBelakang   String
   alamat         String?
   noHp           String
-  jenisKelamin   String
+  jenisKelamin   Gender
   tanggalLahir   DateTime
   role           Role
-  status         String       @default("ACTIVE")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  status         UserStatus @default(ACTIVE)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
   telegramChatId String?
   absensi        Absensi[]
   loginLogs      LoginLog[]
@@ -31,6 +31,9 @@ model User {
   swapFrom       ShiftSwap[]  @relation("SwapFrom")
   swapTo         ShiftSwap[]  @relation("SwapTo")
   token          Token[]
+  supervisorApprovals ShiftSwap[] @relation("SupervisorApprover")
+  targetApprovals     ShiftSwap[] @relation("TargetApprover")
+  unitHeadApprovals   ShiftSwap[] @relation("UnitHeadApprover")
 
   @@map("users")
 }
@@ -40,8 +43,8 @@ model Shift {
   tanggal     DateTime
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  jammulai    String
-  jamselesai  String
+  jammulai    DateTime     @db.Time
+  jamselesai  DateTime     @db.Time
   lokasishift String
   userId      Int
   lokasiEnum  LokasiShift?
@@ -95,16 +98,19 @@ model ShiftSwap {
   fromUser             User       @relation("SwapFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
   shift                Shift      @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   toUser               User       @relation("SwapTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  supervisorApprover   User?      @relation("SupervisorApprover", fields: [supervisorApprovedBy], references: [id], onDelete: SetNull)
+  targetApprover       User?      @relation("TargetApprover", fields: [targetApprovedBy], references: [id], onDelete: SetNull)
+  unitHeadApprover     User?      @relation("UnitHeadApprover", fields: [unitHeadApprovedBy], references: [id], onDelete: SetNull)
 
   @@map("shiftswaps")
 }
 
 model Kegiatan {
-  id              Int       @id @default(autoincrement())
+  id              Int               @id @default(autoincrement())
   nama            String
   deskripsi       String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   anggaran        Int?
   catatan         String?
   departemen      String?
@@ -114,13 +120,13 @@ model Kegiatan {
   lokasi          String
   lokasiDetail    String?
   penanggungJawab String
-  prioritas       String
-  status          String
+  prioritas       PrioritasKegiatan @default(SEDANG)
+  status          StatusKegiatan    @default(DRAFT)
   tanggalMulai    DateTime
   tanggalSelesai  DateTime?
   targetPeserta   String[]
-  waktuMulai      String
-  waktuSelesai    String?
+  waktuMulai      DateTime          @db.Time
+  waktuSelesai    DateTime?         @db.Time
 
   @@map("kegiatans")
 }
@@ -155,7 +161,7 @@ model Notifikasi {
   jenis        JenisNotifikasi
   status       StatusNotifikasi @default(UNREAD)
   data         Json?
-  sentVia      String           @default("WEB")
+  sentVia      SentViaChannel   @default(WEB)
   telegramSent Boolean          @default(false)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
@@ -170,6 +176,36 @@ enum Role {
   PERAWAT
   STAF
   SUPERVISOR
+}
+
+enum Gender {
+  L
+  P
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PrioritasKegiatan {
+  RENDAH
+  SEDANG
+  TINGGI
+  URGENT
+}
+
+enum StatusKegiatan {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum SentViaChannel {
+  WEB
+  TELEGRAM
+  BOTH
 }
 
 enum AbsensiStatus {

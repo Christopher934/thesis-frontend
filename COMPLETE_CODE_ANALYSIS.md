@@ -3,6 +3,7 @@
 ## 🏗️ **SYSTEM ARCHITECTURE OVERVIEW**
 
 ### **Multi-Tier Architecture**
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        RSUD ANUGERAH SYSTEM                            │
@@ -19,6 +20,7 @@
 This is a **comprehensive hospital management system** specifically designed for **RSUD Anugerah Tomohon** with the following core objectives:
 
 ### **Primary Functions:**
+
 1. **Staff Management** - Employee registration, roles, and profiles
 2. **Shift Scheduling** - Complex hospital shift management
 3. **Attendance Tracking** - Clock in/out with photo verification
@@ -27,6 +29,7 @@ This is a **comprehensive hospital management system** specifically designed for
 6. **Event Management** - Hospital activities and announcements
 
 ### **Target Users:**
+
 - **Hospital Administrators** - Full system control
 - **Supervisors** - Department management
 - **Medical Staff** (Doctors, Nurses) - Shift and attendance management
@@ -37,6 +40,7 @@ This is a **comprehensive hospital management system** specifically designed for
 ## 📁 **CODEBASE STRUCTURE ANALYSIS**
 
 ### **Root Directory:**
+
 ```
 /Thesis/
 ├── 📄 Documentation Files (*.md)
@@ -54,11 +58,13 @@ This is a **comprehensive hospital management system** specifically designed for
 ### **Core Architecture: `/backend/src/`**
 
 #### **1. Application Entry Point:**
+
 - **`main.ts`** - Application bootstrap, CORS setup, port 3001
 - **`app.module.ts`** - Root module, imports all feature modules
 - **`app.controller.ts`** - Basic health check endpoint
 
 #### **2. Authentication System: `/auth/`**
+
 ```typescript
 AuthModule
 ├── auth.service.ts     # JWT token generation, password validation
@@ -69,11 +75,13 @@ AuthModule
 ```
 
 **Key Features:**
+
 - **JWT Authentication** with 7-day expiration
 - **bcrypt Password Hashing**
 - **Role-based Authorization** (ADMIN, SUPERVISOR, DOKTER, PERAWAT, STAF)
 
 #### **3. User Management: `/user/`**
+
 ```typescript
 UserModule
 ├── user.service.ts           # CRUD operations, statistics
@@ -86,12 +94,14 @@ UserModule
 ```
 
 **Capabilities:**
+
 - **User Registration** with validation
-- **Profile Management** 
+- **Profile Management**
 - **Gender/Role Statistics** for dashboard
 - **Telegram Chat ID** management
 
 #### **4. Shift Management: `/shift/`**
+
 ```typescript
 ShiftModule
 ├── shift.service.ts              # Complex shift logic
@@ -103,14 +113,16 @@ ShiftModule
 ```
 
 **Shift Types (Based on RSUD Anugerah):**
+
 - **GEDUNG_ADMINISTRASI** (07:00-14:00)
-- **RAWAT_JALAN** (07:00-14:00) 
+- **RAWAT_JALAN** (07:00-14:00)
 - **RAWAT_INAP_3_SHIFT** (Pagi/Siang/Malam)
 - **GAWAT_DARURAT_3_SHIFT** (24/7 coverage)
 - **LABORATORIUM_2_SHIFT** (Pagi/Siang)
 - **FARMASI_2_SHIFT** (Pagi/Siang)
 
 #### **5. Attendance System: `/absensi/`**
+
 ```typescript
 AbsensiModule
 ├── absensi.service.ts     # Clock in/out logic
@@ -120,6 +132,7 @@ AbsensiModule
 ```
 
 **Features:**
+
 - **Clock In/Out** with timestamp
 - **Photo Verification** (optional)
 - **Location Tracking** for on-site verification
@@ -127,6 +140,7 @@ AbsensiModule
 - **Monthly Reports** generation
 
 #### **6. Notification System: `/notifikasi/`**
+
 ```typescript
 NotifikasiModule
 ├── telegram-bot.service.ts           # Core Telegram API
@@ -138,6 +152,7 @@ NotifikasiModule
 ```
 
 **Telegram Bot Capabilities:**
+
 - **Commands:** `/start`, `/help`, `/myid`, `/status`
 - **Long Polling** for development
 - **Webhook Support** for production
@@ -145,6 +160,7 @@ NotifikasiModule
 - **Error Handling** and retry logic
 
 #### **7. Event Management: `/kegiatan/`**
+
 ```typescript
 KegiatanModule
 ├── kegiatan.service.ts     # Event CRUD
@@ -153,6 +169,7 @@ KegiatanModule
 ```
 
 #### **8. Database Layer: `/prisma/`**
+
 ```typescript
 PrismaModule
 ├── prisma.service.ts  # Database connection
@@ -167,6 +184,7 @@ PrismaModule
 ### **Core Architecture: `/frontend/src/`**
 
 #### **1. Application Structure:**
+
 ```
 src/
 ├── app/                    # Next.js 13+ App Router
@@ -174,7 +192,7 @@ src/
 │   ├── page.tsx           # Home page (auth redirect)
 │   ├── globals.css        # Global styles
 │   ├── admin/             # Administrator interface
-│   ├── pegawai/           # Employee interface  
+│   ├── pegawai/           # Employee interface
 │   ├── sign-in/           # Authentication
 │   └── dashboard/         # General dashboard
 ├── components/            # Reusable components
@@ -183,18 +201,20 @@ src/
 ```
 
 #### **2. Authentication Flow:**
+
 ```typescript
 // pages flow:
-Home (/) 
+Home (/)
   ↓ (check localStorage)
   ├── Admin Dashboard (/admin) - for ADMIN/SUPERVISOR
-  ├── Employee Dashboard (/pegawai) - for PERAWAT/DOKTER/STAF  
+  ├── Employee Dashboard (/pegawai) - for PERAWAT/DOKTER/STAF
   └── Sign In (/sign-in) - if not authenticated
 ```
 
 #### **3. User Interfaces by Role:**
 
 **Admin Interface (`/admin/`):**
+
 - **User Management** - Create, edit, delete staff
 - **Shift Management** - Assign and manage schedules
 - **Attendance Monitoring** - View all attendance records
@@ -203,6 +223,7 @@ Home (/)
 - **Notification Center** - Send announcements
 
 **Employee Interface (`/pegawai/`):**
+
 - **Personal Dashboard** - Quick status overview
 - **Attendance** - Clock in/out functionality
 - **My Shifts** - View assigned schedules
@@ -213,6 +234,7 @@ Home (/)
 #### **4. Key Components:**
 
 **Reusable Components (`/components/`):**
+
 - **Navigation** - Role-based menu systems
 - **Forms** - Consistent form styling and validation
 - **Tables** - Data display with sorting/filtering
@@ -227,6 +249,7 @@ Home (/)
 ### **Core Tables:**
 
 #### **1. Users Table:**
+
 ```sql
 users {
   id: Primary Key
@@ -243,13 +266,14 @@ users {
 ```
 
 #### **2. Shifts Table:**
+
 ```sql
 shifts {
   id: Primary Key
   userId: Foreign Key to users
   tanggal: Shift date
   jammulai: Start time (HH:MM)
-  jamselesai: End time (HH:MM) 
+  jamselesai: End time (HH:MM)
   lokasishift: Location (LokasiShift ENUM)
   tipeshift: Type description
   shiftType: ShiftType ENUM
@@ -258,6 +282,7 @@ shifts {
 ```
 
 #### **3. Attendance Table:**
+
 ```sql
 absensis {
   id: Primary Key
@@ -273,6 +298,7 @@ absensis {
 ```
 
 #### **4. Shift Swap Table:**
+
 ```sql
 shiftswaps {
   id: Primary Key
@@ -287,6 +313,7 @@ shiftswaps {
 ```
 
 #### **5. Notifications Table:**
+
 ```sql
 notifikasi {
   id: Primary Key
@@ -306,6 +333,7 @@ notifikasi {
 ## 🤖 **TELEGRAM BOT INTEGRATION**
 
 ### **Bot Architecture:**
+
 ```typescript
 TelegramBotService {
   // Core API wrapper
@@ -313,8 +341,8 @@ TelegramBotService {
   + getMe() // Bot information
   + setMyCommands() // Command setup
   + getUpdates() // Long polling
-  
-  // Hospital-specific features  
+
+  // Hospital-specific features
   + sendShiftReminder(userId, shiftData)
   + sendSwapApproval(userId, swapData)
   + sendSystemAlert(userId, message)
@@ -322,14 +350,16 @@ TelegramBotService {
 ```
 
 ### **Commands Available:**
+
 - **`/start`** - Welcome message + Chat ID
 - **`/help`** - Complete feature guide
 - **`/myid`** - Get Telegram Chat ID
 - **`/status`** - Bot and notification status
 
 ### **Notification Types:**
+
 1. **REMINDER_SHIFT** - Upcoming shift alerts
-2. **KONFIRMASI_TUKAR_SHIFT** - Swap approvals/rejections  
+2. **KONFIRMASI_TUKAR_SHIFT** - Swap approvals/rejections
 3. **PERSETUJUAN_CUTI** - Leave request status
 4. **KEGIATAN_HARIAN** - Daily activities
 5. **ABSENSI_TERLAMBAT** - Late attendance warnings
@@ -340,13 +370,15 @@ TelegramBotService {
 ## 🔄 **WORKFLOW EXAMPLES**
 
 ### **1. Employee Attendance Flow:**
+
 ```
-Employee opens app → Login → Dashboard → Click "Clock In" 
+Employee opens app → Login → Dashboard → Click "Clock In"
 → Take photo (optional) → Confirm location → Record attendance
 → Notification sent to supervisor → WebSocket update to admin dashboard
 ```
 
 ### **2. Shift Swap Request Flow:**
+
 ```
 Employee requests swap → Select target colleague → Provide reason
 → System validates → Notifications sent → Approval chain workflow
@@ -354,6 +386,7 @@ Employee requests swap → Select target colleague → Provide reason
 ```
 
 ### **3. Telegram Notification Flow:**
+
 ```
 Hospital event occurs → Backend triggered → Check user preferences
 → Create notification record → Send via Telegram API
@@ -365,6 +398,7 @@ Hospital event occurs → Backend triggered → Check user preferences
 ## ⚙️ **DEVELOPMENT & DEPLOYMENT**
 
 ### **Environment Configuration:**
+
 ```bash
 # Backend (.env)
 DATABASE_URL="postgresql://..."
@@ -376,6 +410,7 @@ NEXT_PUBLIC_API_URL="http://localhost:3001"
 ```
 
 ### **Development Commands:**
+
 ```bash
 # Start complete system
 ./start-thesis-system.sh
@@ -391,6 +426,7 @@ npx prisma db seed          # Seed sample data
 ```
 
 ### **Production Deployment:**
+
 ```bash
 # Docker deployment
 docker-compose up -d        # All services
@@ -406,6 +442,7 @@ npm run start:prod         # Production servers
 ## 🎯 **KEY FEATURES IMPLEMENTED**
 
 ### ✅ **Completed Features:**
+
 1. **Multi-role Authentication** - Complete JWT system
 2. **Comprehensive Shift Management** - RSUD Anugerah specific
 3. **Real-time Attendance** - Photo and location verification
@@ -418,6 +455,7 @@ npm run start:prod         # Production servers
 10. **Security Implementation** - Input validation, SQL injection prevention
 
 ### 🔧 **Technical Highlights:**
+
 - **TypeScript** throughout for type safety
 - **Prisma ORM** for database management
 - **JWT Authentication** with role-based access
@@ -432,18 +470,21 @@ npm run start:prod         # Production servers
 ## 📈 **SYSTEM METRICS & PERFORMANCE**
 
 ### **Database Performance:**
+
 - **PostgreSQL** with optimized queries
 - **Prisma** with connection pooling
 - **Indexed fields** for fast lookups
 - **11 migrations** successfully applied
 
 ### **API Performance:**
+
 - **RESTful endpoints** with proper HTTP methods
 - **Input validation** using DTO classes
 - **Error handling** with descriptive messages
 - **JWT middleware** for security
 
 ### **Frontend Performance:**
+
 - **Next.js optimizations** enabled
 - **Lazy loading** for components
 - **Image optimization** for faster loading
@@ -454,6 +495,7 @@ npm run start:prod         # Production servers
 ## 🎓 **THESIS CONTEXT**
 
 This system demonstrates:
+
 - **Full-stack development** capabilities
 - **Real-world problem solving** for hospital management
 - **Modern web technologies** implementation

@@ -9,6 +9,7 @@
         "dev:stable": "NODE_OPTIONS='--max-old-space-size=2048' next dev -p 3000",
         "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
         "build:docker": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=4096' next build",
+        "analyze": "ANALYZE=true NODE_OPTIONS='--max-old-space-size=4096' next build",
         "start": "next start",
         "lint": "next lint",
         "type-check": "tsc --noEmit",
@@ -42,6 +43,7 @@
         "zod": "^3.25.30"
     },
     "devDependencies": {
+        "@next/bundle-analyzer": "^15.3.5",
         "@types/axios": "^0.9.36",
         "@types/jest": "^29.5.14",
         "@types/js-cookie": "^3.0.6",

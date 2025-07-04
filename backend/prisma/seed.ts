@@ -16,6 +16,7 @@ async function main() {
     where: { username: 'admin' },
     update: {},
     create: {
+      employeeId: 'ADM001',
       username: 'admin',
       email: 'admin@rsud.id',
       password: commonPassword,
@@ -36,6 +37,7 @@ async function main() {
     where: { username: 'staff1' },
     update: {},
     create: {
+      employeeId: 'STA001',
       username: 'staff1',
       email: 'staff1@rsud.id',
       password: commonPassword,
@@ -54,6 +56,7 @@ async function main() {
     where: { username: 'staff2' },
     update: {},
     create: {
+      employeeId: 'STA002',
       username: 'staff2',
       email: 'staff2@rsud.id',
       password: commonPassword,
@@ -74,6 +77,7 @@ async function main() {
     where: { username: 'perawat1' },
     update: {},
     create: {
+      employeeId: 'PER001',
       username: 'perawat1',
       email: 'perawat1@rsud.id',
       password: commonPassword,
@@ -92,6 +96,7 @@ async function main() {
     where: { username: 'perawat2' },
     update: {},
     create: {
+      employeeId: 'PER002',
       username: 'perawat2',
       email: 'perawat2@rsud.id',
       password: commonPassword,
@@ -112,6 +117,7 @@ async function main() {
     where: { username: 'supervisor1' },
     update: {},
     create: {
+      employeeId: 'SUP001',
       username: 'supervisor1',
       email: 'supervisor1@rsud.id',
       password: commonPassword,
@@ -130,6 +136,7 @@ async function main() {
     where: { username: 'supervisor2' },
     update: {},
     create: {
+      employeeId: 'SUP002',
       username: 'supervisor2',
       email: 'supervisor2@rsud.id',
       password: commonPassword,

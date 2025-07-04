@@ -9,6 +9,7 @@ datasource db {
 
 model User {
   id             Int          @id @default(autoincrement())
+  employeeId     String       @unique
   username       String       @unique
   email          String       @unique
   password       String
@@ -39,7 +40,6 @@ model Shift {
   tanggal     DateTime
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  idpegawai   String
   jammulai    String
   jamselesai  String
   lokasishift String
@@ -239,6 +239,14 @@ enum JenisNotifikasi {
   SHIFT_BARU_DITAMBAHKAN
   SISTEM_INFO
   PENGUMUMAN
+  PERSONAL_REMINDER_ABSENSI
+  TUGAS_PERSONAL
+  HASIL_EVALUASI_PERSONAL
+  KONFIRMASI_SHIFT_SWAP_PERSONAL
+  PENGUMUMAN_INTERAKTIF
+  NOTIFIKASI_DIREKTUR
+  REMINDER_MEETING_PERSONAL
+  PERINGATAN_PERSONAL
 }
 
 enum StatusNotifikasi {

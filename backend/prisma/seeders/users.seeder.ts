@@ -8,6 +8,7 @@ async function main() {
 
   const users = [
     {
+      employeeId: 'ADM001',
       username: 'admin',
       email: 'admin@hospital.com',
       password: await bcrypt.hash('admin123', 10),
@@ -20,6 +21,7 @@ async function main() {
       role: 'ADMIN' as Role,
     },
     {
+      employeeId: 'SUP001',
       username: 'supervisor1',
       email: 'supervisor@hospital.com',
       password: await bcrypt.hash('supervisor123', 10),
@@ -32,6 +34,7 @@ async function main() {
       role: 'SUPERVISOR' as Role,
     },
     {
+      employeeId: 'PER001',
       username: 'perawat1',
       email: 'perawat@hospital.com',
       password: await bcrypt.hash('perawat123', 10),
@@ -44,6 +47,7 @@ async function main() {
       role: 'PERAWAT' as Role,
     },
     {
+      employeeId: 'DOK001',
       username: 'dokter1',
       email: 'dokter@hospital.com',
       password: await bcrypt.hash('dokter123', 10),

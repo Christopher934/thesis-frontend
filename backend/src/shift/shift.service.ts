@@ -30,7 +30,7 @@ export class ShiftService {
       // Check if the user exists before creating the shift
       let userId: number | undefined = createShiftDto.userId;
 
-      // If no userId is provided, try to find the user by idpegawai
+      // If no userId is provided, try to find the user by idpegawai (username for now)
       if (!userId && createShiftDto.idpegawai) {
         const user = await this.prisma.user.findFirst({
           where: { username: createShiftDto.idpegawai },
@@ -40,7 +40,7 @@ export class ShiftService {
           userId = user.id;
         } else {
           throw new Error(
-            'Cannot create shift: User with provided ID does not exist',
+            'Cannot create shift: User with provided employee ID does not exist',
           );
         }
       } else if (userId) {
@@ -55,7 +55,7 @@ export class ShiftService {
           );
         }
       } else {
-        throw new Error('Cannot create shift: No user ID or username provided');
+        throw new Error('Cannot create shift: No user ID or employee ID provided');
       }
 
       // Create a new shift in the database
@@ -70,7 +70,6 @@ export class ShiftService {
           tipeshift: createShiftDto.tipeshift,
           // Try to map string tipe to enum if possible
           tipeEnum: createShiftDto.tipeEnum || undefined,
-          idpegawai: createShiftDto.idpegawai,
           userId: userId, // Use the validated userId
         },
         include: {
@@ -80,6 +79,7 @@ export class ShiftService {
               namaDepan: true,
               namaBelakang: true,
               username: true,
+              employeeId: true,
             },
           },
         },
@@ -92,6 +92,7 @@ export class ShiftService {
         nama: shift.user
           ? `${shift.user.namaDepan} ${shift.user.namaBelakang}`
           : undefined,
+        idpegawai: shift.user?.username, // Include for compatibility
       };
     } catch (error) {
       console.error('[ShiftService][create] Error:', error);
@@ -107,6 +108,7 @@ export class ShiftService {
           user: {
             select: {
               id: true,
+              employeeId: true,
               namaDepan: true,
               namaBelakang: true,
               username: true,
@@ -145,6 +147,7 @@ export class ShiftService {
           user: {
             select: {
               id: true,
+              employeeId: true,
               namaDepan: true,
               namaBelakang: true,
               username: true,
@@ -183,7 +186,7 @@ export class ShiftService {
         throw new NotFoundException(`Shift with ID ${id} not found`);
       }
 
-      // Validate user if userId or idpegawai is being updated
+      // Validate user if userId or employeeId is being updated
       let validatedUserId = existingShift.userId;
 
       if (updateShiftDto.userId) {
@@ -199,18 +202,15 @@ export class ShiftService {
         }
 
         validatedUserId = updateShiftDto.userId;
-      } else if (
-        updateShiftDto.idpegawai &&
-        updateShiftDto.idpegawai !== existingShift.idpegawai
-      ) {
-        // If idpegawai is provided and different from existing, find the corresponding user
+      } else if (updateShiftDto.idpegawai) {
+        // If idpegawai is provided, find the corresponding user by username for now
         const user = await this.prisma.user.findFirst({
           where: { username: updateShiftDto.idpegawai },
         });
 
         if (!user) {
           throw new Error(
-            'Cannot update shift: User with provided username does not exist',
+            'Cannot update shift: User with provided employee ID does not exist',
           );
         }
 
@@ -235,7 +235,6 @@ export class ShiftService {
           tipeshift: updateShiftDto.tipeshift,
           // Update the enum field if provided
           tipeEnum: updateShiftDto.tipeEnum,
-          idpegawai: updateShiftDto.idpegawai,
           userId: validatedUserId,
         },
         include: {
@@ -245,6 +244,7 @@ export class ShiftService {
               namaDepan: true,
               namaBelakang: true,
               username: true,
+              employeeId: true,
             },
           },
         },
@@ -439,11 +439,12 @@ export class ShiftService {
           user: {
             select: {
               id: true,
+              employeeId: true,
               namaDepan: true,
               namaBelakang: true,
-              role: true
-            }
-          }
+              role: true,
+            },
+          },
         },
         orderBy: [
           { tanggal: 'asc' },

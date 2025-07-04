@@ -85,4 +85,200 @@ export class NotificationIntegrationService {
       { attendanceId: attendanceDetails?.id },
     );
   }
+
+  /**
+   * Enhanced User-Based Notification Methods
+   */
+
+  /**
+   * Send personal attendance reminder
+   */
+  async sendPersonalAttendanceReminder(
+    userId: number,
+    reminderData: {
+      shiftTime: string;
+      location: string;
+      reminderMinutes?: number;
+    },
+  ): Promise<any> {
+    return await this.notifikasiService.sendPersonalAttendanceReminder(
+      userId,
+      reminderData,
+    );
+  }
+
+  /**
+   * Send personal task assignment
+   */
+  async sendPersonalTaskAssignment(
+    userId: number,
+    taskData: {
+      taskId: number;
+      taskTitle: string;
+      description: string;
+      dueDate: string;
+      priority: 'LOW' | 'MEDIUM' | 'HIGH';
+      assignedBy: string;
+    },
+  ): Promise<any> {
+    return await this.notifikasiService.sendPersonalTaskAssignment(
+      userId,
+      taskData,
+    );
+  }
+
+  /**
+   * Send personal evaluation results
+   */
+  async sendPersonalEvaluationResults(
+    userId: number,
+    evaluationData: {
+      evaluationId: number;
+      evaluationType: string;
+      score: number;
+      feedback: string;
+      evaluatedBy: string;
+      evaluationDate: string;
+    },
+  ): Promise<any> {
+    return await this.notifikasiService.sendPersonalEvaluationResults(
+      userId,
+      evaluationData,
+    );
+  }
+
+  /**
+   * Send personal shift swap confirmation between users
+   */
+  async sendPersonalShiftSwapConfirmation(
+    requesterUserId: number,
+    targetUserId: number,
+    swapData: {
+      swapId: number;
+      requesterShiftDate: string;
+      requesterShiftTime: string;
+      targetShiftDate: string;
+      targetShiftTime: string;
+      reason: string;
+    },
+  ): Promise<{ requesterNotification: any; targetNotification: any }> {
+    return await this.notifikasiService.sendPersonalShiftSwapConfirmation(
+      requesterUserId,
+      targetUserId,
+      swapData,
+    );
+  }
+
+  /**
+   * Send interactive announcement to multiple users
+   */
+  async sendInteractiveAnnouncement(announcementData: {
+    title: string;
+    content: string;
+    targetRoles: string[];
+    interactionType: 'INTEREST' | 'CONFIRMATION' | 'FEEDBACK';
+    deadline?: string;
+    maxParticipants?: number;
+  }): Promise<any[]> {
+    return await this.notifikasiService.sendInteractiveAnnouncement(
+      announcementData,
+    );
+  }
+
+  /**
+   * Send director-level notification
+   */
+  async sendDirectorNotification(
+    userId: number,
+    notificationData: {
+      title: string;
+      content: string;
+      priority: 'URGENT' | 'HIGH' | 'NORMAL';
+      actionRequired?: boolean;
+      relatedDocumentId?: number;
+    },
+  ): Promise<any> {
+    return await this.notifikasiService.sendDirectorNotification(
+      userId,
+      notificationData,
+    );
+  }
+
+  /**
+   * Send personal meeting reminder
+   */
+  async sendPersonalMeetingReminder(
+    userId: number,
+    meetingData: {
+      meetingId: number;
+      title: string;
+      startTime: string;
+      location: string;
+      reminderMinutes: number;
+      organizer: string;
+    },
+  ): Promise<any> {
+    return await this.notifikasiService.sendPersonalMeetingReminder(
+      userId,
+      meetingData,
+    );
+  }
+
+  /**
+   * Send personal warning notification
+   */
+  async sendPersonalWarning(
+    userId: number,
+    warningData: {
+      warningType:
+        | 'ATTENDANCE'
+        | 'PERFORMANCE'
+        | 'CONDUCT'
+        | 'POLICY_VIOLATION';
+      severity: 'VERBAL' | 'WRITTEN' | 'FINAL';
+      reason: string;
+      issuedBy: string;
+      actionRequired?: string;
+      deadline?: string;
+    },
+  ): Promise<any> {
+    return await this.notifikasiService.sendPersonalWarning(userId, warningData);
+  }
+
+  /**
+   * Handle interactive notification response
+   */
+  async handleInteractiveResponse(
+    userId: number,
+    notificationId: number,
+    responseData: {
+      responseType: 'INTERESTED' | 'CONFIRMED' | 'DECLINED' | 'FEEDBACK';
+      message?: string;
+      additionalData?: any;
+    },
+  ): Promise<any> {
+    return await this.notifikasiService.handleInteractiveResponse(
+      userId,
+      notificationId,
+      responseData,
+    );
+  }
+
+  /**
+   * Get user-specific notifications with enhanced filtering
+   */
+  async getUserSpecificNotifications(
+    userId: number,
+    filters?: {
+      types?: any[];
+      status?: any;
+      isPersonal?: boolean;
+      requiresInteraction?: boolean;
+    },
+  ): Promise<any[]> {
+    return await this.notifikasiService.getUserSpecificNotifications(
+      userId,
+      filters,
+    );
+  }
 }

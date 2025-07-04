@@ -18,6 +18,7 @@ interface ShiftData {
   jamselesai: string;
   lokasishift: string;
   user: {
+    employeeId: string;
     namaDepan: string;
     namaBelakang: string;
     role: string;

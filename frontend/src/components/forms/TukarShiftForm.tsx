@@ -18,6 +18,7 @@ type CommonFormProps = {
 // User interface
 interface User {
   id: number;
+  employeeId: string;
   username: string;
   namaDepan: string;
   namaBelakang: string;
@@ -331,7 +332,7 @@ function TukarShiftForm({
                   <option value={0} className="text-gray-500">Pilih partner tukar shift...</option>
                   {users.map(user => (
                     <option key={user.id} value={user.id} className="text-gray-900">
-                      {user.namaDepan} {user.namaBelakang} ({user.username}) - {user.role}
+                      {user.employeeId} - {user.namaDepan} {user.namaBelakang} ({user.role})
                     </option>
                   ))}
                 </select>

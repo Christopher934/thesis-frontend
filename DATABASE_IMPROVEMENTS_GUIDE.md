@@ -17,42 +17,42 @@ This guide implements comprehensive database structure improvements for the RSUD
 
 ### **✅ 1. TABEL USERS - ENHANCED**
 
-| **Column** | **Before** | **After** | **Improvement** |
-|------------|------------|-----------|-----------------|
-| `jenisKelamin` | `VARCHAR(1) + CHECK` | `ENUM ('L', 'P')` | ✅ Type safety, better validation |
-| `status` | `VARCHAR(20)` | `ENUM ('ACTIVE', 'INACTIVE')` | ✅ Consistent status management |
-| `email` | `VARCHAR` | `VARCHAR + regex validation` | ✅ Email format validation |
-| `noHp` | `VARCHAR` | `VARCHAR + phone validation` | ✅ Indonesian phone format validation |
+| **Column**     | **Before**           | **After**                     | **Improvement**                       |
+| -------------- | -------------------- | ----------------------------- | ------------------------------------- |
+| `jenisKelamin` | `VARCHAR(1) + CHECK` | `ENUM ('L', 'P')`             | ✅ Type safety, better validation     |
+| `status`       | `VARCHAR(20)`        | `ENUM ('ACTIVE', 'INACTIVE')` | ✅ Consistent status management       |
+| `email`        | `VARCHAR`            | `VARCHAR + regex validation`  | ✅ Email format validation            |
+| `noHp`         | `VARCHAR`            | `VARCHAR + phone validation`  | ✅ Indonesian phone format validation |
 
 ### **✅ 2. TABEL SHIFTS - ENHANCED**
 
-| **Column** | **Before** | **After** | **Improvement** |
-|------------|------------|-----------|-----------------|
-| `jammulai` | `VARCHAR(5)` | `TIME` | ✅ Native SQL time validation |
-| `jamselesai` | `VARCHAR(5)` | `TIME` | ✅ Built-in time operations |
+| **Column**   | **Before**   | **After** | **Improvement**               |
+| ------------ | ------------ | --------- | ----------------------------- |
+| `jammulai`   | `VARCHAR(5)` | `TIME`    | ✅ Native SQL time validation |
+| `jamselesai` | `VARCHAR(5)` | `TIME`    | ✅ Built-in time operations   |
 
 ### **✅ 3. TABEL SHIFTSWAPS - ENHANCED**
 
-| **Column** | **Before** | **After** | **Improvement** |
-|------------|------------|-----------|-----------------|
+| **Column**             | **Before**    | **After**               | **Improvement**          |
+| ---------------------- | ------------- | ----------------------- | ------------------------ |
 | `supervisorApprovedBy` | `INT (no FK)` | `INT + FK to users(id)` | ✅ Referential integrity |
-| `targetApprovedBy` | `INT (no FK)` | `INT + FK to users(id)` | ✅ Referential integrity |
-| `unitHeadApprovedBy` | `INT (no FK)` | `INT + FK to users(id)` | ✅ Referential integrity |
+| `targetApprovedBy`     | `INT (no FK)` | `INT + FK to users(id)` | ✅ Referential integrity |
+| `unitHeadApprovedBy`   | `INT (no FK)` | `INT + FK to users(id)` | ✅ Referential integrity |
 
 ### **✅ 4. TABEL NOTIFIKASI - ENHANCED**
 
-| **Column** | **Before** | **After** | **Improvement** |
-|------------|------------|-----------|-----------------|
-| `sentVia` | `VARCHAR` | `ENUM ('WEB', 'TELEGRAM', 'BOTH')` | ✅ Type safety, standardized channels |
+| **Column** | **Before** | **After**                          | **Improvement**                       |
+| ---------- | ---------- | ---------------------------------- | ------------------------------------- |
+| `sentVia`  | `VARCHAR`  | `ENUM ('WEB', 'TELEGRAM', 'BOTH')` | ✅ Type safety, standardized channels |
 
 ### **✅ 5. TABEL KEGIATANS - ENHANCED**
 
-| **Column** | **Before** | **After** | **Improvement** |
-|------------|------------|-----------|-----------------|
-| `prioritas` | `VARCHAR + CHECK` | `ENUM ('RENDAH', 'SEDANG', 'TINGGI', 'URGENT')` | ✅ Type safety |
-| `status` | `VARCHAR + CHECK` | `ENUM ('DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELLED')` | ✅ Lifecycle management |
-| `waktuMulai` | `VARCHAR(5)` | `TIME` | ✅ Time precision |
-| `waktuSelesai` | `VARCHAR(5)` | `TIME` | ✅ Time operations |
+| **Column**     | **Before**        | **After**                                            | **Improvement**         |
+| -------------- | ----------------- | ---------------------------------------------------- | ----------------------- |
+| `prioritas`    | `VARCHAR + CHECK` | `ENUM ('RENDAH', 'SEDANG', 'TINGGI', 'URGENT')`      | ✅ Type safety          |
+| `status`       | `VARCHAR + CHECK` | `ENUM ('DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELLED')` | ✅ Lifecycle management |
+| `waktuMulai`   | `VARCHAR(5)`      | `TIME`                                               | ✅ Time precision       |
+| `waktuSelesai` | `VARCHAR(5)`      | `TIME`                                               | ✅ Time operations      |
 
 ---
 
@@ -147,7 +147,7 @@ CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_employee_id ON users(employeeId);
 
--- Shift table indexes  
+-- Shift table indexes
 CREATE INDEX idx_shifts_tanggal ON shifts(tanggal);
 CREATE INDEX idx_shifts_user_id ON shifts(userId);
 CREATE INDEX idx_shifts_shift_type ON shifts(shiftType);
@@ -202,7 +202,7 @@ SELECT unnest(enum_range(NULL::user_status_enum)) as status_values;
 SELECT unnest(enum_range(NULL::prioritas_enum)) as prioritas_values;
 
 -- Verify data integrity
-SELECT 
+SELECT
     table_name,
     COUNT(*) as record_count
 FROM (
@@ -220,10 +220,10 @@ FROM (
 ) t GROUP BY table_name, cnt;
 
 -- Check constraint violations
-SELECT COUNT(*) as valid_emails FROM users 
+SELECT COUNT(*) as valid_emails FROM users
 WHERE email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$';
 
-SELECT COUNT(*) as valid_phones FROM users 
+SELECT COUNT(*) as valid_phones FROM users
 WHERE "noHp" ~ '^(\+62|62|0)[0-9]{8,12}$';
 ```
 
@@ -232,22 +232,27 @@ WHERE "noHp" ~ '^(\+62|62|0)[0-9]{8,12}$';
 ## 🎯 **BENEFITS ACHIEVED**
 
 ### **✅ Type Safety**
+
 - ENUMs prevent invalid values at database level
 - Better data consistency across application
 
 ### **✅ Performance**
+
 - Strategically placed indexes improve query speed
 - TIME data type enables efficient time-based operations
 
 ### **✅ Data Integrity**
+
 - Foreign key constraints prevent orphaned records
 - Validation constraints ensure data quality
 
 ### **✅ Developer Experience**
+
 - TypeScript types auto-generated from Prisma schema
 - Better IDE support with ENUM autocomplete
 
 ### **✅ Maintainability**
+
 - Clearer data models with explicit types
 - Easier debugging with constrained values
 
@@ -265,13 +270,13 @@ WHERE "noHp" ~ '^(\+62|62|0)[0-9]{8,12}$';
 
 ## 🏆 **COMPLETION STATUS**
 
-| **Component** | **Status** | **Details** |
-|---------------|------------|-------------|
-| **Migration SQL** | ✅ READY | Complete migration script created |
-| **Prisma Schema** | ✅ UPDATED | All ENUMs and types updated |
-| **Performance Indexes** | ✅ INCLUDED | Strategic indexes defined |
-| **Data Validation** | ✅ ENHANCED | Constraints and validations added |
-| **Safety Measures** | ✅ IMPLEMENTED | Backup and rollback procedures |
+| **Component**           | **Status**     | **Details**                       |
+| ----------------------- | -------------- | --------------------------------- |
+| **Migration SQL**       | ✅ READY       | Complete migration script created |
+| **Prisma Schema**       | ✅ UPDATED     | All ENUMs and types updated       |
+| **Performance Indexes** | ✅ INCLUDED    | Strategic indexes defined         |
+| **Data Validation**     | ✅ ENHANCED    | Constraints and validations added |
+| **Safety Measures**     | ✅ IMPLEMENTED | Backup and rollback procedures    |
 
 ---
 
@@ -281,5 +286,5 @@ WHERE "noHp" ~ '^(\+62|62|0)[0-9]{8,12}$';
 
 ---
 
-*Database Structure Improvements Guide - Generated July 5, 2025*  
-*RSUD Anugerah Hospital Management System - Production Ready*
+_Database Structure Improvements Guide - Generated July 5, 2025_  
+_RSUD Anugerah Hospital Management System - Production Ready_

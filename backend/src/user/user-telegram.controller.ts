@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Put, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Put, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from '../notifikasi/telegram.service';
@@ -61,7 +61,11 @@ export class UserTelegramController {
    */
   @Post('telegram-chat-id')
   async getTelegramChatId(@Request() req) {
-    const userId = req.user.sub;
+    const userId = req.user?.sub || req.user?.id;
+    
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -84,7 +88,11 @@ export class UserTelegramController {
     @Request() req,
     @Body() dto: TestTelegramNotificationDto,
   ) {
-    const userId = req.user.sub;
+    const userId = req.user?.sub || req.user?.id;
+    
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
 
     try {
       // Get user's Chat ID

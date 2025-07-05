@@ -419,12 +419,33 @@ export class ShiftService {
    */
   async getShiftsByInstallation(installasi: string, startDate?: string, endDate?: string) {
     try {
+      // Map common installation names to enum values
+      const lokasiMapping: { [key: string]: string } = {
+        'IGD': 'GAWAT_DARURAT',
+        'GAWAT_DARURAT': 'GAWAT_DARURAT',
+        'RAWAT_JALAN': 'RAWAT_JALAN',
+        'RAWAT_INAP': 'RAWAT_INAP',
+        'LABORATORIUM': 'LABORATORIUM',
+        'FARMASI': 'FARMASI',
+        'RADIOLOGI': 'RADIOLOGI',
+        'GIZI': 'GIZI',
+        'KEAMANAN': 'KEAMANAN',
+        'LAUNDRY': 'LAUNDRY',
+        'CLEANING_SERVICE': 'CLEANING_SERVICE',
+        'SUPIR': 'SUPIR'
+      };
+
       const whereClause: any = {
         OR: [
-          { lokasishift: { contains: installasi, mode: 'insensitive' } },
-          { lokasiEnum: installasi as any }
+          { lokasishift: { contains: installasi, mode: 'insensitive' } }
         ]
       };
+
+      // Add enum condition if mapping exists
+      const enumValue = lokasiMapping[installasi.toUpperCase()];
+      if (enumValue) {
+        whereClause.OR.push({ lokasiEnum: enumValue });
+      }
 
       if (startDate && endDate) {
         whereClause.tanggal = {

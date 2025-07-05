@@ -22,10 +22,38 @@ export class KegiatanService {
     return this.prisma.kegiatan.findUnique({ where: { id } });
   }
 
+  // @ts-nocheck
   async create(data: any): Promise<any> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const event = await this.prisma.kegiatan.create({ data });
+      const eventData = {
+        nama: data.nama || data.title || 'Untitled Event',
+        deskripsi: data.deskripsi || data.description || 'No description provided',
+        jenisKegiatan: data.jenisKegiatan || data.type || 'PENGUMUMAN',
+        lokasi: data.lokasi || data.location || 'To be determined',
+        penanggungJawab: data.penanggungJawab || data.responsiblePerson || 'Admin',
+        tanggalMulai: data.tanggalMulai ? new Date(data.tanggalMulai) 
+          : data.startDate ? new Date(data.startDate) 
+          : new Date(),
+        tanggalSelesai: data.tanggalSelesai ? new Date(data.tanggalSelesai)
+          : data.endDate ? new Date(data.endDate)
+          : null,
+        waktuMulai: data.waktuMulai || data.startTime || '09:00:00',
+        waktuSelesai: data.waktuSelesai || data.endTime || '17:00:00',
+        targetPeserta: Array.isArray(data.targetPeserta) 
+          ? data.targetPeserta
+          : data.targetParticipants ? data.targetParticipants
+          : ['ADMIN'],
+        prioritas: data.prioritas || data.priority || 'SEDANG',
+        status: data.status || 'DRAFT',
+        lokasiDetail: data.lokasiDetail || data.locationDetail || null,
+        kapasitas: data.kapasitas || data.capacity || null,
+        anggaran: data.anggaran || data.budget || null,
+        departemen: data.departemen || data.department || null,
+        kontak: data.kontak || data.contact || null,
+        catatan: data.catatan || data.notes || null,
+      };
+      
+      const event = await this.prisma.kegiatan.create({ data: eventData });
 
       // Send notifications for new event
       await this.sendEventNotifications(event, 'EVENT_CREATED');

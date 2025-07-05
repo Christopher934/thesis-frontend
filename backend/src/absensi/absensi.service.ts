@@ -304,9 +304,20 @@ export class AbsensiService {
   }
 
   async verifyAttendance(absensiId: number, updateData: any) {
+    // Remove invalid 'verified' field and set appropriate status
+    const { verified, ...validData } = updateData;
+    
+    // If trying to verify, set status to HADIR and add verification note
+    if (verified) {
+      validData.status = 'HADIR';
+      validData.catatan = validData.catatan 
+        ? `${validData.catatan} - Verified by admin`
+        : 'Verified by admin';
+    }
+    
     return this.prisma.absensi.update({
       where: { id: absensiId },
-      data: updateData,
+      data: validData,
       include: {
         user: {
           select: {
@@ -322,8 +333,13 @@ export class AbsensiService {
   async getMonthlyReport(query: any) {
     const { year, month, userId } = query;
     
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    // Use current date as fallback if year/month not provided
+    const currentDate = new Date();
+    const reportYear = year ? parseInt(year) : currentDate.getFullYear();
+    const reportMonth = month ? parseInt(month) : currentDate.getMonth() + 1;
+    
+    const startDate = new Date(reportYear, reportMonth - 1, 1);
+    const endDate = new Date(reportYear, reportMonth, 0, 23, 59, 59);
 
     const where: any = {
       createdAt: {

@@ -122,32 +122,7 @@ export function EnhancedNotificationProvider({ children }: EnhancedNotificationP
     return null;
   }, []);
 
-  // Enhanced notification categorization
-  const categorizeNotification = useCallback((notification: EnhancedNotification) => {
-    const personalTypes = [
-      'PERSONAL_REMINDER_ABSENSI',
-      'TUGAS_PERSONAL',
-      'HASIL_EVALUASI_PERSONAL',
-      'KONFIRMASI_SHIFT_SWAP_PERSONAL',
-      'NOTIFIKASI_DIREKTUR',
-      'REMINDER_MEETING_PERSONAL',
-      'PERINGATAN_PERSONAL'
-    ];
-
-    const interactiveTypes = [
-      'PENGUMUMAN_INTERAKTIF',
-      'KONFIRMASI_SHIFT_SWAP_PERSONAL'
-    ];
-
-    return {
-      ...notification,
-      isPersonal: personalTypes.includes(notification.jenis),
-      requiresInteraction: interactiveTypes.includes(notification.jenis) || 
-                          Boolean(notification.data?.requiresInteraction),
-      category: getNotificationCategory(notification)
-    };
-  }, []);
-
+  // Get notification category helper function
   const getNotificationCategory = useCallback((notification: EnhancedNotification) => {
     const categoryMap: { [key: string]: string } = {
       'REMINDER_SHIFT': 'shift',
@@ -169,6 +144,32 @@ export function EnhancedNotificationProvider({ children }: EnhancedNotificationP
     };
     return categoryMap[notification.jenis] || 'other';
   }, []);
+
+  // Enhanced notification categorization
+  const categorizeNotification = useCallback((notification: EnhancedNotification) => {
+    const personalTypes = [
+      'PERSONAL_REMINDER_ABSENSI',
+      'TUGAS_PERSONAL',
+      'HASIL_EVALUASI_PERSONAL',
+      'KONFIRMASI_SHIFT_SWAP_PERSONAL',
+      'NOTIFIKASI_DIREKTUR',
+      'REMINDER_MEETING_PERSONAL',
+      'PERINGATAN_PERSONAL'
+    ];
+
+    const interactiveTypes = [
+      'PENGUMUMAN_INTERAKTIF',
+      'KONFIRMASI_SHIFT_SWAP_PERSONAL'
+    ];
+
+    return {
+      ...notification,
+      isPersonal: personalTypes.includes(notification.jenis),
+      requiresInteraction: interactiveTypes.includes(notification.jenis) ||
+                           Boolean(notification.data?.requiresInteraction),
+      category: getNotificationCategory(notification)
+    };
+  }, [getNotificationCategory]);
 
   // Fetch all notifications
   const fetchNotifications = useCallback(async () => {
@@ -297,15 +298,15 @@ export function EnhancedNotificationProvider({ children }: EnhancedNotificationP
       });
 
       if (response.ok) {
-        // Update local state
-        setNotifications(prev => 
+        // Update local state with consistent 'READ' status
+        setNotifications(prev =>
           prev.map(n => n.id === notificationId ? { ...n, status: 'READ' as const } : n)
         );
-        setPersonalNotifications(prev => 
-          prev.map(n => n.id === notificationId ? { ...n, status: 'read' as const } : n)
+        setPersonalNotifications(prev =>
+          prev.map(n => n.id === notificationId ? { ...n, status: 'READ' as const } : n)
         );
-        setInteractiveNotifications(prev => 
-          prev.map(n => n.id === notificationId ? { ...n, status: 'read' as const } : n)
+        setInteractiveNotifications(prev =>
+          prev.map(n => n.id === notificationId ? { ...n, status: 'READ' as const } : n)
         );
         
         // Update counts

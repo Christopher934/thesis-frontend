@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ShiftModule } from './shift/shift.module'; // Import ShiftModule
 import { KegiatanModule } from './kegiatan/kegiatan.module'; // Import KegiatanModule
 import { AbsensiModule } from './absensi/absensi.module'; // Import AbsensiModule
+import { NotifikasiModule } from './notifikasi/notifikasi.module'; // Import NotifikasiModule
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AbsensiModule } from './absensi/absensi.module'; // Import AbsensiModul
     ShiftModule,
     KegiatanModule,
     AbsensiModule,
+    NotifikasiModule,
   ], // Tambahkan ShiftModule, KegiatanModule, dan AbsensiModule
   controllers: [AppController],
   providers: [PrismaService, AppService],

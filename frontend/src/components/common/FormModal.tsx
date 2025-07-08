@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
-import PegawaiForm from '@/app/dashboard/list/pegawai/CreatePegawaiForm';
-import JadwalForm from '@/components/forms/JadwalForm';
+import PegawaiForm from '@/app/dashboard/list/pegawai/EnhancedCreatePegawaiForm';
+import JadwalForm from '@/components/forms/EnhancedJadwalForm';
 import TukarShiftForm from '@/components/forms/TukarShiftForm';
 import { joinUrl } from '@/lib/urlUtils';
 
@@ -106,6 +106,8 @@ export default function FormModal({
       let endpoint = '';
       if (table === 'pegawai') {
         endpoint = '/users/' + id; // gunakan endpoint UserController
+      } else if (table === 'jadwal') {
+        endpoint = '/shifts/' + id; // gunakan endpoint ShiftController
       } else {
         endpoint = '/' + table + 's/' + id;
       }

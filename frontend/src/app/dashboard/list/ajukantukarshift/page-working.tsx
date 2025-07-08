@@ -17,6 +17,7 @@ import FormModal from "@/components/common/FormModal";
 // TypeScript interfaces
 interface User {
   id: number;
+  employeeId: string;
   namaDepan: string;
   namaBelakang: string;
   role: string;

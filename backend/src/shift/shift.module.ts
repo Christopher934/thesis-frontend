@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { NotifikasiModule } from '../notifikasi/notifikasi.module';
 import { ShiftController } from './shift.controller';
 import { ShiftService } from './shift.service';
 import { ShiftSwapRequestController } from './shift-swap-request.controller';
@@ -10,6 +11,7 @@ import { JwtModule } from '@nestjs/jwt';
 @Module({
   imports: [
     PrismaModule,
+    NotifikasiModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'SECRET_KEY',
       signOptions: { expiresIn: '1d' },

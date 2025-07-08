@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationIntegrationService } from '../notifikasi/notification-integration.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { 
@@ -13,9 +14,15 @@ import {
 
 @Injectable()
 export class ShiftService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService?: NotificationIntegrationService,
+  ) {}
 
   async create(createShiftDto: CreateShiftDto) {
+    if (!createShiftDto) {
+      throw new BadRequestException('Shift data is required');
+    }
     try {
       // Parse the date string to a Date object
       const tanggalDate = new Date(createShiftDto.tanggal);
@@ -23,7 +30,7 @@ export class ShiftService {
       // Check if the user exists before creating the shift
       let userId: number | undefined = createShiftDto.userId;
 
-      // If no userId is provided, try to find the user by idpegawai
+      // If no userId is provided, try to find the user by idpegawai (username for now)
       if (!userId && createShiftDto.idpegawai) {
         const user = await this.prisma.user.findFirst({
           where: { username: createShiftDto.idpegawai },
@@ -33,7 +40,7 @@ export class ShiftService {
           userId = user.id;
         } else {
           throw new Error(
-            'Cannot create shift: User with provided ID does not exist',
+            'Cannot create shift: User with provided employee ID does not exist',
           );
         }
       } else if (userId) {
@@ -48,7 +55,7 @@ export class ShiftService {
           );
         }
       } else {
-        throw new Error('Cannot create shift: No user ID or username provided');
+        throw new Error('Cannot create shift: No user ID or employee ID provided');
       }
 
       // Create a new shift in the database
@@ -63,7 +70,6 @@ export class ShiftService {
           tipeshift: createShiftDto.tipeshift,
           // Try to map string tipe to enum if possible
           tipeEnum: createShiftDto.tipeEnum || undefined,
-          idpegawai: createShiftDto.idpegawai,
           userId: userId, // Use the validated userId
         },
         include: {
@@ -73,6 +79,7 @@ export class ShiftService {
               namaDepan: true,
               namaBelakang: true,
               username: true,
+              employeeId: true,
             },
           },
         },
@@ -85,9 +92,11 @@ export class ShiftService {
         nama: shift.user
           ? `${shift.user.namaDepan} ${shift.user.namaBelakang}`
           : undefined,
+        idpegawai: shift.user?.username, // Include for compatibility
       };
     } catch (error) {
-      throw error;
+      console.error('[ShiftService][create] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to create shift');
     }
   }
 
@@ -99,6 +108,7 @@ export class ShiftService {
           user: {
             select: {
               id: true,
+              employeeId: true,
               namaDepan: true,
               namaBelakang: true,
               username: true,
@@ -121,13 +131,15 @@ export class ShiftService {
       // Return empty array if no data found
       return [];
     } catch (error) {
-      console.error('Error fetching shifts:', error);
-      // Return empty array on error
-      return [];
+      console.error('[ShiftService][findAll] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to get shifts');
     }
   }
 
   async findOne(id: number) {
+    if (!id) {
+      throw new BadRequestException('Shift id is required');
+    }
     try {
       const shift = await this.prisma.shift.findUnique({
         where: { id },
@@ -135,6 +147,7 @@ export class ShiftService {
           user: {
             select: {
               id: true,
+              employeeId: true,
               namaDepan: true,
               namaBelakang: true,
               username: true,
@@ -154,11 +167,15 @@ export class ShiftService {
           : undefined,
       };
     } catch (error) {
-      throw error;
+      console.error('[ShiftService][findOne] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to get shift');
     }
   }
 
   async update(id: number, updateShiftDto: UpdateShiftDto) {
+    if (!id || !updateShiftDto) {
+      throw new BadRequestException('Shift id and update data are required');
+    }
     try {
       // Check if the shift exists
       const existingShift = await this.prisma.shift.findUnique({
@@ -169,7 +186,7 @@ export class ShiftService {
         throw new NotFoundException(`Shift with ID ${id} not found`);
       }
 
-      // Validate user if userId or idpegawai is being updated
+      // Validate user if userId or employeeId is being updated
       let validatedUserId = existingShift.userId;
 
       if (updateShiftDto.userId) {
@@ -185,18 +202,15 @@ export class ShiftService {
         }
 
         validatedUserId = updateShiftDto.userId;
-      } else if (
-        updateShiftDto.idpegawai &&
-        updateShiftDto.idpegawai !== existingShift.idpegawai
-      ) {
-        // If idpegawai is provided and different from existing, find the corresponding user
+      } else if (updateShiftDto.idpegawai) {
+        // If idpegawai is provided, find the corresponding user by username for now
         const user = await this.prisma.user.findFirst({
           where: { username: updateShiftDto.idpegawai },
         });
 
         if (!user) {
           throw new Error(
-            'Cannot update shift: User with provided username does not exist',
+            'Cannot update shift: User with provided employee ID does not exist',
           );
         }
 
@@ -221,7 +235,6 @@ export class ShiftService {
           tipeshift: updateShiftDto.tipeshift,
           // Update the enum field if provided
           tipeEnum: updateShiftDto.tipeEnum,
-          idpegawai: updateShiftDto.idpegawai,
           userId: validatedUserId,
         },
         include: {
@@ -231,6 +244,7 @@ export class ShiftService {
               namaDepan: true,
               namaBelakang: true,
               username: true,
+              employeeId: true,
             },
           },
         },
@@ -243,11 +257,15 @@ export class ShiftService {
           : undefined,
       };
     } catch (error) {
-      throw error;
+      console.error('[ShiftService][update] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to update shift');
     }
   }
 
   async remove(id: number) {
+    if (!id) {
+      throw new BadRequestException('Shift id is required');
+    }
     try {
       // Check if the shift exists
       const shift = await this.prisma.shift.findUnique({
@@ -265,7 +283,8 @@ export class ShiftService {
 
       return { message: `Shift with ID ${id} has been deleted` };
     } catch (error) {
-      throw error;
+      console.error('[ShiftService][remove] Error:', error);
+      throw new InternalServerErrorException(error.message || 'Failed to delete shift');
     }
   }
 
@@ -400,12 +419,33 @@ export class ShiftService {
    */
   async getShiftsByInstallation(installasi: string, startDate?: string, endDate?: string) {
     try {
+      // Map common installation names to enum values
+      const lokasiMapping: { [key: string]: string } = {
+        'IGD': 'GAWAT_DARURAT',
+        'GAWAT_DARURAT': 'GAWAT_DARURAT',
+        'RAWAT_JALAN': 'RAWAT_JALAN',
+        'RAWAT_INAP': 'RAWAT_INAP',
+        'LABORATORIUM': 'LABORATORIUM',
+        'FARMASI': 'FARMASI',
+        'RADIOLOGI': 'RADIOLOGI',
+        'GIZI': 'GIZI',
+        'KEAMANAN': 'KEAMANAN',
+        'LAUNDRY': 'LAUNDRY',
+        'CLEANING_SERVICE': 'CLEANING_SERVICE',
+        'SUPIR': 'SUPIR'
+      };
+
       const whereClause: any = {
         OR: [
-          { lokasishift: { contains: installasi, mode: 'insensitive' } },
-          { lokasiEnum: installasi as any }
+          { lokasishift: { contains: installasi, mode: 'insensitive' } }
         ]
       };
+
+      // Add enum condition if mapping exists
+      const enumValue = lokasiMapping[installasi.toUpperCase()];
+      if (enumValue) {
+        whereClause.OR.push({ lokasiEnum: enumValue });
+      }
 
       if (startDate && endDate) {
         whereClause.tanggal = {
@@ -420,11 +460,12 @@ export class ShiftService {
           user: {
             select: {
               id: true,
+              employeeId: true,
               namaDepan: true,
               namaBelakang: true,
-              role: true
-            }
-          }
+              role: true,
+            },
+          },
         },
         orderBy: [
           { tanggal: 'asc' },

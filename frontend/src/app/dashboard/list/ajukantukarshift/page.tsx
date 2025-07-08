@@ -18,6 +18,7 @@ import { textFormatter } from "@/lib/textFormatter";
 // TypeScript interfaces
 interface User {
   id: number;
+  employeeId: string;
   namaDepan: string;
   namaBelakang: string;
   role: string;

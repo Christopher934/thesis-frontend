@@ -18,6 +18,7 @@ import { PageHeader, PrimaryButton, ContentCard, Tabs } from "@/components/ui";
 // TypeScript interfaces
 interface User {
   id: number;
+  employeeId: string;
   namaDepan: string;
   namaBelakang: string;
   role: string;

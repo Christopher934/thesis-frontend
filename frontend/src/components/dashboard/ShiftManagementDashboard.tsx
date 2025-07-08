@@ -18,6 +18,7 @@ interface ShiftData {
   jamselesai: string;
   lokasishift: string;
   user: {
+    employeeId: string;
     namaDepan: string;
     namaBelakang: string;
     role: string;
@@ -186,14 +187,6 @@ const ShiftManagementDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard Management Shift</h1>
-        <div className="flex gap-3">
-          <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-            + Buat Shift Baru
-          </button>
-          <button className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
-            Export Data
-          </button>
-        </div>
       </div>
 
       {/* Staff Schedule Table */}
@@ -208,141 +201,69 @@ const ShiftManagementDashboard: React.FC = () => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nama Staff
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Jabatan
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Unit
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Shift
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Jam Kerja
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aksi
-                  </th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px] text-center">Nama Staff</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] text-center">Jabatan</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] text-center">Unit</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px] text-center">Shift</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[110px] text-center">Jam Kerja</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">Status</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {/* Sample data row 1 */}
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Ns. Ani Suryani</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Perawat</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">IGD</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Pagi</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">07:00 - 15:00</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Hadir
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                    <button className="text-blue-600 hover:text-blue-900">Detail</button>
-                  </td>
-                </tr>
-                
-                {/* Sample data row 2 */}
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Ns. Budi Santoso</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Perawat</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">ICU</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Sore</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">15:00 - 23:00</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Hadir
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                    <button className="text-blue-600 hover:text-blue-900">Detail</button>
-                  </td>
-                </tr>
-
-                {/* Sample data row 3 */}
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Ns. Citra Dewi</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Kepala Ruang</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Rawat Inap</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Malam</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">23:00 - 07:00</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                      Izin
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                    <button className="text-blue-600 hover:text-blue-900">Detail</button>
-                  </td>
-                </tr>
-
-                {/* Sample data row 4 */}
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Dr. Dani Pratama</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Dokter Jaga</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">IGD</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Pagi</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">07:00 - 15:00</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Hadir
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                    <button className="text-blue-600 hover:text-blue-900">Detail</button>
-                  </td>
-                </tr>
+                {scheduleData.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-6 text-gray-500">
+                      Tidak ada jadwal shift hari ini.
+                    </td>
+                  </tr>
+                ) : (
+                  scheduleData.map((shift) => {
+                    const jabatan = shift.user && shift.user.role ? shift.user.role : <span className="text-gray-300">-</span>;
+                    const shiftType = (shift as any).tipeshift || <span className="text-gray-300">-</span>;
+                    const jamKerja = `${shift.jammulai} - ${shift.jamselesai}`;
+                    let statusLabel = 'Belum Absensi';
+                    let statusClass = 'bg-gray-100 text-gray-800';
+                    const now = new Date();
+                    const jamMulai = new Date(`${shift.tanggal}T${shift.jammulai}`);
+                    if (shift.status === 'Hadir') {
+                      statusLabel = 'Hadir';
+                      statusClass = 'bg-green-100 text-green-800';
+                    } else if (shift.status === 'Izin') {
+                      statusLabel = 'Izin';
+                      statusClass = 'bg-yellow-100 text-yellow-800';
+                    } else if (now > jamMulai && !shift.status) {
+                      statusLabel = 'Terlambat';
+                      statusClass = 'bg-yellow-100 text-yellow-800';
+                    }
+                    return (
+                      <tr key={shift.id}>
+                        <td className="px-6 py-4 whitespace-nowrap align-middle">
+                          <div className="text-sm font-medium text-gray-900 min-w-[120px] text-center">{shift.user?.namaDepan} {shift.user?.namaBelakang}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap align-middle">
+                          <div className="text-sm text-gray-900 min-w-[100px] text-center">{jabatan}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap align-middle">
+                          <div className="text-sm text-gray-900 min-w-[100px] text-center">{shift.lokasishift}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap align-middle">
+                          <div className="text-sm text-gray-900 min-w-[80px] text-center">{shiftType}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap align-middle">
+                          <div className="text-sm text-gray-900 min-w-[110px] text-center">{jamKerja}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap align-middle">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}>{statusLabel}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap align-middle text-right text-sm font-medium">
+                          <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                          <button className="text-blue-600 hover:text-blue-900">Detail</button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

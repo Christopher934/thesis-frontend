@@ -55,6 +55,7 @@ export class UserService {
     return this.prisma.user.findMany({
       select: {
         id: true,
+        employeeId: true,
         username: true,
         email: true,
         namaDepan: true,
@@ -80,6 +81,7 @@ export class UserService {
       where: { id },
       select: {
         id: true,
+        employeeId: true,
         username: true,
         email: true,
         namaDepan: true,
@@ -126,9 +128,15 @@ export class UserService {
       tanggal = new Date(data.tanggalLahir);
     }
 
-    // 3.d) Simpan ke database
+    // 3.d) Generate employeeId
+    const role = data.role ?? 'STAF';
+    const rolePrefix = this.getRolePrefix(role);
+    const employeeId = await this.generateEmployeeId(rolePrefix);
+
+    // 3.e) Simpan ke database
     const createdUser = await this.prisma.user.create({
       data: {
+        employeeId: employeeId,
         username: data.username ?? '',
         email: data.email ?? '',
         password: hashed,
@@ -230,5 +238,50 @@ export class UserService {
     });
 
     return removed;
+  }
+
+  /**
+   * Helper method to get role prefix for employeeId
+   */
+  private getRolePrefix(role: Role): string {
+    const prefixMap: Record<Role, string> = {
+      ADMIN: 'ADM',
+      DOKTER: 'DOK',
+      PERAWAT: 'PER',
+      STAF: 'STA',
+      SUPERVISOR: 'SUP',
+    };
+    return prefixMap[role] || 'USR';
+  }
+
+  /**
+   * Helper method to generate unique employeeId
+   */
+  private async generateEmployeeId(prefix: string): Promise<string> {
+    // Find the highest existing employeeId with this prefix
+    const existingUsers = await this.prisma.user.findMany({
+      where: {
+        employeeId: {
+          startsWith: prefix,
+        },
+      },
+      select: {
+        employeeId: true,
+      },
+      orderBy: {
+        employeeId: 'desc',
+      },
+    });
+
+    let nextNumber = 1;
+    if (existingUsers.length > 0) {
+      // Extract number from the latest employeeId
+      const latestId = existingUsers[0].employeeId;
+      const numberPart = latestId.replace(prefix, '');
+      nextNumber = parseInt(numberPart) + 1;
+    }
+
+    // Format with leading zeros (e.g., ADM001)
+    return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
   }
 }

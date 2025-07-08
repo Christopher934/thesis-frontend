@@ -1,0 +1,151 @@
+import { Injectable } from '@nestjs/common';
+import { NotifikasiService } from '../notifikasi/notifikasi.service';
+// import { NotificationGateway } from '../notifikasi/notification.gateway'; // Temporarily commented out
+
+/**
+ * Service untuk integrasi sistem notifikasi dengan service-service lain
+ * Gunakan service ini di ShiftService, AbsensiService, dll untuk mengirim notifikasi
+ */
+@Injectable()
+export class NotificationIntegrationService {
+  constructor(
+    private notifikasiService: NotifikasiService,
+    // private notificationGateway: NotificationGateway, // Temporarily commented out
+  ) {}
+
+  /**
+   * Kirim notifikasi shift baru ke user
+   */
+  async notifyNewShift(userId: number, shiftData: any) {
+    try {
+      const notification = await this.notifikasiService.createNewShiftNotification(userId, shiftData);
+      
+      // Kirim real-time notification
+      if (this.notificationGateway.isUserConnected(userId)) {
+        await this.notificationGateway.sendNotificationToUser(userId, notification);
+      }
+      
+      return notification;
+    } catch (error) {
+      console.error('Failed to send new shift notification:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Kirim reminder shift (biasanya dipanggil oleh CRON job)
+   */
+  async notifyShiftReminder(userId: number, shiftData: any) {
+    try {
+      const notification = await this.notifikasiService.createShiftReminderNotification(userId, shiftData);
+      
+      // Kirim real-time notification
+      if (this.notificationGateway.isUserConnected(userId)) {
+        await this.notificationGateway.sendNotificationToUser(userId, notification);
+      }
+      
+      return notification;
+    } catch (error) {
+      console.error('Failed to send shift reminder notification:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Kirim notifikasi konfirmasi tukar shift
+   */
+  async notifyShiftSwapStatus(userId: number, swapData: any) {
+    try {
+      const notification = await this.notifikasiService.createShiftSwapNotification(userId, swapData);
+      
+      // Kirim real-time notification
+      if (this.notificationGateway.isUserConnected(userId)) {
+        await this.notificationGateway.sendNotificationToUser(userId, notification);
+      }
+      
+      return notification;
+    } catch (error) {
+      console.error('Failed to send shift swap notification:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Kirim notifikasi absensi terlambat
+   */
+  async notifyLateAttendance(userId: number, attendanceData: any) {
+    try {
+      const notification = await this.notifikasiService.createLateAttendanceNotification(userId, attendanceData);
+      
+      // Kirim real-time notification
+      if (this.notificationGateway.isUserConnected(userId)) {
+        await this.notificationGateway.sendNotificationToUser(userId, notification);
+      }
+      
+      return notification;
+    } catch (error) {
+      console.error('Failed to send late attendance notification:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Kirim notifikasi umum ke user
+   */
+  async notifyUser(userId: number, title: string, message: string, type: any, data?: any) {
+    try {
+      const notification = await this.notifikasiService.createNotification({
+        userId,
+        judul: title,
+        pesan: message,
+        jenis: type,
+        data,
+        sentVia: 'BOTH'
+      });
+      
+      // Kirim real-time notification
+      if (this.notificationGateway.isUserConnected(userId)) {
+        await this.notificationGateway.sendNotificationToUser(userId, notification);
+      }
+      
+      return notification;
+    } catch (error) {
+      console.error('Failed to send user notification:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Kirim notifikasi ke multiple users
+   */
+  async notifyMultipleUsers(userIds: number[], title: string, message: string, type: any, data?: any) {
+    const results = [];
+    
+    for (const userId of userIds) {
+      const result = await this.notifyUser(userId, title, message, type, data);
+      results.push(result);
+    }
+    
+    return results.filter(result => result !== null);
+  }
+
+  /**
+   * Broadcast notifikasi ke semua user yang terhubung
+   */
+  async broadcastNotification(title: string, message: string, type: any, data?: any) {
+    try {
+      // Broadcast via WebSocket
+      this.notificationGateway.broadcastNotification({
+        judul: title,
+        pesan: message,
+        jenis: type,
+        data,
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to broadcast notification:', error);
+      return false;
+    }
+  }
+}

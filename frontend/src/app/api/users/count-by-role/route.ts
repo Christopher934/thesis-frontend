@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   try {
     // Get authorization header if available
     const authHeader = request.headers.get('authorization') || '';
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'; // Updated to correct backend port
 
     // Proxy request to NestJS backend
     const response = await axios.get<CountByRoleResponse>(`${apiUrl}/users/count-by-role`, {

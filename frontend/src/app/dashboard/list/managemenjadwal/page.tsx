@@ -177,7 +177,7 @@ const ManagemenJadwalPage = () => {
                 
                 try {
                     // Try to fetch from the API server first
-                    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
                     
                     const [jadwalRes, usersRes] = await Promise.all([
                         fetch(joinUrl(apiUrl, '/shifts'), {

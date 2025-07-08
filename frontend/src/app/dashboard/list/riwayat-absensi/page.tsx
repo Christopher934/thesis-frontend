@@ -83,7 +83,7 @@ export default function RiwayatAbsensi() {
         ...(filters.status && { status: filters.status })
       });
 
-      const response = await fetch(`http://localhost:3001/absensi/my-attendance?${queryParams}`, {
+      const response = await fetch(`http://localhost:3002/absensi/my-attendance?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

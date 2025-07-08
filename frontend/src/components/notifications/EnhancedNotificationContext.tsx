@@ -104,7 +104,7 @@ export function EnhancedNotificationProvider({ children }: EnhancedNotificationP
   const [isConnected, setIsConnected] = useState(false);
 
   // Base API URL
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'; // Updated to correct backend port
 
   // Get auth token
   const getAuthToken = useCallback(() => {

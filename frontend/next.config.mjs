@@ -24,6 +24,9 @@ const nextConfig = {
   // Fast refresh optimization
   reactStrictMode: false, // Disabled for faster development
   
+  // Output configuration for Docker
+  output: 'standalone',
+  
   // Experimental features for performance
   experimental: {
     optimizeCss: true,

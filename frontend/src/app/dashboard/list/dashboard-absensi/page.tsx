@@ -81,7 +81,7 @@ export default function DashboardAbsensi() {
   const fetchTodayData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/absensi/today', {
+      const response = await fetch('http://localhost:3002/absensi/today', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -103,7 +103,7 @@ export default function DashboardAbsensi() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/absensi/dashboard-stats', {
+      const response = await fetch('http://localhost:3002/absensi/dashboard-stats', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -142,7 +142,7 @@ export default function DashboardAbsensi() {
         }
       }
 
-      const response = await fetch('http://localhost:3001/absensi/masuk', {
+      const response = await fetch('http://localhost:3002/absensi/masuk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ export default function DashboardAbsensi() {
         }
       }
 
-      const response = await fetch(`http://localhost:3001/absensi/keluar/${todayData.absensi.id}`, {
+      const response = await fetch(`http://localhost:3002/absensi/keluar/${todayData.absensi.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

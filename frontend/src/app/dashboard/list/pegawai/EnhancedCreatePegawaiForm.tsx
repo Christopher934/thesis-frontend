@@ -118,7 +118,7 @@ export default function EnhancedCreatePegawaiForm({
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
         const response = await fetch(`${apiUrl}/users`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -185,7 +185,7 @@ export default function EnhancedCreatePegawaiForm({
       const payload = filterEmptyFields(rawPayload);
 
       let res: Response;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       
       if (type === 'create') {
         res = await fetch(`${apiUrl}/users`, {

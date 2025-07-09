@@ -130,7 +130,7 @@ export default function AjukanTukarShiftPage() {
         setLoading(false);
         return;
       }
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       let url = `${apiUrl}/shift-swap-requests`;
       
       // Use different endpoints based on user role and tab
@@ -198,7 +198,7 @@ export default function AjukanTukarShiftPage() {
       // Determine the correct action based on the current tab
       const action = activeTab === 'supervisor-approvals' ? 'approve' : 'accept';
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       const response = await fetch(`${apiUrl}/shift-swap-requests/${requestId}/respond`, {
         method: 'PATCH',
         headers: {
@@ -237,7 +237,7 @@ export default function AjukanTukarShiftPage() {
       }
 
       // Use 'reject' for both tabs since supervisors also use 'reject' action
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       const response = await fetch(`${apiUrl}/shift-swap-requests/${requestId}/respond`, {
         method: 'PATCH',
         headers: {

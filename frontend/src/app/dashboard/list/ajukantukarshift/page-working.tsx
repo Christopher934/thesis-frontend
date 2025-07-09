@@ -142,7 +142,7 @@ export default function AjukanTukarShiftPage() {
         setLoading(false);
         return;
       }
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       // Always fetch only current user's requests for regular users
       let url = `${apiUrl}/shift-swap-requests`;
       if (currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && currentUserId) {
@@ -328,7 +328,7 @@ export default function AjukanTukarShiftPage() {
   const handleSupervisorAction = async (id: number, action: 'approve' | 'reject') => {
     try {
       const token = localStorage.getItem('token');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       const endpoint = `${apiUrl}/shift-swap-requests/${id}/${action === 'approve' ? 'approve-supervisor' : 'reject-supervisor'}`;
       const res = await fetch(endpoint, {
         method: 'PATCH',
@@ -350,7 +350,7 @@ export default function AjukanTukarShiftPage() {
   const handleTargetUserAction = async (id: number, action: 'approve' | 'reject') => {
     try {
       const token = localStorage.getItem('token');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       const endpoint = `${apiUrl}/shift-swap-requests/${id}/${action === 'approve' ? 'approve-target' : 'reject-target'}`;
       const res = await fetch(endpoint, {
         method: 'PATCH',

@@ -92,7 +92,7 @@ export default function LaporanStatistik() {
         ...(filters.userId && { userId: filters.userId })
       });
 
-      const response = await fetch(`http://localhost:3001/absensi/reports/monthly?${queryParams}`, {
+      const response = await fetch(`http://localhost:3002/absensi/reports/monthly?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -120,7 +120,7 @@ export default function LaporanStatistik() {
         ...(filters.userId && { userId: filters.userId })
       });
 
-      const response = await fetch(`http://localhost:3001/absensi/reports/stats?${queryParams}`, {
+      const response = await fetch(`http://localhost:3002/absensi/reports/stats?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

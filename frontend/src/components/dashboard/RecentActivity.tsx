@@ -26,7 +26,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ userRole, isAdmin = fal
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
         // Ganti endpoint sesuai backend Anda
         const res = await fetch(`${apiUrl}/activities`, {
           headers: { 'Authorization': `Bearer ${token}` }

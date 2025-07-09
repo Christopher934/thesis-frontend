@@ -22,7 +22,7 @@ const EventCalendar = () => {
             try {
                 // Always use the backend API URL, never /api for direct backend calls
                 let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-                if (!apiUrl) apiUrl = 'http://localhost:3001';
+                if (!apiUrl) apiUrl = 'http://localhost:3002'; // Updated to correct backend port
                 const res = await fetch(`${apiUrl}/events`);
                 if (!res.ok) throw new Error("Gagal memuat data event");
                 const data = await res.json();

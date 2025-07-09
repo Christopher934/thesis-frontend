@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token format' }, { status: 401 });
     }
     
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
     const userId = decoded.sub; // Get user ID from JWT token
 
     try {
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
 
     // Get the profile data from request body
     const profileData = await request.json();
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
     const userId = decoded.sub; // Get user ID from JWT token
 
     try {

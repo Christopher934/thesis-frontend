@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(request: NextRequest) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
   const authHeader = request.headers.get('authorization');
   if (!authHeader) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

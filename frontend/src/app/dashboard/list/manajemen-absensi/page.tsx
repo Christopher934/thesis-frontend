@@ -105,7 +105,7 @@ export default function ManajemenAbsensi() {
   const fetchDashboardStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/absensi/dashboard-stats', {
+      const response = await fetch('http://localhost:3002/absensi/dashboard-stats', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -133,7 +133,7 @@ export default function ManajemenAbsensi() {
         ...(filters.userId && { userId: filters.userId })
       });
 
-      const response = await fetch(`http://localhost:3001/absensi/all?${queryParams}`, {
+      const response = await fetch(`http://localhost:3002/absensi/all?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -153,7 +153,7 @@ export default function ManajemenAbsensi() {
   const handleVerifyAttendance = async (id: number, status: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3001/absensi/verify/${id}`, {
+      const response = await fetch(`http://localhost:3002/absensi/verify/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

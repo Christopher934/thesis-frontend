@@ -330,7 +330,7 @@ const JadwalForm = ({
                 try {
                     // Try to fetch from the API server first
                     let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-                    if (!apiUrl) apiUrl = 'http://localhost:3001';
+                    if (!apiUrl) apiUrl = 'http://localhost:3002';
                     
                     console.log('Using API URL for fetching users:', apiUrl);
                     const url = joinUrl(apiUrl, '/users');
@@ -429,7 +429,7 @@ const JadwalForm = ({
             
             // Use the real API
             let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-            if (!apiUrl) apiUrl = 'http://localhost:3001';
+            if (!apiUrl) apiUrl = 'http://localhost:3002';
             
             console.log('Using API URL for shifts:', apiUrl);
             const endpoint = type === "create" 

@@ -28,7 +28,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userRole, userI
   const [error, setError] = useState<string | null>(null);
 
   // Base API URL
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 
   // Get auth token
   const getAuthToken = () => {

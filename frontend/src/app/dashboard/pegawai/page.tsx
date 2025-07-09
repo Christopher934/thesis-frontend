@@ -105,7 +105,7 @@ function PegawaiPage() {
         throw new Error('Authentication token not found');
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       const response = await fetch(`${apiUrl}/shifts`, {
         headers: {
           'Authorization': `Bearer ${token}`,

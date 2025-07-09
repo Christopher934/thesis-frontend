@@ -30,7 +30,7 @@ export function useOptimizedUsers() {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Token not found');
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       const startTime = performance.now();
       
       const response = await fetch(`${apiUrl}/users`, {

@@ -4,6 +4,23 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Calendar, Download, Filter, TrendingUp, Users, Clock, AlertTriangle } from 'lucide-react';
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 interface MonthlyReport {
   id: number;
   jamMasuk: string | null;
@@ -400,13 +417,13 @@ export default function LaporanStatistik() {
                             {new Date(item.shift.tanggal).toLocaleDateString('id-ID')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {item.shift.jammulai} - {item.shift.jamselesai}
+                            {formatTime(item.shift.jammulai)} - {formatTime(item.shift.jamselesai)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {item.jamMasuk ? new Date(item.jamMasuk).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                            {item.jamMasuk ? formatTime(item.jamMasuk) : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {item.jamKeluar ? new Date(item.jamKeluar).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                            {item.jamKeluar ? formatTime(item.jamKeluar) : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 text-xs rounded ${

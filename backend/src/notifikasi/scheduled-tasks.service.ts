@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotifikasiService } from './notifikasi.service';
 
@@ -16,27 +16,17 @@ export class ScheduledTasksService {
   @Cron('*/15 * * * *')
   async sendShiftReminders() {
     this.logger.log('Checking for upcoming shifts to send reminders...');
-
     try {
-      // Ambil waktu 1 jam dari sekarang
-      const oneHourFromNow = new Date();
-      oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
-
-      // Cari shift yang akan dimulai dalam 1 jam (dengan toleransi 15 menit)
-      const upcomingShifts = await this.prisma.shift.findMany({
+      // Get all shifts for today first, then filter by time in application logic
+      const today = new Date();
+      const todayStart = new Date(today.toDateString());
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      const allShiftsToday = await this.prisma.shift.findMany({
         where: {
           tanggal: {
-            gte: new Date(new Date().toDateString()), // Hari ini
-            lt: new Date(new Date(new Date().toDateString()).getTime() + 24 * 60 * 60 * 1000), // Besok
+            gte: todayStart,
+            lt: todayEnd,
           },
-          AND: [
-            {
-              jammulai: {
-                gte: new Date(oneHourFromNow.getTime() - 15 * 60 * 1000).toTimeString().slice(0, 5), // 15 menit sebelum 1 jam
-                lte: new Date(oneHourFromNow.getTime() + 15 * 60 * 1000).toTimeString().slice(0, 5), // 15 menit setelah 1 jam
-              },
-            },
-          ],
         },
         include: {
           user: {
@@ -49,16 +39,22 @@ export class ScheduledTasksService {
           },
         },
       });
-
-      // Kirim reminder untuk setiap shift
+      // Filter shifts that start within the next hour (with 15 minute tolerance)
+      const oneHourFromNow = new Date();
+      oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+      const upcomingShifts = allShiftsToday.filter(shift => {
+        const shiftStart = new Date(shift.jammulai);
+        const shiftTimeInMinutes = shiftStart.getHours() * 60 + shiftStart.getMinutes();
+        const targetTimeInMinutes = oneHourFromNow.getHours() * 60 + oneHourFromNow.getMinutes();
+        return Math.abs(shiftTimeInMinutes - targetTimeInMinutes) <= 15;
+      });
       for (const shift of upcomingShifts) {
-        // Cek apakah reminder sudah dikirim hari ini
         const existingReminder = await this.prisma.notifikasi.findFirst({
           where: {
             userId: shift.userId,
             jenis: 'REMINDER_SHIFT',
             createdAt: {
-              gte: new Date(new Date().toDateString()), // Hari ini
+              gte: todayStart,
             },
             data: {
               path: ['shiftId'],
@@ -66,7 +62,6 @@ export class ScheduledTasksService {
             },
           },
         });
-
         if (!existingReminder) {
           await this.notifikasiService.createShiftReminderNotification(
             shift.userId,
@@ -78,13 +73,11 @@ export class ScheduledTasksService {
               lokasishift: shift.lokasishift,
             }
           );
-
           this.logger.log(
             `Shift reminder sent to user ${shift.user.namaDepan} ${shift.user.namaBelakang} for shift at ${shift.jammulai}`
           );
         }
       }
-
       this.logger.log(`Processed ${upcomingShifts.length} upcoming shifts`);
     } catch (error) {
       this.logger.error('Error sending shift reminders:', error);
@@ -92,23 +85,18 @@ export class ScheduledTasksService {
   }
 
   // Jalankan setiap hari pada jam 8 pagi untuk cek absensi terlambat
-  @Cron('0 8 * * *') // 8:00 AM setiap hari
+  @Cron('0 8 * * *')
   async checkLateAttendance() {
     this.logger.log('Checking for late attendance...');
-
     try {
       const today = new Date();
       const todayStart = new Date(today.toDateString());
-      
-      // Cari shift hari ini yang sudah dimulai tapi belum ada absensi masuk
-      const shiftsWithoutAttendance = await this.prisma.shift.findMany({
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      const allShiftsToday = await this.prisma.shift.findMany({
         where: {
           tanggal: {
             gte: todayStart,
-            lt: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000),
-          },
-          jammulai: {
-            lt: new Date().toTimeString().slice(0, 5), // Shift sudah dimulai
+            lt: todayEnd,
           },
         },
         include: {
@@ -123,18 +111,21 @@ export class ScheduledTasksService {
           absensi: true,
         },
       });
-
-      // Filter shift yang belum ada absensi masuk
-      const lateShifts = shiftsWithoutAttendance.filter(shift => !shift.absensi || !shift.absensi.jamMasuk);
-
+      const now = new Date();
+      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+      const shiftsWithoutAttendance = allShiftsToday.filter(shift => {
+        const shiftStart = new Date(shift.jammulai);
+        const shiftTimeInMinutes = shiftStart.getHours() * 60 + shiftStart.getMinutes();
+        return shiftTimeInMinutes < currentTimeInMinutes && (!shift.absensi || !shift.absensi.jamMasuk);
+      });
+      const lateShifts = shiftsWithoutAttendance;
       for (const shift of lateShifts) {
-        // Hitung durasi keterlambatan
-        const shiftStart = new Date(`${shift.tanggal.toDateString()} ${shift.jammulai}`);
+        const shiftStart = new Date(shift.jammulai);
+        const shiftTimeString = `${shiftStart.getHours().toString().padStart(2, '0')}:${shiftStart.getMinutes().toString().padStart(2, '0')}`;
+        const actualShiftStart = new Date(`${shift.tanggal.toDateString()} ${shiftTimeString}`);
         const now = new Date();
-        const lateDuration = Math.floor((now.getTime() - shiftStart.getTime()) / (1000 * 60)); // dalam menit
-
-        if (lateDuration > 15) { // Jika terlambat lebih dari 15 menit
-          // Cek apakah notifikasi keterlambatan sudah dikirim hari ini
+        const lateDuration = Math.floor((now.getTime() - actualShiftStart.getTime()) / (1000 * 60));
+        if (lateDuration > 15) {
           const existingLateNotification = await this.prisma.notifikasi.findFirst({
             where: {
               userId: shift.userId,
@@ -148,26 +139,23 @@ export class ScheduledTasksService {
               },
             },
           });
-
           if (!existingLateNotification) {
             await this.notifikasiService.createLateAttendanceNotification(
               shift.userId,
               {
                 shiftId: shift.id,
                 tanggal: shift.tanggal,
-                jamMulaiShift: shift.jammulai,
+                jamMulaiShift: shiftTimeString,
                 jamMasuk: null,
                 durasiTerlambat: `${lateDuration} menit`,
               }
             );
-
             this.logger.log(
               `Late attendance notification sent to user ${shift.user.namaDepan} ${shift.user.namaBelakang}, late by ${lateDuration} minutes`
             );
           }
         }
       }
-
       this.logger.log(`Processed ${lateShifts.length} late attendance cases`);
     } catch (error) {
       this.logger.error('Error checking late attendance:', error);
@@ -175,15 +163,12 @@ export class ScheduledTasksService {
   }
 
   // Jalankan setiap hari pada jam 6 pagi untuk kirim summary aktivitas harian
-  @Cron('0 6 * * *') // 6:00 AM setiap hari
+  @Cron('0 6 * * *')
   async sendDailyActivitySummary() {
     this.logger.log('Sending daily activity summary...');
-
     try {
       const today = new Date();
       const todayStart = new Date(today.toDateString());
-
-      // Ambil semua user yang punya shift hari ini
       const usersWithShiftsToday = await this.prisma.user.findMany({
         where: {
           shifts: {
@@ -195,7 +180,7 @@ export class ScheduledTasksService {
             },
           },
           telegramChatId: {
-            not: null, // Hanya user yang punya Telegram
+            not: null,
           },
         },
         include: {
@@ -209,22 +194,18 @@ export class ScheduledTasksService {
           },
         },
       });
-
       for (const user of usersWithShiftsToday) {
         const shifts = user.shifts;
         const shiftCount = shifts.length;
-        
         if (shiftCount > 0) {
-          const shiftTimes = shifts.map(s => `${s.jammulai} - ${s.jamselesai} (${s.lokasishift})`).join('\n');
-          
-          const pesan = `Selamat pagi! Berikut jadwal shift Anda hari ini:
-
-📅 Tanggal: ${todayStart.toLocaleDateString('id-ID')}
-🕒 Jadwal Shift (${shiftCount} shift):
-${shiftTimes}
-
-Semoga hari Anda produktif! 💪`;
-
+          const shiftTimes = shifts.map(s => {
+            const startTime = new Date(s.jammulai);
+            const endTime = new Date(s.jamselesai);
+            const startTimeString = `${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')}`;
+            const endTimeString = `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`;
+            return `${startTimeString} - ${endTimeString} (${s.lokasishift})`;
+          }).join('\n');
+          const pesan = `Selamat pagi! Berikut jadwal shift Anda hari ini:\n\n📅 Tanggal: ${todayStart.toLocaleDateString('id-ID')}\n🕒 Jadwal Shift (${shiftCount} shift):\n${shiftTimes}\n\nSemoga hari Anda produktif! 💪`;
           await this.notifikasiService.createNotification({
             userId: user.id,
             judul: '🌅 Summary Aktivitas Harian',
@@ -236,11 +217,9 @@ Semoga hari Anda produktif! 💪`;
             },
             sentVia: 'TELEGRAM',
           });
-
           this.logger.log(`Daily summary sent to user ${user.namaDepan} ${user.namaBelakang}`);
         }
       }
-
       this.logger.log(`Sent daily summaries to ${usersWithShiftsToday.length} users`);
     } catch (error) {
       this.logger.error('Error sending daily activity summary:', error);

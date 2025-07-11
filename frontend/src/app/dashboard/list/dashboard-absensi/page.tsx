@@ -3,6 +3,23 @@
 import { useState, useEffect } from 'react';
 import { Clock, MapPin, Camera, User, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 interface Shift {
   id: number;
   tanggal: string;
@@ -38,13 +55,6 @@ const capitalizeWords = (str: string) => {
   return str.toLowerCase().split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
-};
-
-const formatTime = (timeString: string) => {
-  return new Date(timeString).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
 };
 
 const formatDate = (dateString: string) => {
@@ -278,7 +288,7 @@ export default function DashboardAbsensi() {
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span className="text-sm">
-                  {todayData.shift.jammulai} - {todayData.shift.jamselesai}
+                  {formatTime(todayData.shift.jammulai)} - {formatTime(todayData.shift.jamselesai)}
                 </span>
               </div>
               <div className="flex items-center gap-2">

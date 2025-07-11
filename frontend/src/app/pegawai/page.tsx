@@ -9,6 +9,23 @@ import { getApiUrl } from '@/config/api';
 import { fetchWithFallback } from '@/utils/fetchWithFallback';
 import Image from 'next/image';
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 // Load components that need browser-only (like FullCalendar) without SSR
 const BigCalendar = dynamic(() => import('@/components/common/BigCalendar'), { ssr: false });
 const EventCalendar = dynamic(() => import('@/components/common/EventCalendar'), { ssr: false });
@@ -191,7 +208,7 @@ function PegawaiPage() {
                         <div>
                           <p className="font-medium">{shift.lokasishift}</p>
                           <p className="text-sm text-gray-500">
-                            {new Date(shift.tanggal).toLocaleDateString('id-ID')} • {shift.jammulai} - {shift.jamselesai}
+                            {new Date(shift.tanggal).toLocaleDateString('id-ID')} • {formatTime(shift.jammulai)} - {formatTime(shift.jamselesai)}
                           </p>
                         </div>
                       </div>

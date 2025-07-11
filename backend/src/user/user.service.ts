@@ -68,6 +68,7 @@ export class UserService {
         status: true,
         createdAt: true,
         updatedAt: true,
+        telegramChatId: true,
       },
       orderBy: { id: 'asc' },
     });
@@ -94,6 +95,7 @@ export class UserService {
         status: true,
         createdAt: true,
         updatedAt: true,
+        telegramChatId: true,
       },
     });
     if (!user) {
@@ -214,6 +216,7 @@ export class UserService {
         status: true,
         createdAt: true,
         updatedAt: true,
+        telegramChatId: true,
       },
     });
 

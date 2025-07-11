@@ -15,6 +15,23 @@ import FormModal from "@/components/common/FormModal";
 import { PageHeader, PrimaryButton, ContentCard, Tabs } from "@/components/ui";
 import { textFormatter } from "@/lib/textFormatter";
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 // TypeScript interfaces
 interface User {
   id: number;
@@ -407,7 +424,7 @@ export default function AjukanTukarShiftPage() {
                   <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>{item.shift.jammulai} - {item.shift.jamselesai}</span>
+                  <span>{formatTime(item.shift.jammulai)} - {formatTime(item.shift.jamselesai)}</span>
                 </div>
                 
                 {item.alasan && (

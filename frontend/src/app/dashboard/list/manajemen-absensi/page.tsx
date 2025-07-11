@@ -49,12 +49,20 @@ const capitalizeWords = (str: string) => {
     .join(' ');
 };
 
-const formatTime = (timeString: string | null) => {
-  if (!timeString) return '-';
-  return new Date(timeString).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
 };
 
 const formatDate = (dateString: string) => {
@@ -432,7 +440,7 @@ export default function ManajemenAbsensi() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {item.shift.jammulai} - {item.shift.jamselesai}
+                        {formatTime(item.shift.jammulai)} - {formatTime(item.shift.jamselesai)}
                       </div>
                       <div className="text-sm text-gray-500">
                         {capitalizeWords(item.shift.lokasishift)}

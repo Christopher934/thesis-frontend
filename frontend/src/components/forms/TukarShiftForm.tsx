@@ -6,6 +6,23 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, Clock, User, FileText, AlertCircle } from 'lucide-react';
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 // Types for form props
 type CommonFormProps = {
   type: 'create' | 'update';
@@ -394,7 +411,7 @@ function TukarShiftForm({
                   <option value={0} className="text-gray-500">Pilih shift Anda...</option>
                   {currentUserShifts.map(shift => (
                     <option key={shift.id} value={shift.id} className="text-gray-900">
-                      {shift.tanggal} | {shift.jammulai}-{shift.jamselesai} | {formatLokasiShift(shift.lokasishift)}
+                      {shift.tanggal} | {formatTime(shift.jammulai)}-{formatTime(shift.jamselesai)} | {formatLokasiShift(shift.lokasishift)}
                     </option>
                   ))}
                 </select>

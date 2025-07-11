@@ -58,4 +58,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsString()
+  telegramChatId?: string;
 }

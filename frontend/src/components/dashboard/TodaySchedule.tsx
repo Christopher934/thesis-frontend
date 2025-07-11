@@ -3,6 +3,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, MapPin, User } from 'lucide-react';
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 interface TodayScheduleItem {
   id: string;
   time: string;
@@ -107,7 +124,7 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
 
         return {
           id: shift.id.toString(),
-          time: shift.jammulai,
+          time: formatTime(shift.jammulai),
           location: formatLocation(shift.lokasishift),
           type: `Shift ${shift.tipeshift}`,
           status,
@@ -267,7 +284,7 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
               <div className="flex-shrink-0">
                 <div className="flex flex-col items-center">
                   <Clock className="w-5 h-5 mb-1" />
-                  <span className="text-sm font-bold">{item.time}</span>
+                  <span className="text-sm font-bold">{formatTime(item.time)}</span>
                 </div>
               </div>
               

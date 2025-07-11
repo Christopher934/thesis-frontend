@@ -129,7 +129,7 @@ export default function AjukanTukarShiftPage() {
         setLoading(false);
         return;
       }
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       let url = `${apiUrl}/shift-swap-requests`;
       if (currentUserRole && !['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase()) && currentUserId) {
         url += `?userId=${currentUserId}`;

@@ -211,7 +211,7 @@ const EnhancedJadwalForm = ({
                     throw new Error('Anda belum login');
                 }
                 
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
                 
                 // Fetch users
                 const usersResponse = await fetch(`${apiUrl}/users`, {
@@ -300,7 +300,7 @@ const EnhancedJadwalForm = ({
                 shiftOption: selectedShiftType
             };
             
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             let response;
             
             if (type === 'create') {

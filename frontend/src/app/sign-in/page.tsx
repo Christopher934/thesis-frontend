@@ -43,7 +43,7 @@ export default function LoginPage() {
     try {
       // Pastikan bahwa apiUrl diproses dengan benar dan tidak undefined
       let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) apiUrl = 'http://localhost:3002'; // Updated to correct backend port
+      if (!apiUrl) apiUrl = 'http://localhost:3001'; // Updated to correct backend port
       
       const res = await fetch(apiUrl + '/auth/login', {
         method: 'POST',

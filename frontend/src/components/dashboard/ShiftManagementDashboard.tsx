@@ -56,7 +56,7 @@ const ShiftManagementDashboard: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       
       // Fetch total active staff
       const usersResponse = await fetch(`${apiUrl}/users`, {

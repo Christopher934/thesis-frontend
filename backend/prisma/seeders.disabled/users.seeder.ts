@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, Gender } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -16,7 +16,7 @@ async function main() {
       namaBelakang: 'System',
       alamat: 'Rumah Sakit',
       noHp: '081234567890',
-      jenisKelamin: 'Laki-laki',
+      jenisKelamin: 'L' as Gender,
       tanggalLahir: new Date('1990-01-01'),
       role: 'ADMIN' as Role,
     },
@@ -29,7 +29,7 @@ async function main() {
       namaBelakang: 'Johnson',
       alamat: 'Jakarta',
       noHp: '081234567891',
-      jenisKelamin: 'Perempuan',
+      jenisKelamin: 'P' as Gender,
       tanggalLahir: new Date('1985-05-15'),
       role: 'SUPERVISOR' as Role,
     },
@@ -42,7 +42,7 @@ async function main() {
       namaBelakang: 'Nurhaliza',
       alamat: 'Jakarta',
       noHp: '081234567892',
-      jenisKelamin: 'Perempuan',
+      jenisKelamin: 'P' as Gender,
       tanggalLahir: new Date('1992-08-20'),
       role: 'PERAWAT' as Role,
     },
@@ -55,7 +55,7 @@ async function main() {
       namaBelakang: 'Wijaya',
       alamat: 'Jakarta',
       noHp: '081234567893',
-      jenisKelamin: 'Laki-laki',
+      jenisKelamin: 'L' as Gender,
       tanggalLahir: new Date('1988-03-10'),
       role: 'DOKTER' as Role,
     }

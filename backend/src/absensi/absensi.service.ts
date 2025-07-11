@@ -46,7 +46,8 @@ export class AbsensiService {
       }
 
       const jamMasuk = new Date();
-      const status = this.determineStatus(shift.jammulai, jamMasuk);
+      const shiftStartTime = shift.jammulai.toTimeString().split(' ')[0]; // Convert DateTime to HH:MM:SS format
+      const status = this.determineStatus(shiftStartTime, jamMasuk);
 
       return this.prisma.absensi.create({
         data: {

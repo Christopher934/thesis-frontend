@@ -3,7 +3,7 @@
  * Prevents double slashes in URLs when the base URL might end with a slash
  * Handles various URL formats and edge cases
  * 
- * @param baseUrl - The base API URL (e.g., 'http://localhost:3002')
+ * @param baseUrl - The base API URL (e.g., 'http://localhost:3001')
  * @param endpoint - The API endpoint starting with '/' (e.g., '/auth/login')
  * @returns Properly joined URL
  */

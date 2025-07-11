@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from './telegram.service';
-import { JenisNotifikasi, StatusNotifikasi } from '@prisma/client';
+import { JenisNotifikasi, StatusNotifikasi, SentViaChannel } from '@prisma/client';
 
 export interface CreateNotificationDto {
   userId: number;
@@ -9,13 +9,13 @@ export interface CreateNotificationDto {
   pesan: string;
   jenis: JenisNotifikasi;
   data?: any;
-  sentVia?: string;
+  sentVia?: SentViaChannel;
 }
 
 export interface UpdateNotificationDto {
   status?: StatusNotifikasi;
   telegramSent?: boolean;
-  sentVia?: string;
+  sentVia?: SentViaChannel;
 }
 
 @Injectable()
@@ -269,7 +269,7 @@ export class NotifikasiService {
           pesan: dto.pesan,
           jenis: dto.jenis,
           data: dto.data,
-          sentVia: dto.sentVia || 'WEB',
+          sentVia: dto.sentVia || SentViaChannel.WEB,
         },
         include: {
           user: {
@@ -284,7 +284,7 @@ export class NotifikasiService {
       });
 
       // Jika user punya Telegram Chat ID, kirim ke Telegram
-      if (notification.user.telegramChatId) {
+      if (notification.user && notification.user.telegramChatId) {
         await this.sendToTelegram(notification);
       }
 

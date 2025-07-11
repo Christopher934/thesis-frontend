@@ -89,7 +89,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, eventId, initialData }
     setIsSubmitting(true);
     try {
       let apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) apiUrl = 'http://localhost:3002';
+      if (!apiUrl) apiUrl = 'http://localhost:3001';
       let payload;
       if (eventId && initialData) {
         // Saat update, gunakan data lama jika field kosong (kecuali namaEvent)

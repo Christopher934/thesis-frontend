@@ -89,7 +89,7 @@ export default function FormModal({
 
       try {
         // Try using the real API first
-        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         console.log('Using API URL:', apiUrl);
         
         // Use the URL utility for proper URL construction

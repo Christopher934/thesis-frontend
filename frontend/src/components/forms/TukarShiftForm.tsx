@@ -128,7 +128,7 @@ function TukarShiftForm({
         }
 
         // Fetch all users for partner selection
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         try {
           const usersResponse = await fetch(`${apiUrl}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -176,7 +176,7 @@ function TukarShiftForm({
     try {
       const token = localStorage.getItem('token');
       if (!token || userId === 0) return;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       try {
         const response = await fetch(`${apiUrl}/shifts?userId=${userId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -219,7 +219,7 @@ function TukarShiftForm({
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Token tidak ditemukan');
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const endpoint = type === 'create' ? '/shift-swap-requests' : `/shift-swap-requests/${data?.id}`;
       const method = type === 'create' ? 'POST' : 'PUT';
 

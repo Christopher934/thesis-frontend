@@ -144,10 +144,10 @@ export class UserService {
         namaBelakang: data.namaBelakang ?? '',
         alamat: data.alamat ?? null,
         noHp: data.noHp ?? '',
-        jenisKelamin: data.jenisKelamin ?? '',
+        jenisKelamin: (data.jenisKelamin as any) ?? 'L',
         tanggalLahir: tanggal ?? new Date('1970-01-01'),
-        role: data.role ?? 'STAF',
-        status: data.status ?? 'ACTIVE',
+        role: (data.role as any) ?? 'STAF',
+        status: (data.status as any) ?? 'ACTIVE',
       },
       // 3.e) Hanya return field yang diperlukan, tanpa password
       select: {

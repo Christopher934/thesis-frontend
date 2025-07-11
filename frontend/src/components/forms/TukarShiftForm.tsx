@@ -283,41 +283,56 @@ function TukarShiftForm({
   });
 
   return (
-    <div className="w-full max-w-full mx-auto px-2 sm:px-4">
-      <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
-            {type === 'create' ? 'Ajukan Tukar Shift' : 'Edit Pengajuan Tukar Shift'}
-          </h1>
-          <p className="text-gray-600 text-xs sm:text-sm">
-            Silakan lengkapi formulir berikut untuk mengajukan pertukaran shift
-          </p>
+    <div className="w-full max-w-full mx-auto px-4">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <User className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {type === 'create' ? 'Ajukan Tukar Shift' : 'Edit Pengajuan Tukar Shift'}
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">
+                Silakan lengkapi formulir berikut untuk mengajukan pertukaran shift
+              </p>
+            </div>
+          </div>
         </div>
 
-        {errorMessage && (
-          <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-sm" role="alert">
-            <span className="block font-medium">{errorMessage}</span>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded-lg shadow-sm" role="alert">
-            <span className="block font-medium">{successMessage}</span>
-          </div>
-        )}
-
-        {/* Partner Selection */}
-        <div className="bg-blue-50 p-2 sm:p-3 md:p-4 rounded-lg border border-blue-200 shadow-sm">
-          <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4 flex items-center">
-            <div className="p-1 sm:p-1.5 md:p-2 bg-blue-500 rounded-md mr-2 sm:mr-3 flex-shrink-0">
-              <User className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
+        <form onSubmit={onSubmit} className="p-6 space-y-6">
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+              <div className="flex items-center">
+                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                <span className="text-red-800 text-sm">{errorMessage}</span>
+              </div>
             </div>
-            <span className="truncate">Partner Tukar Shift</span>
-          </h3>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Pilih Partner Tukar Shift *
+          )}
+
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <div className="flex items-center">
+                <User className="h-4 w-4 text-green-600 mr-2" />
+                <span className="text-green-800 text-sm">{successMessage}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Partner Selection */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="p-2 bg-blue-500 rounded-lg mr-3">
+                <User className="h-4 w-4 text-white" />
+              </div>
+              Partner Tukar Shift
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Pilih Partner Tukar Shift *
               </label>
               <div className="relative">
                 <select
@@ -433,37 +448,38 @@ function TukarShiftForm({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`flex-1 py-3 px-4 sm:px-6 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 ${
-              isSubmitting
-                ? 'bg-blue-400 text-white cursor-not-allowed opacity-60'
-                : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 shadow-md hover:shadow-lg'
-            }`}
-          >
-            {isSubmitting ? 'Menyimpan...' : type === 'create' ? 'Kirim Pengajuan' : 'Update Pengajuan'}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="flex-1 bg-gray-500 text-white py-3 px-4 sm:px-6 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-200 font-semibold text-sm sm:text-base transition-all duration-200 disabled:opacity-60 shadow-md hover:shadow-lg"
-          >
-            Batal
-          </button>
-        </div>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`flex-1 py-3 px-4 sm:px-6 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 ${
+                isSubmitting
+                  ? 'bg-blue-400 text-white cursor-not-allowed opacity-60'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 shadow-md hover:shadow-lg'
+              }`}
+            >
+              {isSubmitting ? 'Menyimpan...' : type === 'create' ? 'Kirim Pengajuan' : 'Update Pengajuan'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1 bg-gray-500 text-white py-3 px-4 sm:px-6 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-200 font-semibold text-sm sm:text-base transition-all duration-200 disabled:opacity-60 shadow-md hover:shadow-lg"
+            >
+              Batal
+            </button>
+          </div>
 
-        {/* Info Footer */}
-        <div className="mt-3 sm:mt-4 md:mt-6 p-2 sm:p-3 md:p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">
-            <strong>Catatan:</strong> Pengajuan tukar shift harus disetujui oleh partner tukar shift dan supervisor. 
-            Untuk unit kritikal (ICU/IGD), diperlukan persetujuan tambahan dari kepala unit.
-          </p>
-        </div>
-      </form>
+          {/* Info Footer */}
+          <div className="mt-3 sm:mt-4 md:mt-6 p-2 sm:p-3 md:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">
+              <strong>Catatan:</strong> Pengajuan tukar shift harus disetujui oleh partner tukar shift dan supervisor. 
+              Untuk unit kritikal (ICU/IGD), diperlukan persetujuan tambahan dari kepala unit.
+            </p>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

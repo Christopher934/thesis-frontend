@@ -73,7 +73,6 @@ const formatLokasiShift = (lokasi: string): string => {
 const DEPARTMENT_CONFIGS = {
   'GEDUNG_ADMINISTRASI': {
     name: 'Gedung Administrasi',
-    icon: '🏢',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '17:00' },
     },
@@ -81,7 +80,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'RAWAT_JALAN': {
     name: 'Rawat Jalan',
-    icon: '🏥',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '15:00' },
     },
@@ -89,7 +87,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'RAWAT_INAP': {
     name: 'Rawat Inap',
-    icon: '🛏️',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '15:00' },
       'SIANG': { start: '15:00', end: '21:00' },
@@ -99,7 +96,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'GAWAT_DARURAT': {
     name: 'Gawat Darurat',
-    icon: '🚑',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '15:00' },
       'SIANG': { start: '15:00', end: '21:00' },
@@ -109,7 +105,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'LABORATORIUM': {
     name: 'Laboratorium',
-    icon: '🔬',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '17:00' },
       'MALAM': { start: '17:00', end: '08:00' },
@@ -118,7 +113,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'FARMASI': {
     name: 'Farmasi',
-    icon: '💊',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '17:00' },
       'MALAM': { start: '17:00', end: '08:00' },
@@ -127,7 +121,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'RADIOLOGI': {
     name: 'Radiologi',
-    icon: '📷',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '17:00' },
       'MALAM': { start: '17:00', end: '08:00' },
@@ -136,7 +129,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'GIZI': {
     name: 'Gizi',
-    icon: '🍽️',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '17:00' },
       'MALAM': { start: '17:00', end: '08:00' },
@@ -145,7 +137,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'KEAMANAN': {
     name: 'Keamanan',
-    icon: '🛡️',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '17:00' },
       'MALAM': { start: '17:00', end: '08:00' },
@@ -162,7 +153,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'CLEANING_SERVICE': {
     name: 'Cleaning Service',
-    icon: '🧹',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '15:00' },
     },
@@ -170,7 +160,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'SUPIR': {
     name: 'Supir',
-    icon: '🚗',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '17:00' },
       'MALAM': { start: '17:00', end: '08:00' },
@@ -179,7 +168,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'ICU': {
     name: 'ICU',
-    icon: '⚕️',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '15:00' },
       'SIANG': { start: '15:00', end: '21:00' },
@@ -189,7 +177,6 @@ const DEPARTMENT_CONFIGS = {
   },
   'NICU': {
     name: 'NICU',
-    icon: '👶',
     suggestedTimes: {
       'PAGI': { start: '08:00', end: '15:00' },
       'SIANG': { start: '15:00', end: '21:00' },
@@ -480,18 +467,18 @@ const JadwalForm = ({
     return (
         <div className="w-full max-w-3xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white p-5">
+            <div className="bg-white border-b border-gray-200 p-6">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/20 rounded-xl shadow-lg backdrop-blur-sm">
-                        <Calendar className="h-6 w-6" />
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                        <Calendar className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                        <h1 className="text-xl md:text-2xl font-bold mb-1">
+                        <h1 className="text-xl font-semibold text-gray-900">
                             {type === "create" ? "Tambah Jadwal Shift Baru" : "Edit Jadwal Shift"}
                         </h1>
-                        <p className="text-blue-100 text-xs md:text-sm leading-relaxed">
+                        <p className="text-gray-500 text-sm mt-1">
                             {type === "create" 
-                                ? "Buat jadwal shift baru untuk pegawai RSUD Anugerah Tomohon" 
+                                ? "Sistem terintegrasi dengan RSUD Anugerah shift management" 
                                 : "Perbarui informasi jadwal shift pegawai"
                             }
                         </p>
@@ -499,41 +486,37 @@ const JadwalForm = ({
                 </div>
             </div>
 
-            <form onSubmit={onSubmit} className="bg-white rounded-b-2xl shadow-2xl border border-gray-100">
-                <div className="p-5 space-y-6">
+            <form onSubmit={onSubmit} className="bg-white">
+                <div className="p-6 space-y-6">
                     {/* Error Message */}
                     {errorMessage && (
-                        <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded-lg shadow-sm">
+                        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
                             <div className="flex items-center">
-                                <div className="p-1 bg-red-100 rounded-lg mr-2">
-                                    <AlertCircle className="h-4 w-4 text-red-600" />
-                                </div>
-                                <span className="text-red-800 font-medium text-xs md:text-sm">{errorMessage}</span>
+                                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                                <span className="text-red-800 text-sm">{errorMessage}</span>
                             </div>
                         </div>
                     )}
 
                     {/* Success Message */}
                     {successMessage && (
-                        <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded-lg shadow-sm">
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
                             <div className="flex items-center">
-                                <div className="p-1 bg-green-100 rounded-lg mr-2">
-                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                </div>
-                                <span className="text-green-800 font-medium text-xs md:text-sm">{successMessage}</span>
+                                <CheckCircle2 className="h-4 w-4 text-green-600 mr-2" />
+                                <span className="text-green-800 text-sm">{successMessage}</span>
                             </div>
                         </div>
                     )}
                     
                     {/* Employee Information Section */}
-                    <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
-                                <Users className="h-5 w-5 text-white" />
+                            <div className="p-2 bg-blue-50 rounded-lg">
+                                <User className="h-4 w-4 text-blue-600" />
                             </div>
                             <div>
-                                <h2 className="text-lg md:text-xl font-bold text-gray-900">Informasi Pegawai</h2>
-                                <p className="text-gray-600 text-xs md:text-sm">Data pegawai yang akan dijadwalkan</p>
+                                <h2 className="text-lg font-semibold text-gray-900">Informasi Pegawai</h2>
+                                <p className="text-gray-600 text-sm">Data pegawai yang akan dijadwalkan</p>
                             </div>
                         </div>
                         
@@ -640,7 +623,7 @@ const JadwalForm = ({
                                     <option value="">-- Pilih Unit Kerja --</option>
                                     {Object.entries(DEPARTMENT_CONFIGS).map(([key, config]) => (
                                         <option key={key} value={key}>
-                                            {config.icon} {config.name}
+                                            {config.name}
                                         </option>
                                     ))}
                                 </select>
@@ -783,22 +766,22 @@ const JadwalForm = ({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 rounded-b-2xl flex flex-col sm:flex-row gap-3 sm:justify-end border-t border-gray-200">
+                <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex flex-col sm:flex-row gap-3 sm:justify-end border-t border-gray-200">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="px-5 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm shadow-sm"
+                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Batal
                     </button>
                     <button 
                         type="submit"
                         disabled={isSubmitting}
-                        className={`px-6 py-2 text-white font-semibold text-sm rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md ${
+                        className={`px-6 py-2 text-white font-medium rounded-lg transition shadow-sm ${
                             isSubmitting 
                                 ? 'bg-blue-400 cursor-not-allowed' 
-                                : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900'
+                                : 'bg-blue-600 hover:bg-blue-700'
                         }`}
                     >
                         {isSubmitting ? (
@@ -807,7 +790,7 @@ const JadwalForm = ({
                                 {type === "create" ? "Menyimpan..." : "Memperbarui..."}
                             </div>
                         ) : (
-                            <>{type === "create" ? "💾 Simpan Jadwal" : "✏️ Update Jadwal"}</>
+                            <>{type === "create" ? "Simpan Jadwal" : "Update Jadwal"}</>
                         )}
                     </button>
                 </div>

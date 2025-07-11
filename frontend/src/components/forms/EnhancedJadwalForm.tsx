@@ -373,63 +373,66 @@ const EnhancedJadwalForm = ({
 
     return (
         <div className="w-full max-w-3xl mx-auto max-h-[85vh] overflow-y-auto">
-            {/* Enhanced Header */}
-            <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 text-white rounded-t-2xl p-3 shadow-xl">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 p-6 rounded-t-2xl">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
-                        <Calendar className="h-6 w-6" />
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                        <Calendar className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold">
-                            {type === 'create' ? 'Tambah Jadwal Shift Baru' : 'Update Jadwal Shift'}
+                        <h2 className="text-xl font-semibold text-gray-900">
+                            {type === 'create' ? 'Tambah Jadwal Shift' : 'Update Jadwal Shift'}
                         </h2>
-                        <p className="text-blue-100 mt-1 text-sm">
-                            Sistem terintegrasi dengan RSUD Anugerah shift management
+                        <p className="text-gray-500 text-sm mt-1">
+                            {type === 'create' 
+                                ? 'Buat jadwal shift baru untuk pegawai' 
+                                : 'Perbarui jadwal shift yang ada'
+                            }
                         </p>
                     </div>
                 </div>
             </div>
 
-            <form onSubmit={onSubmit} className="bg-white rounded-b-2xl shadow-xl border-x border-b border-gray-200">
-                <div className="p-3 space-y-3">
+            <form onSubmit={onSubmit} className="bg-white rounded-b-2xl border border-gray-200 shadow-lg">
+                <div className="p-6 space-y-6">
                     {/* Error & Success Messages */}
                     {errorMessage && (
-                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+                        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
                             <div className="flex items-center">
-                                <AlertCircle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0" />
-                                <span className="text-red-800 font-medium">{errorMessage}</span>
+                                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                                <span className="text-red-800 text-sm">{errorMessage}</span>
                             </div>
                         </div>
                     )}
 
                     {successMessage && (
-                        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm">
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
                             <div className="flex items-center">
-                                <CheckCircle2 className="h-5 w-5 text-green-600 mr-2 flex-shrink-0" />
-                                <span className="text-green-800 font-medium">{successMessage}</span>
+                                <CheckCircle2 className="h-4 w-4 text-green-600 mr-2" />
+                                <span className="text-green-800 text-sm">{successMessage}</span>
                             </div>
                         </div>
                     )}
                     
                     {/* Employee Selection */}
-                    <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-5 rounded-xl border border-gray-200">
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                                <User className="h-5 w-5 text-white" />
+                            <div className="p-2 bg-blue-50 rounded-lg">
+                                <User className="h-4 w-4 text-blue-600" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">Pilih Pegawai</h3>
+                                <h3 className="text-lg font-semibold text-gray-900">Pilih Pegawai</h3>
                                 <p className="text-gray-600 text-sm">Pilih pegawai yang akan dijadwalkan</p>
                             </div>
                         </div>
                         
                         <div className="space-y-3">
-                            <label className="block text-sm font-semibold text-gray-800">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Employee ID <span className="text-red-500">*</span>
                             </label>
                             <select
                                 {...register("idpegawai")}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             >
                                 <option value="">-- Pilih Employee --</option>
                                 {users.map(user => (
@@ -446,7 +449,7 @@ const EnhancedJadwalForm = ({
                             )}
                             
                             {selectedUser && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                                     <div className="flex items-center gap-3">
                                         <CheckCircle2 className="h-5 w-5 text-green-600" />
                                         <div>
@@ -464,21 +467,20 @@ const EnhancedJadwalForm = ({
                     </div>
 
                     {/* Shift Location & Type Selection */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Shift Location */}
-                        <div className="space-y-3">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                <Building2 className="inline h-4 w-4 mr-1" />
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Lokasi/Instalasi <span className="text-red-500">*</span>
                             </label>
                             <select
                                 {...register("shiftLocation")}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             >
                                 <option value="">-- Pilih Lokasi --</option>
                                 {Object.entries(RSUD_SHIFT_TYPES).map(([key, config]) => (
                                     <option key={key} value={key}>
-                                        {config.icon} {config.name}
+                                        {config.name}
                                     </option>
                                 ))}
                             </select>
@@ -491,20 +493,19 @@ const EnhancedJadwalForm = ({
                         </div>
 
                         {/* Shift Type */}
-                        <div className="space-y-3">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                <Clock className="inline h-4 w-4 mr-1" />
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Tipe Shift <span className="text-red-500">*</span>
                             </label>
                             <select
                                 {...register("shiftType")}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 disabled={!selectedShiftLocation}
                             >
                                 <option value="">-- Pilih Shift --</option>
                                 {availableShifts.map((shift) => (
                                     <option key={shift.id} value={shift.id}>
-                                        🕐 {shift.name} ({shift.start} - {shift.end})
+                                        {shift.name} ({shift.start} - {shift.end})
                                     </option>
                                 ))}
                             </select>
@@ -519,13 +520,13 @@ const EnhancedJadwalForm = ({
 
                     {/* Location Preview */}
                     {selectedLocationConfig && (
-                        <div className={`bg-gradient-to-r ${selectedLocationConfig.color} text-white p-4 rounded-lg`}>
+                        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                             <div className="flex items-center gap-3">
-                                <span className="text-2xl">{selectedLocationConfig.icon}</span>
+                                <Building2 className="h-5 w-5 text-blue-600" />
                                 <div>
-                                    <h4 className="font-bold text-lg">{selectedLocationConfig.name}</h4>
-                                    <p className="text-sm opacity-90">{selectedLocationConfig.description}</p>
-                                    <p className="text-xs opacity-75 mt-1">📅 {selectedLocationConfig.workdays}</p>
+                                    <h4 className="font-semibold text-blue-900">{selectedLocationConfig.name}</h4>
+                                    <p className="text-blue-700 text-sm">{selectedLocationConfig.description}</p>
+                                    <p className="text-blue-600 text-xs mt-1">{selectedLocationConfig.workdays}</p>
                                 </div>
                             </div>
                         </div>
@@ -534,16 +535,15 @@ const EnhancedJadwalForm = ({
                     {/* Date and Time */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Date */}
-                        <div className="space-y-3">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                <Calendar className="inline h-4 w-4 mr-1" />
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Tanggal Shift <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="date"
                                 {...register("tanggal")}
                                 min={new Date().toISOString().split('T')[0]}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             />
                             {errors.tanggal && (
                                 <p className="text-red-600 text-sm flex items-center gap-1">
@@ -554,15 +554,14 @@ const EnhancedJadwalForm = ({
                         </div>
 
                         {/* Start Time */}
-                        <div className="space-y-3">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                <Clock className="inline h-4 w-4 mr-1" />
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Jam Mulai <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="time"
                                 {...register("jammulai")}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             />
                             {errors.jammulai && (
                                 <p className="text-red-600 text-sm flex items-center gap-1">
@@ -573,15 +572,14 @@ const EnhancedJadwalForm = ({
                         </div>
 
                         {/* End Time */}
-                        <div className="space-y-3">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                <Clock className="inline h-4 w-4 mr-1" />
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
                                 Jam Selesai <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="time"
                                 {...register("jamselesai")}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             />
                             {errors.jamselesai && (
                                 <p className="text-red-600 text-sm flex items-center gap-1">
@@ -598,23 +596,22 @@ const EnhancedJadwalForm = ({
                             type="button"
                             onClick={onClose}
                             disabled={isSubmitting}
-                            className="px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
+                            className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
                         >
                             Batal
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 transition-all flex items-center gap-2 font-semibold"
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all"
                         >
                             {isSubmitting ? (
                                 <>
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    {type === 'create' ? 'Membuat Jadwal...' : 'Memperbarui...'}
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
+                                    {type === 'create' ? 'Membuat...' : 'Memperbarui...'}
                                 </>
                             ) : (
                                 <>
-                                    <Star className="h-4 w-4" />
                                     {type === 'create' ? 'Buat Jadwal' : 'Update Jadwal'}
                                 </>
                             )}

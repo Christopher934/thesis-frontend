@@ -55,7 +55,9 @@ export class AbsensiService {
           shiftId: shift.id,
           jamMasuk: jamMasuk,
           status: status,
-          ...createAbsensiDto
+          lokasi: createAbsensiDto.lokasi,
+          foto: createAbsensiDto.foto,
+          catatan: createAbsensiDto.catatan
         },
         include: {
           user: {

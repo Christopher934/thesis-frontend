@@ -58,12 +58,28 @@ export class ShiftService {
         throw new Error('Cannot create shift: No user ID or employee ID provided');
       }
 
+      // Create DateTime objects for time fields
+      const parseTimeToDate = (timeString: string, baseDate: Date): Date => {
+        const [hours, minutes] = timeString.split(':').map(num => parseInt(num, 10));
+        const dateTime = new Date(baseDate);
+        dateTime.setHours(hours, minutes || 0, 0, 0);
+        return dateTime;
+      };
+
+      const jammulaiDate = parseTimeToDate(createShiftDto.jammulai, tanggalDate);
+      const jamselesaiDate = parseTimeToDate(createShiftDto.jamselesai, tanggalDate);
+
+      // Handle overnight shifts (end time before start time)
+      if (jamselesaiDate <= jammulaiDate) {
+        jamselesaiDate.setDate(jamselesaiDate.getDate() + 1);
+      }
+
       // Create a new shift in the database
       const shift = await this.prisma.shift.create({
         data: {
           tanggal: tanggalDate,
-          jammulai: createShiftDto.jammulai,
-          jamselesai: createShiftDto.jamselesai,
+          jammulai: jammulaiDate,
+          jamselesai: jamselesaiDate,
           lokasishift: createShiftDto.lokasishift,
           // Try to map string lokasi to enum if possible
           lokasiEnum: createShiftDto.lokasiEnum || undefined,

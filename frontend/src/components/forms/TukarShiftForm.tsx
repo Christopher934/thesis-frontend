@@ -322,10 +322,10 @@ function TukarShiftForm({
           )}
 
           {/* Partner Selection */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <div className="p-2 bg-blue-500 rounded-lg mr-3">
-                <User className="h-4 w-4 text-white" />
+              <div className="p-2 bg-blue-50 rounded-lg mr-3">
+                <User className="h-4 w-4 text-blue-600" />
               </div>
               Partner Tukar Shift
             </h3>
@@ -368,12 +368,12 @@ function TukarShiftForm({
         </div>
 
         {/* Shift Selection */}
-        <div className="bg-yellow-50 p-2 sm:p-3 md:p-4 rounded-lg border border-yellow-200 shadow-sm">
-          <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4 flex items-center">
-            <div className="p-1 sm:p-1.5 md:p-2 bg-yellow-500 rounded-md mr-2 sm:mr-3 flex-shrink-0">
-              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="p-2 bg-blue-50 rounded-lg mr-3">
+              <Calendar className="h-4 w-4 text-blue-600" />
             </div>
-            <span className="truncate">Pilih Shift untuk Ditukar</span>
+            Pilih Shift untuk Ditukar
           </h3>
           <div className="grid grid-cols-1 gap-4">
             {/* Current User Shift */}

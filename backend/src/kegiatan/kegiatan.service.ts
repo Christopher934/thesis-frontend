@@ -25,20 +25,33 @@ export class KegiatanService {
   // @ts-nocheck
   async create(data: any): Promise<any> {
     try {
+      // Helper function to parse time string to DateTime
+      const parseTimeToDateTime = (timeString: string, baseDate: Date): Date => {
+        const [hours, minutes, seconds] = timeString.split(':').map(num => parseInt(num, 10));
+        const dateTime = new Date(baseDate);
+        dateTime.setHours(hours, minutes || 0, seconds || 0, 0);
+        return dateTime;
+      };
+
+      const startDate = data.tanggalMulai ? new Date(data.tanggalMulai) 
+        : data.startDate ? new Date(data.startDate) 
+        : new Date();
+
+      const waktuMulaiString = data.waktuMulai || data.startTime || '09:00:00';
+      const waktuSelesaiString = data.waktuSelesai || data.endTime || '17:00:00';
+
       const eventData = {
-        nama: data.nama || data.title || 'Untitled Event',
+        nama: data.nama || data.title || data.judul || 'Untitled Event',
         deskripsi: data.deskripsi || data.description || 'No description provided',
         jenisKegiatan: data.jenisKegiatan || data.type || 'PENGUMUMAN',
         lokasi: data.lokasi || data.location || 'To be determined',
         penanggungJawab: data.penanggungJawab || data.responsiblePerson || 'Admin',
-        tanggalMulai: data.tanggalMulai ? new Date(data.tanggalMulai) 
-          : data.startDate ? new Date(data.startDate) 
-          : new Date(),
+        tanggalMulai: startDate,
         tanggalSelesai: data.tanggalSelesai ? new Date(data.tanggalSelesai)
           : data.endDate ? new Date(data.endDate)
           : null,
-        waktuMulai: data.waktuMulai || data.startTime || '09:00:00',
-        waktuSelesai: data.waktuSelesai || data.endTime || '17:00:00',
+        waktuMulai: parseTimeToDateTime(waktuMulaiString, startDate),
+        waktuSelesai: parseTimeToDateTime(waktuSelesaiString, startDate),
         targetPeserta: Array.isArray(data.targetPeserta) 
           ? data.targetPeserta
           : data.targetParticipants ? data.targetParticipants

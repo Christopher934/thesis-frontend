@@ -133,11 +133,14 @@ export class UserService {
     const rolePrefix = this.getRolePrefix(role);
     const employeeId = await this.generateEmployeeId(rolePrefix);
 
-    // 3.e) Simpan ke database
+    // 3.e) Generate username if not provided (use employeeId as fallback)
+    const username = data.username || employeeId.toLowerCase();
+
+    // 3.f) Simpan ke database
     const createdUser = await this.prisma.user.create({
       data: {
         employeeId: employeeId,
-        username: data.username ?? '',
+        username: username,
         email: data.email ?? '',
         password: hashed,
         namaDepan: data.namaDepan ?? '',

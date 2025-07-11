@@ -267,6 +267,36 @@ docker compose logs --since 30m -f
 
 ### 4. Environment Configuration
 
+#### ⚠️ Security Notice: .env Files
+
+**NEVER commit .env files to Git!** They contain sensitive information:
+- Database passwords
+- JWT secrets  
+- API tokens
+
+Your `.env` file is automatically ignored by Git (see `.gitignore`).
+
+#### Environment Setup
+
+1. **Copy the example file:**
+```bash
+cp .env.example .env
+```
+
+2. **Edit with your actual values:**
+```bash
+nano .env
+```
+
+3. **Required variables:**
+```bash
+DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
+JWT_SECRET="your-super-secret-jwt-key"
+NODE_ENV="development"
+PORT=3001
+TELEGRAM_BOT_TOKEN="your-telegram-bot-token"
+```
+
 #### Automatic Environment Setup
 
 The startup script creates a default `.env` file, or you can create a custom one:

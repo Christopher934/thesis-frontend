@@ -1,0 +1,33 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { ShiftModule } from './shift/shift.module';
+import { AbsensiModule } from './absensi/absensi.module';
+import { NotifikasiModule } from './notifikasi/notifikasi.module';
+import { ShiftSwapRequestModule } from './shift-swap-request/shift-swap-request.module';
+import { KegiatanModule } from './kegiatan/kegiatan.module';
+import { PrismaModule } from './prisma/prisma.module';
+
+// Import crypto for global use
+import * as crypto from 'crypto';
+if (typeof global.crypto === 'undefined') {
+  (global as any).crypto = crypto;
+}
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    AuthModule,
+    UserModule,
+    ShiftModule,
+    AbsensiModule,
+    NotifikasiModule,
+    ShiftSwapRequestModule,
+    KegiatanModule,
+    PrismaModule,
+  ],
+})
+export class AppModule {}

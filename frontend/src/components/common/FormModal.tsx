@@ -102,7 +102,7 @@ export default function FormModal({
       if (!token) throw new Error('Anda belum login.');
 
       // Use the real API
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       let endpoint = '';
       if (table === 'pegawai') {
         endpoint = '/users/' + id; // gunakan endpoint UserController

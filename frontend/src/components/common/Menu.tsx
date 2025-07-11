@@ -45,8 +45,8 @@ const menuItems = [
     title: "MENU",
     items: [
       { icon: Home, label: "Dashboard", href: "/", visible: ["admin", "perawat","staf","dokter","supervisor"] },
-      { icon: UserPlus, label: "Pegawai", href: "/dashboard/list/pegawai", visible: ["admin"] },
-      { icon: Calendar, label: "Managemen Jadwal", href: "/dashboard/list/managemenjadwal", visible: ["admin"] },
+      { icon: UserPlus, label: "Manajemen Pegawai", href: "/dashboard/list/pegawai", visible: ["admin"] },
+      { icon: Calendar, label: "Manajemen Jadwal", href: "/dashboard/list/managemenjadwal", visible: ["admin"] },
       { icon: ClipboardList, label: "Jadwal Saya", href: "/dashboard/list/jadwalsaya", visible: ["perawat","staf","dokter","supervisor"] },
       { icon: RefreshCw, label: "Ajukan Tukar Shift", href: "/dashboard/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { 

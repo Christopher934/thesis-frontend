@@ -68,6 +68,7 @@ export class UserService {
         status: true,
         createdAt: true,
         updatedAt: true,
+        telegramChatId: true,
       },
       orderBy: { id: 'asc' },
     });
@@ -94,6 +95,7 @@ export class UserService {
         status: true,
         createdAt: true,
         updatedAt: true,
+        telegramChatId: true,
       },
     });
     if (!user) {
@@ -133,21 +135,24 @@ export class UserService {
     const rolePrefix = this.getRolePrefix(role);
     const employeeId = await this.generateEmployeeId(rolePrefix);
 
-    // 3.e) Simpan ke database
+    // 3.e) Generate username if not provided (use employeeId as fallback)
+    const username = data.username || employeeId.toLowerCase();
+
+    // 3.f) Simpan ke database
     const createdUser = await this.prisma.user.create({
       data: {
         employeeId: employeeId,
-        username: data.username ?? '',
+        username: username,
         email: data.email ?? '',
         password: hashed,
         namaDepan: data.namaDepan ?? '',
         namaBelakang: data.namaBelakang ?? '',
         alamat: data.alamat ?? null,
         noHp: data.noHp ?? '',
-        jenisKelamin: data.jenisKelamin ?? '',
+        jenisKelamin: (data.jenisKelamin as any) ?? 'L',
         tanggalLahir: tanggal ?? new Date('1970-01-01'),
-        role: data.role ?? 'STAF',
-        status: data.status ?? 'ACTIVE',
+        role: (data.role as any) ?? 'STAF',
+        status: (data.status as any) ?? 'ACTIVE',
       },
       // 3.e) Hanya return field yang diperlukan, tanpa password
       select: {
@@ -211,6 +216,7 @@ export class UserService {
         status: true,
         createdAt: true,
         updatedAt: true,
+        telegramChatId: true,
       },
     });
 

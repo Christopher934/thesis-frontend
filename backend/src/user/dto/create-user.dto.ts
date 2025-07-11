@@ -58,4 +58,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsString()
+  telegramChatId?: string;
 }

@@ -3,6 +3,23 @@
 import { useState, useEffect } from 'react';
 import { Clock, MapPin, Camera, User, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 interface Shift {
   id: number;
   tanggal: string;
@@ -40,13 +57,6 @@ const capitalizeWords = (str: string) => {
     .join(' ');
 };
 
-const formatTime = (timeString: string) => {
-  return new Date(timeString).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-
 const formatDate = (dateString: string) => {
   const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const date = new Date(dateString);
@@ -81,7 +91,7 @@ export default function DashboardAbsensi() {
   const fetchTodayData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3002/absensi/today', {
+      const response = await fetch('http://localhost:3001/absensi/today', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -103,7 +113,7 @@ export default function DashboardAbsensi() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3002/absensi/dashboard-stats', {
+      const response = await fetch('http://localhost:3001/absensi/dashboard-stats', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -142,7 +152,7 @@ export default function DashboardAbsensi() {
         }
       }
 
-      const response = await fetch('http://localhost:3002/absensi/masuk', {
+      const response = await fetch('http://localhost:3001/absensi/masuk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +195,7 @@ export default function DashboardAbsensi() {
         }
       }
 
-      const response = await fetch(`http://localhost:3002/absensi/keluar/${todayData.absensi.id}`, {
+      const response = await fetch(`http://localhost:3001/absensi/keluar/${todayData.absensi.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -278,7 +288,7 @@ export default function DashboardAbsensi() {
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span className="text-sm">
-                  {todayData.shift.jammulai} - {todayData.shift.jamselesai}
+                  {formatTime(todayData.shift.jammulai)} - {formatTime(todayData.shift.jamselesai)}
                 </span>
               </div>
               <div className="flex items-center gap-2">

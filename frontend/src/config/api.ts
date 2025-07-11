@@ -8,7 +8,7 @@
 // List of possible API endpoints in order of preference
 const API_ENDPOINTS = [
   process.env.NEXT_PUBLIC_API_URL,
-  'http://localhost:3002'  // Updated to correct backend port
+  'http://localhost:3001'  // Updated to correct backend port
 ].filter(Boolean) as string[]; // Remove undefined and type as string array
 
 /**

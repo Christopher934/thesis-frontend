@@ -193,7 +193,7 @@ const JadwalSayaPage = () => {
         throw new Error("Authentication token not found");
       }
       
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const url = joinUrl(apiUrl, '/shifts');
       
       const response = await fetch(url, {

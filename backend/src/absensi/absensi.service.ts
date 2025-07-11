@@ -46,7 +46,8 @@ export class AbsensiService {
       }
 
       const jamMasuk = new Date();
-      const status = this.determineStatus(shift.jammulai, jamMasuk);
+      const shiftStartTime = shift.jammulai.toTimeString().split(' ')[0]; // Convert DateTime to HH:MM:SS format
+      const status = this.determineStatus(shiftStartTime, jamMasuk);
 
       return this.prisma.absensi.create({
         data: {
@@ -54,7 +55,9 @@ export class AbsensiService {
           shiftId: shift.id,
           jamMasuk: jamMasuk,
           status: status,
-          ...createAbsensiDto
+          lokasi: createAbsensiDto.lokasi,
+          foto: createAbsensiDto.foto,
+          catatan: createAbsensiDto.catatan
         },
         include: {
           user: {

@@ -105,7 +105,7 @@ function PegawaiPage() {
         throw new Error('Authentication token not found');
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const response = await fetch(`${apiUrl}/shifts`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -249,7 +249,7 @@ function PegawaiPage() {
                     🔄
                   </button>
                   <a 
-                    href="/list/jadwalsaya" 
+                    href="/dashboard/list/jadwalsaya" 
                     className="text-hospitalBlue hover:text-hospitalBlue/80 text-sm font-medium"
                   >
                     Lihat Detail →

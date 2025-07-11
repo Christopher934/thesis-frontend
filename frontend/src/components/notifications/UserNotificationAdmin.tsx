@@ -82,7 +82,7 @@ export function UserNotificationAdmin({ className = '' }: UserNotificationAdminP
       const token = getAuthToken();
       if (!token) return;
 
-      const response = await fetch('http://localhost:3002/user', {
+      const response = await fetch('http://localhost:3001/user', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

@@ -335,7 +335,7 @@ export default function EventPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h2 className="text-2xl font-extrabold text-gray-800 mb-0 flex items-center gap-2">
-                              <span className="inline-block text-3xl">📝</span> {event.judul}
+                              {event.judul}
                             </h2>
                             {event.status && (
                               <span className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${

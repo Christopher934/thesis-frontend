@@ -3,6 +3,23 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Filter, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 interface Absensi {
   id: number;
   jamMasuk: string | null;
@@ -23,14 +40,6 @@ const capitalizeWords = (str: string) => {
   return str.toLowerCase().split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
-};
-
-const formatTime = (timeString: string | null) => {
-  if (!timeString) return '-';
-  return new Date(timeString).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
 };
 
 const formatDate = (dateString: string) => {
@@ -83,7 +92,7 @@ export default function RiwayatAbsensi() {
         ...(filters.status && { status: filters.status })
       });
 
-      const response = await fetch(`http://localhost:3002/absensi/my-attendance?${queryParams}`, {
+      const response = await fetch(`http://localhost:3001/absensi/my-attendance?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -140,7 +149,7 @@ export default function RiwayatAbsensi() {
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <span className="text-gray-500">Jadwal:</span>
-          <p className="font-medium">{item.shift.jammulai} - {item.shift.jamselesai}</p>
+          <p className="font-medium">{formatTime(item.shift.jammulai)} - {formatTime(item.shift.jamselesai)}</p>
         </div>
         <div>
           <span className="text-gray-500">Aktual:</span>
@@ -282,7 +291,7 @@ export default function RiwayatAbsensi() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div>
-                      <div className="font-medium">{item.shift.jammulai} - {item.shift.jamselesai}</div>
+                      <div className="font-medium">{formatTime(item.shift.jammulai)} - {formatTime(item.shift.jamselesai)}</div>
                       <div className="text-gray-500">{capitalizeWords(item.shift.tipeshift)}</div>
                     </div>
                   </td>

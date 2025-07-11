@@ -1,33 +1,20 @@
 
-> rsud-anugerah-frontend@0.1.0 dev:stable
-> NODE_OPTIONS='--max-old-space-size=2048' next dev -p 3000
+> rsud-anugerah-frontend@0.1.0 dev
+> NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 next dev -p 3000 --turbo
 
-   ▲ Next.js 15.3.4
+   ▲ Next.js 15.3.4 (Turbopack)
    - Local:        http://localhost:3000
    - Network:      http://127.0.2.2:3000
+   - Environments: .env.local
    - Experiments (use with caution):
      ✓ optimizeCss
 
  ✓ Starting...
    Using tsconfig file: ./tsconfig.json
- ✓ Ready in 4.5s
- ○ Compiling /middleware ...
- ✓ Compiled /middleware in 2.8s (154 modules)
- ○ Compiling / ...
- ✓ Compiled / in 12.1s (925 modules)
- GET / 200 in 12822ms
- GET /?id=0cbf6fd9-c146-45cc-bb70-ecbe327902ef&vscodeBrowserReqId=1751509367702 200 in 135ms
- ○ Compiling /sign-in ...
- ✓ Compiled /sign-in in 5.8s (1764 modules)
- GET /sign-in 200 in 6094ms
- GET /sign-in 200 in 50ms
- ○ Compiling /dashboard/admin ...
- ✓ Compiled /dashboard/admin in 15.8s (3222 modules)
- GET /dashboard/admin 200 in 17138ms
- ○ Compiling /api/users/count-by-role ...
- ✓ Compiled /api/users/count-by-role in 1836ms (3345 modules)
- GET /api/users/count-by-role 200 in 2292ms
- GET /api/users/count-by-role 200 in 26ms
- GET /api/users/count-by-role 200 in 15ms
- GET /api/users/count-by-role 200 in 21ms
- GET /api/users/count-by-role 200 in 13ms
+ ✓ Compiled middleware in 166ms
+ ✓ Ready in 1517ms
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbo
+
+[?25h

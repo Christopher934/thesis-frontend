@@ -121,7 +121,7 @@ export default function UpdatePegawaiForm({
         payload.password = values.password;
       }
 
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       console.log('Using API URL:', apiUrl);
       const res = await fetch(apiUrl + '/users/' + data.id, {
         method: 'PUT',
@@ -148,124 +148,155 @@ export default function UpdatePegawaiForm({
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <h2 className="text-xl font-semibold">Update Pegawai</h2>
-
-      {errorMsg && (
-        <div className="bg-red-100 text-red-700 p-2 rounded">{errorMsg}</div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InputField
-          label="Username"
-          name="username"
-          register={register}
-          error={errors.username}
-        />
-        <InputField
-          label="Email"
-          name="email"
-          type="email"
-          register={register}
-          error={errors.email}
-        />
-        <InputField
-          label="Password"
-          name="password"
-          type="password"
-          register={register}
-          error={errors.password}
-        />
-        <InputField
-          label="Nama Depan"
-          name="firstname"
-          register={register}
-          error={errors.firstname}
-        />
-        <InputField
-          label="Nama Belakang"
-          name="lastname"
-          register={register}
-          error={errors.lastname}
-        />
-        <InputField
-          label="Nomor Handphone"
-          name="phone"
-          register={register}
-          error={errors.phone}
-        />
-
-        <div>
-          <InputField
-            label="Alamat"
-            name="alamat"
-            register={register}
-            error={errors.alamat}
-            as="textarea"
-            rows={2}
-          />
+    <div className="w-full max-w-2xl mx-auto">
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Update Data Pegawai</h2>
+              <p className="text-gray-500 text-sm mt-1">Perbarui informasi pegawai</p>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label className="text-xs text-gray-500 mb-1">Jenis Kelamin</label>
-          <select
-            {...register('kelamin')}
-            className="w-full border rounded px-2 py-1"
-          >
-            <option value="Laki-laki">Laki-laki</option>
-            <option value="Perempuan">Perempuan</option>
-          </select>
-          {errors.kelamin && (
-            <p className="text-xs text-red-500">{errors.kelamin.message}</p>
+        <form onSubmit={onSubmit} className="p-6 space-y-6">
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-4 w-4 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span className="text-red-800 text-sm">{errorMsg}</span>
+              </div>
+            </div>
           )}
-        </div>
 
-        <div>
-          <label className="text-xs text-gray-500 mb-1">Tanggal Lahir</label>
-          <input
-            type="date"
-            {...register('tanggallahir')}
-            className="w-full border rounded px-2 py-1"
-          />
-          {errors.tanggallahir && (
-            <p className="text-xs text-red-500">
-              {errors.tanggallahir.message}
-            </p>
-          )}
-        </div>
+          {/* Form Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InputField
+              label="Username"
+              name="username"
+              register={register}
+              error={errors.username}
+            />
+            <InputField
+              label="Email"
+              name="email"
+              type="email"
+              register={register}
+              error={errors.email}
+            />
+            <InputField
+              label="Password (kosongkan jika tidak ingin diubah)"
+              name="password"
+              type="password"
+              register={register}
+              error={errors.password}
+            />
+            <InputField
+              label="Nama Depan"
+              name="firstname"
+              register={register}
+              error={errors.firstname}
+            />
+            <InputField
+              label="Nama Belakang"
+              name="lastname"
+              register={register}
+              error={errors.lastname}
+            />
+            <InputField
+              label="Nomor Handphone"
+              name="phone"
+              register={register}
+              error={errors.phone}
+            />
 
-        <div>
-          <label className="text-xs text-gray-500 mb-1">Status</label>
-          <select
-            {...register('status')}
-            className="w-full border rounded px-2 py-1"
-          >
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-          </select>
-          {errors.status && (
-            <p className="text-xs text-red-500">{errors.status.message}</p>
-          )}
-        </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Jenis Kelamin
+              </label>
+              <select
+                {...register('kelamin')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              >
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+              </select>
+              {errors.kelamin && (
+                <p className="text-red-600 text-sm">{errors.kelamin.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Tanggal Lahir
+              </label>
+              <input
+                type="date"
+                {...register('tanggallahir')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+              {errors.tanggallahir && (
+                <p className="text-red-600 text-sm">{errors.tanggallahir.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Status
+              </label>
+              <select
+                {...register('status')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              >
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
+              </select>
+              {errors.status && (
+                <p className="text-red-600 text-sm">{errors.status.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <InputField
+              label="Alamat"
+              name="alamat"
+              register={register}
+              error={errors.alamat}
+              as="textarea"
+              rows={3}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-6 border-t border-gray-200 flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all"
+            >
+              {submitting ? 'Memperbarui...' : 'Update'}
+            </button>
+          </div>
+        </form>
       </div>
-
-      <div className="flex justify-end space-x-2 pt-4 border-t">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 text-gray-600 hover:text-gray-800"
-          disabled={submitting}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 disabled:opacity-50"
-          disabled={submitting}
-        >
-          {submitting ? 'Updating...' : 'Update'}
-        </button>
-      </div>
-    </form>
+    </div>
   );
 }

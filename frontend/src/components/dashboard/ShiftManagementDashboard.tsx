@@ -3,6 +3,23 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Users, Clock, AlertCircle, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Helper function to format time from DateTime string to HH:mm format
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
+  }
+};
+
 // TypeScript interfaces
 interface ShiftStats {
   totalStaffActive: number;
@@ -56,7 +73,7 @@ const ShiftManagementDashboard: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       
       // Fetch total active staff
       const usersResponse = await fetch(`${apiUrl}/users`, {
@@ -221,7 +238,7 @@ const ShiftManagementDashboard: React.FC = () => {
                   scheduleData.map((shift) => {
                     const jabatan = shift.user && shift.user.role ? shift.user.role : <span className="text-gray-300">-</span>;
                     const shiftType = (shift as any).tipeshift || <span className="text-gray-300">-</span>;
-                    const jamKerja = `${shift.jammulai} - ${shift.jamselesai}`;
+                    const jamKerja = `${formatTime(shift.jammulai)} - ${formatTime(shift.jamselesai)}`;
                     let statusLabel = 'Belum Absensi';
                     let statusClass = 'bg-gray-100 text-gray-800';
                     const now = new Date();

@@ -53,11 +53,11 @@ const generateEmployeeId = (role: string, existingEmployeeIds: string[] = []): s
 };
 
 const roleDescriptions = {
-  'ADMIN': { icon: '👨‍💼', desc: 'Administrator sistem dengan akses penuh', color: 'from-purple-500 to-purple-600' },
-  'DOKTER': { icon: '👨‍⚕️', desc: 'Dokter spesialis dan umum', color: 'from-blue-500 to-blue-600' },
-  'PERAWAT': { icon: '👩‍⚕️', desc: 'Perawat pelayanan medis', color: 'from-green-500 to-green-600' },
-  'STAF': { icon: '👨‍💻', desc: 'Staf administrasi dan pendukung', color: 'from-gray-500 to-gray-600' },
-  'SUPERVISOR': { icon: '👨‍🔧', desc: 'Supervisor pengawas operasional', color: 'from-orange-500 to-orange-600' }
+  'ADMIN': { desc: 'Administrator sistem dengan akses penuh', color: 'bg-purple-50 text-purple-800 border-purple-200' },
+  'DOKTER': { desc: 'Dokter spesialis dan umum', color: 'bg-blue-50 text-blue-800 border-blue-200' },
+  'PERAWAT': { desc: 'Perawat pelayanan medis', color: 'bg-green-50 text-green-800 border-green-200' },
+  'STAF': { desc: 'Staf administrasi dan pendukung', color: 'bg-gray-50 text-gray-800 border-gray-200' },
+  'SUPERVISOR': { desc: 'Supervisor pengawas operasional', color: 'bg-orange-50 text-orange-800 border-orange-200' }
 };
 
 export default function EnhancedCreatePegawaiForm({
@@ -242,55 +242,55 @@ export default function EnhancedCreatePegawaiForm({
 
   return (
     <div className="w-full max-w-2xl mx-auto max-h-[85vh] overflow-y-auto">
-      {/* Header with gradient background */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-t-2xl p-3 shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
-            <User className="h-6 w-6" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold">
-              {type === 'create' ? 'Tambah Pegawai Baru' : 'Update Data Pegawai'}
-            </h2>
-            <p className="text-blue-100 mt-1 text-sm">
-              {type === 'create' 
-                ? 'Sistem akan otomatis generate Employee ID berdasarkan role'
-                : 'Perbarui informasi pegawai'
-              }
-            </p>
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <User className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {type === 'create' ? 'Tambah Pegawai Baru' : 'Update Data Pegawai'}
+              </h2>
+              <p className="text-gray-500 text-sm mt-1">
+                {type === 'create' 
+                  ? 'Sistem akan otomatis generate Employee ID berdasarkan role'
+                  : 'Perbarui informasi pegawai'
+                }
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <form onSubmit={onSubmit} className="bg-white rounded-b-2xl shadow-xl border-x border-b border-gray-200">
-        <div className="p-3 space-y-3">
+        <form onSubmit={onSubmit} className="p-6 space-y-6">
           {/* Error & Success Messages */}
           {errorMessage && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
               <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                <span className="text-red-800 font-medium">{errorMessage}</span>
+                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                <span className="text-red-800 text-sm">{errorMessage}</span>
               </div>
             </div>
           )}
 
           {successMessage && (
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
               <div className="flex items-center">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
-                <span className="text-green-800 font-medium">{successMessage}</span>
+                <CheckCircle2 className="h-4 w-4 text-green-600 mr-2" />
+                <span className="text-green-800 text-sm">{successMessage}</span>
               </div>
             </div>
           )}
 
           {/* Employee ID Preview for Create Mode */}
           {type === 'create' && generatedEmployeeId && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <Hash className="h-5 w-5 text-blue-600" />
                 <div>
-                  <p className="font-semibold text-blue-900">Employee ID yang akan digenerate:</p>
-                  <p className="text-2xl font-bold text-blue-700 font-mono">{generatedEmployeeId}</p>
+                  <p className="font-medium text-blue-900">Employee ID yang akan digenerate:</p>
+                  <p className="text-xl font-bold text-blue-700 font-mono">{generatedEmployeeId}</p>
                   <p className="text-xs text-blue-600 mt-1">ID ini akan menjadi username login pegawai</p>
                 </div>
               </div>
@@ -299,7 +299,7 @@ export default function EnhancedCreatePegawaiForm({
 
           {/* Role Selection with Visual Preview */}
           <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-800">
+            <label className="block text-sm font-medium text-gray-700">
               Role & Jabatan <span className="text-red-500">*</span>
             </label>
             <select
@@ -309,7 +309,7 @@ export default function EnhancedCreatePegawaiForm({
               <option value="">-- Pilih Role --</option>
               {Object.entries(roleDescriptions).map(([role, info]) => (
                 <option key={role} value={role}>
-                  {info.icon} {role} - {info.desc}
+                  {role} - {info.desc}
                 </option>
               ))}
             </select>
@@ -322,12 +322,14 @@ export default function EnhancedCreatePegawaiForm({
             
             {/* Role Preview */}
             {selectedRoleInfo && (
-              <div className={`bg-gradient-to-r ${selectedRoleInfo.color} text-white p-3 rounded-lg`}>
+              <div className={`border rounded-lg p-3 ${selectedRoleInfo.color}`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{selectedRoleInfo.icon}</span>
+                  <div className="w-8 h-8 bg-current/10 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4" />
+                  </div>
                   <div>
-                    <p className="font-semibold">{selectedRole}</p>
-                    <p className="text-sm opacity-90">{selectedRoleInfo.desc}</p>
+                    <p className="font-medium">{selectedRole}</p>
+                    <p className="text-sm opacity-80">{selectedRoleInfo.desc}</p>
                   </div>
                 </div>
               </div>
@@ -338,8 +340,7 @@ export default function EnhancedCreatePegawaiForm({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* First Name */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">
-                <User className="inline h-4 w-4 mr-1" />
+              <label className="block text-sm font-medium text-gray-700">
                 Nama Depan <span className="text-red-500">*</span>
               </label>
               <input
@@ -358,8 +359,7 @@ export default function EnhancedCreatePegawaiForm({
 
             {/* Last Name */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">
-                <User className="inline h-4 w-4 mr-1" />
+              <label className="block text-sm font-medium text-gray-700">
                 Nama Belakang <span className="text-red-500">*</span>
               </label>
               <input
@@ -381,8 +381,7 @@ export default function EnhancedCreatePegawaiForm({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Email */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">
-                <Mail className="inline h-4 w-4 mr-1" />
+              <label className="block text-sm font-medium text-gray-700">
                 Email <span className="text-red-500">*</span>
               </label>
               <input
@@ -401,8 +400,7 @@ export default function EnhancedCreatePegawaiForm({
 
             {/* Phone */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">
-                <Phone className="inline h-4 w-4 mr-1" />
+              <label className="block text-sm font-medium text-gray-700">
                 Nomor HP <span className="text-red-500">*</span>
               </label>
               <input
@@ -422,8 +420,7 @@ export default function EnhancedCreatePegawaiForm({
 
           {/* Password */}
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-800">
-              <Lock className="inline h-4 w-4 mr-1" />
+            <label className="block text-sm font-medium text-gray-700">
               Password <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -453,8 +450,7 @@ export default function EnhancedCreatePegawaiForm({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Birth Date */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">
-                <Calendar className="inline h-4 w-4 mr-1" />
+              <label className="block text-sm font-medium text-gray-700">
                 Tanggal Lahir <span className="text-red-500">*</span>
               </label>
               <input
@@ -472,7 +468,7 @@ export default function EnhancedCreatePegawaiForm({
 
             {/* Gender */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">
+              <label className="block text-sm font-medium text-gray-700">
                 Jenis Kelamin <span className="text-red-500">*</span>
               </label>
               <select
@@ -480,8 +476,8 @@ export default function EnhancedCreatePegawaiForm({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
                 <option value="">Pilih</option>
-                <option value="L">👨 Laki-laki</option>
-                <option value="P">👩 Perempuan</option>
+                <option value="L">Laki-laki</option>
+                <option value="P">Perempuan</option>
               </select>
               {errors.jenisKelamin && (
                 <p className="text-red-600 text-sm flex items-center gap-1">
@@ -493,16 +489,15 @@ export default function EnhancedCreatePegawaiForm({
 
             {/* Status */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">
-                <Shield className="inline h-4 w-4 mr-1" />
+              <label className="block text-sm font-medium text-gray-700">
                 Status
               </label>
               <select
                 {...register('status')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
-                <option value="ACTIVE">✅ ACTIVE</option>
-                <option value="INACTIVE">❌ INACTIVE</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
               </select>
               {errors.status && (
                 <p className="text-red-600 text-sm flex items-center gap-1">
@@ -515,8 +510,7 @@ export default function EnhancedCreatePegawaiForm({
 
           {/* Address */}
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-800">
-              <MapPin className="inline h-4 w-4 mr-1" />
+            <label className="block text-sm font-medium text-gray-700">
               Alamat
             </label>
             <textarea
@@ -539,14 +533,14 @@ export default function EnhancedCreatePegawaiForm({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
+              className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all flex items-center gap-2 font-semibold"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -555,13 +549,13 @@ export default function EnhancedCreatePegawaiForm({
                 </>
               ) : (
                 <>
-                  {type === 'create' ? '➕ Buat Pegawai' : '💾 Update Data'}
+                  {type === 'create' ? 'Buat Pegawai' : 'Update Data'}
                 </>
               )}
             </button>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

@@ -182,6 +182,37 @@ const MobileSidebar = ({ isOpen, onToggle, onClose }: MobileSidebarProps) => {
           margin: 0 !important;
         }
 
+        /* Force show dropdown item labels in mobile */
+        .mobile-menu-wrapper .mobile-dropdown .hidden.lg\\:block {
+          display: block !important;
+        }
+        
+        /* Hide mobile-only dropdown icons */
+        .mobile-menu-wrapper .mobile-dropdown .lg\\:hidden {
+          display: none !important;
+        }
+        
+        /* Dropdown items alignment */
+        .mobile-menu-wrapper .mobile-dropdown button {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          text-align: left !important;
+          width: 100% !important;
+        }
+        
+        /* Ensure proper indentation for dropdown items */
+        .mobile-menu-wrapper .dropdown-container .space-y-1 {
+          margin-left: 1rem !important;
+          margin-top: 0.5rem !important;
+        }
+        
+        /* Fix dropdown text visibility */
+        .mobile-menu-wrapper .dropdown-container .space-y-1 span {
+          display: block !important;
+          text-align: left !important;
+        }
+
         /* Ensure menu items show full content */
         .mobile-menu-wrapper .lg\\:hidden {
           display: none !important;

@@ -227,14 +227,12 @@ const Menu = memo(() => {
                                 handleNavigation(dropdownItem.href);
                                 setOpenDropdown(null);
                               }}
-                              className="block py-2 lg:py-2 px-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm lg:text-sm touch-manipulation font-medium w-full text-left"
+                              className="flex items-center gap-3 w-full py-2 lg:py-2 px-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm lg:text-sm touch-manipulation font-medium text-left"
                             >
-                              {/* Desktop view - full label */}
-                              <span className="hidden lg:block">{dropdownItem.label}</span>
-                              {/* Mobile view - icon only */}
-                              <div className="lg:hidden flex items-center justify-center">
-                                {IconComponent && <IconComponent className="w-6 h-6" />}
-                              </div>
+                              {/* Show icon in mobile sidebar */}
+                              {IconComponent && <IconComponent className="w-4 h-4" />}
+                              {/* Show full label in mobile sidebar */}
+                              <span className="block">{dropdownItem.label}</span>
                             </button>
                           );
                         })}

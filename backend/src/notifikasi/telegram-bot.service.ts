@@ -492,6 +492,24 @@ Gunakan /help untuk panduan lengkap.`;
   }
 
   /**
+   * Get webhook information
+   */
+  async getWebhookInfo(): Promise<any> {
+    if (!this.botToken) {
+      throw new Error('Telegram bot token not configured');
+    }
+
+    try {
+      const response: AxiosResponse<TelegramApiResponse<any>> =
+        await axios.get(`${this.baseUrl}/getWebhookInfo`);
+      return response.data.result;
+    } catch (error) {
+      this.logger.error(`Error getting webhook info: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Set webhook URL (for production deployment)
    */
   async setWebhook(webhookUrl: string): Promise<boolean> {

@@ -13,10 +13,7 @@ const schema = z.object({
         .min(3, { message: 'Nama pegawai minimal 3 karakter' })
         .max(50, { message: 'Nama pegawai maksimal 50 karakter' }),
     idpegawai: z.string()
-        .min(3, { message: 'Employee ID dibutuhkan' })
-        .refine((val) => /^(ADM|DOK|PER|STF|SUP)\d{3}$/.test(val), {
-            message: 'Format Employee ID: ADM001, DOK001, PER001, STF001, atau SUP001'
-        }),
+        .min(1, { message: 'Employee ID dibutuhkan' }),
     userId: z.number().optional(),
     shiftType: z.string().min(1, { message: 'Tipe shift dibutuhkan' }),
     shiftLocation: z.string().min(1, { message: 'Lokasi shift dibutuhkan' }),
@@ -124,7 +121,165 @@ const RSUD_SHIFT_TYPES = {
     description: 'Pelayanan farmasi dan obat-obatan',
     workdays: '24/7 - 2 Shift System',
     color: 'from-cyan-500 to-cyan-600'
+  },
+  'RADIOLOGI_2_SHIFT': {
+    name: 'Radiologi (2 Shift)',
+    icon: '🩻',
+    shifts: {
+      'SHIFT_PAGI': { name: 'Shift Pagi', start: '08:00', end: '17:00', type: 'PAGI' },
+      'SHIFT_MALAM': { name: 'Shift Malam', start: '17:00', end: '08:00', type: 'MALAM' }
+    },
+    description: 'Layanan radiologi dan diagnostik',
+    workdays: '24/7 - 2 Shift System',
+    color: 'from-indigo-500 to-indigo-600'
+  },
+  'GIZI_2_SHIFT': {
+    name: 'Gizi (2 Shift)',
+    icon: '🍽️',
+    shifts: {
+      'SHIFT_PAGI': { name: 'Shift Pagi', start: '08:00', end: '17:00', type: 'PAGI' },
+      'SHIFT_MALAM': { name: 'Shift Malam', start: '17:00', end: '08:00', type: 'MALAM' }
+    },
+    description: 'Layanan gizi dan nutrisi',
+    workdays: '24/7 - 2 Shift System',
+    color: 'from-orange-500 to-orange-600'
+  },
+  'KEAMANAN_2_SHIFT': {
+    name: 'Keamanan (2 Shift)',
+    icon: '🛡️',
+    shifts: {
+      'SHIFT_PAGI': { name: 'Shift Pagi', start: '08:00', end: '17:00', type: 'PAGI' },
+      'SHIFT_MALAM': { name: 'Shift Malam', start: '17:00', end: '08:00', type: 'MALAM' }
+    },
+    description: 'Keamanan rumah sakit',
+    workdays: '24/7 - 2 Shift System',
+    color: 'from-gray-500 to-gray-600'
+  },
+  'LAUNDRY_REGULER': {
+    name: 'Laundry',
+    icon: '🧺',
+    shifts: {
+      'SHIFT_PAGI': { name: 'Shift Pagi', start: '08:00', end: '15:00', type: 'PAGI' }
+    },
+    description: 'Layanan laundry rumah sakit',
+    workdays: 'Sen-Jum: 08:00-15:00, Sab: 08:00-11:30',
+    color: 'from-blue-400 to-blue-500'
+  },
+  'CLEANING_SERVICE': {
+    name: 'Cleaning Service',
+    icon: '🧹',
+    shifts: {
+      'SHIFT_PAGI': { name: 'Shift Pagi', start: '08:00', end: '15:00', type: 'PAGI' }
+    },
+    description: 'Layanan kebersihan rumah sakit',
+    workdays: 'Sen-Jum: 08:00-15:00, Sab: 08:00-11:30',
+    color: 'from-green-400 to-green-500'
+  },
+  'SUPIR_2_SHIFT': {
+    name: 'Supir (2 Shift)',
+    icon: '🚗',
+    shifts: {
+      'SHIFT_PAGI': { name: 'Shift Pagi', start: '08:00', end: '17:00', type: 'PAGI' },
+      'SHIFT_MALAM': { name: 'Shift Malam', start: '17:00', end: '08:00', type: 'MALAM' }
+    },
+    description: 'Transportasi rumah sakit',
+    workdays: '24/7 - 2 Shift System',
+    color: 'from-yellow-500 to-yellow-600'
+}
+};
+
+// Date validation for different shift types
+const getValidDaysForShiftType = (shiftType: string): number[] => {
+  switch (shiftType) {
+    case 'GEDUNG_ADMINISTRASI':
+      return [1, 2, 3, 4, 5]; // Monday to Friday
+    case 'RAWAT_JALAN':
+    case 'LAUNDRY_REGULER':
+    case 'CLEANING_SERVICE':
+      return [1, 2, 3, 4, 5, 6]; // Monday to Saturday
+    case 'RAWAT_INAP_3_SHIFT':
+    case 'GAWAT_DARURAT_3_SHIFT':
+    case 'LABORATORIUM_2_SHIFT':
+    case 'FARMASI_2_SHIFT':
+    case 'RADIOLOGI_2_SHIFT':
+    case 'GIZI_2_SHIFT':
+    case 'KEAMANAN_2_SHIFT':
+    case 'SUPIR_2_SHIFT':
+      return [0, 1, 2, 3, 4, 5, 6]; // All days (24/7)
+    default:
+      return [1, 2, 3, 4, 5]; // Default: Monday to Friday
   }
+};
+
+const validateDateForShiftType = (date: string, shiftType: string): string | null => {
+  if (!date || !shiftType) return null;
+  
+  const selectedDate = new Date(date);
+  const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const validDays = getValidDaysForShiftType(shiftType);
+  
+  if (!validDays.includes(dayOfWeek)) {
+    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const validDayNames = validDays.map(day => dayNames[day]).join(', ');
+    return `${RSUD_SHIFT_TYPES[shiftType as keyof typeof RSUD_SHIFT_TYPES]?.name || shiftType} hanya beroperasi pada: ${validDayNames}`;
+  }
+  
+  return null;
+};
+
+// Convert frontend shift names to backend shift names
+const convertShiftNameForBackend = (frontendShiftName: string, shiftType: string): string => {
+  // Special handling for shift types with unique naming systems
+  if (shiftType === 'GEDUNG_ADMINISTRASI') {
+    // GEDUNG_ADMINISTRASI has different naming system
+    const currentDate = new Date();
+    const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    if (dayOfWeek >= 1 && dayOfWeek <= 4) { // Monday to Thursday
+      return 'Reguler Senin-Kamis';
+    } else if (dayOfWeek === 5) { // Friday
+      return 'Jumat';
+    }
+    // For other days, default to first available (though validation should prevent this)
+    return 'Reguler Senin-Kamis';
+  }
+  
+  if (shiftType === 'RAWAT_JALAN') {
+    // RAWAT_JALAN has day-based naming
+    const currentDate = new Date();
+    const dayOfWeek = currentDate.getDay();
+    
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+      return 'Senin-Jumat';
+    } else if (dayOfWeek === 6) { // Saturday
+      return 'Sabtu';
+    }
+    // Default to weekday schedule
+    return 'Senin-Jumat';
+  }
+  
+  if (shiftType === 'LAUNDRY_REGULER' || shiftType === 'CLEANING_SERVICE') {
+    // Similar pattern to RAWAT_JALAN
+    const currentDate = new Date();
+    const dayOfWeek = currentDate.getDay();
+    
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+      return 'Senin-Jumat';
+    } else if (dayOfWeek === 6) { // Saturday
+      return 'Sabtu';
+    }
+    return 'Senin-Jumat';
+  }
+  
+  // Standard shift name mapping for shift-based systems
+  const shiftNameMapping: { [key: string]: string } = {
+    'SHIFT_PAGI': 'Shift Pagi',
+    'SHIFT_SIANG': 'Shift Sore', // Backend uses "Shift Sore" instead of "Shift Siang"
+    'SHIFT_MALAM': 'Shift Malam',
+    'SHIFT_SORE': 'Shift Sore'
+  };
+  
+  return shiftNameMapping[frontendShiftName] || frontendShiftName;
 };
 
 type User = {
@@ -173,7 +328,23 @@ const EnhancedJadwalForm = ({
     const selectedEmployeeId = watch("idpegawai");
     const selectedShiftType = watch("shiftType");
     const selectedShiftLocation = watch("shiftLocation");
+    const selectedDate = watch("tanggal");
     
+    // Date validation effect
+    useEffect(() => {
+        if (selectedDate && selectedShiftLocation) {
+            const validationError = validateDateForShiftType(selectedDate, selectedShiftLocation);
+            if (validationError) {
+                setErrorMessage(validationError);
+            } else {
+                // Clear error if date is valid
+                if (errorMessage && errorMessage.includes('beroperasi pada:')) {
+                    setErrorMessage('');
+                }
+            }
+        }
+    }, [selectedDate, selectedShiftLocation]);
+
     // Get available shifts for selected location
     const availableShifts = useMemo(() => {
         if (selectedShiftLocation) {
@@ -274,6 +445,14 @@ const EnhancedJadwalForm = ({
                 throw new Error('Anda belum login');
             }
             
+            // Validate date for shift type
+            if (formData.tanggal && selectedShiftLocation) {
+                const validationError = validateDateForShiftType(formData.tanggal, selectedShiftLocation);
+                if (validationError) {
+                    throw new Error(validationError);
+                }
+            }
+            
             if (!formData.userId || !formData.idpegawai) {
                 throw new Error('Employee ID tidak valid. Silakan pilih dari daftar yang tersedia.');
             }
@@ -297,7 +476,7 @@ const EnhancedJadwalForm = ({
                     : selectedShiftType,
                 // Additional fields for backend integration
                 shiftType: selectedShiftLocation,
-                shiftOption: selectedShiftType
+                shiftOption: convertShiftNameForBackend(selectedShiftType, selectedShiftLocation)
             };
             
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';

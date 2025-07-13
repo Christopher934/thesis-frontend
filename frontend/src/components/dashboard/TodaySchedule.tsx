@@ -3,10 +3,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, MapPin, User } from 'lucide-react';
 
-// Helper function to format time from DateTime string to HH:mm format
+// Helper function to format time
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
     return date.toLocaleTimeString('id-ID', { 
@@ -117,9 +128,51 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
 
         // Format location
         const formatLocation = (location: string) => {
-          return location.split('_').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-          ).join(' ');
+          if (!location) return '-';
+          
+          // Handle specific unit mappings first
+          const unitMappings: { [key: string]: string } = {
+            'RAWAT_INAP_3_SHIFT': 'Rawat Inap',
+            'RAWAT_INAP': 'Rawat Inap',
+            'RAWAT_JALAN': 'Rawat Jalan',
+            'UGD': 'UGD',
+            'ICU': 'ICU',
+            'EMERGENCY': 'Emergency',
+            'KAMAR_OPERASI': 'Kamar Operasi',
+            'LABORATORIUM': 'Laboratorium',
+            'RADIOLOGI': 'Radiologi',
+            'FARMASI': 'Farmasi',
+            'GIZI': 'Gizi',
+            'FISIOTERAPI': 'Fisioterapi',
+            'HEMODIALISA': 'Hemodialisa',
+            'NICU': 'NICU',
+            'PICU': 'PICU'
+          };
+          
+          // Check if we have a direct mapping
+          const upperLocation = location.toUpperCase();
+          if (unitMappings[upperLocation]) {
+            return unitMappings[upperLocation];
+          }
+          
+          // For other cases, process the string
+          let formatted = location
+            .split('_')
+            .map(word => {
+              // Skip numbers and "SHIFT" word
+              if (/^\d+$/.test(word) || word.toUpperCase() === 'SHIFT') {
+                return null;
+              }
+              return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            })
+            .filter(word => word !== null)
+            .join(' ');
+          
+          // Clean up any remaining shift references
+          formatted = formatted.replace(/\s*\d+\s*(Shift|shift)/gi, '');
+          
+          // Clean up any trailing spaces and multiple spaces
+          return formatted.replace(/\s+/g, ' ').trim();
         };
 
         return {

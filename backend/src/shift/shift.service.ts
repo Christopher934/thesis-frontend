@@ -136,14 +136,27 @@ export class ShiftService {
       // Jika ada data shift dari database, return itu
       if (shifts && shifts.length > 0) {
         // Map the shifts to include the user's full name and idpegawai for frontend compatibility
-        return shifts.map((shift) => ({
-          ...shift,
-          nama: shift.user
-            ? `${shift.user.namaDepan} ${shift.user.namaBelakang}`
-            : undefined,
-          // Add idpegawai at top level for frontend compatibility
-          idpegawai: shift.user?.username || shift.user?.employeeId || undefined,
-        }));
+        return shifts.map((shift) => {
+          // Format time fields from DateTime to HH:MM string
+          const formatTime = (timeValue: Date): string => {
+            if (!timeValue) return '';
+            const hours = timeValue.getUTCHours().toString().padStart(2, '0');
+            const minutes = timeValue.getUTCMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+          };
+
+          return {
+            ...shift,
+            nama: shift.user
+              ? `${shift.user.namaDepan} ${shift.user.namaBelakang}`
+              : undefined,
+            // Add idpegawai at top level for frontend compatibility
+            idpegawai: shift.user?.username || shift.user?.employeeId || undefined,
+            // Format time fields properly
+            jammulai: formatTime(shift.jammulai),
+            jamselesai: formatTime(shift.jamselesai),
+          };
+        });
       }
 
       // Return empty array if no data found

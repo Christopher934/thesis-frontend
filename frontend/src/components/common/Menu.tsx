@@ -17,6 +17,8 @@ import {
   ClipboardList,
   RefreshCw,
   CalendarDays,
+  Clock,
+  CalendarX2,
   MessageSquare,
   FileBarChart,
   User,
@@ -50,7 +52,7 @@ const menuItems = [
       { icon: ClipboardList, label: "Jadwal Saya", href: "/dashboard/list/jadwalsaya", visible: ["perawat","staf","dokter","supervisor"] },
       { icon: RefreshCw, label: "Ajukan Tukar Shift", href: "/dashboard/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { 
-        icon: CalendarDays, 
+        icon: Clock, 
         label: "Absensi", 
         visible: ["admin", "perawat","staf","dokter","supervisor"],
         dropdown: [
@@ -60,7 +62,7 @@ const menuItems = [
           { label: "Laporan Absensi", href: "/dashboard/list/laporan-absensi", visible: ["admin"], icon: FileText },
         ]
       },
-      { icon: CalendarDays, label: "Events", href: "/dashboard/list/events", visible: ["admin", "perawat","staf","dokter","supervisor"] },
+      { icon: CalendarX2, label: "Events", href: "/dashboard/list/events", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { icon: MessageSquare, label: "Pesan", href: "/dashboard/list/notifications", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { icon: FileBarChart, label: "Laporan", href: "/dashboard/list/laporan", visible: ["admin","supervisor"] },
     ],

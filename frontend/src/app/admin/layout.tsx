@@ -34,9 +34,8 @@ export default function AdminLayout({
             
             {/* Main Content - RIGHT */}
             <div className="w-full lg:w-[84%] xl:w-[86%] bg-[#F7F8FA] overflow-hidden flex flex-col">
-                {/* Navbar with mobile menu space */}
-                <div className="lg:hidden h-16"></div>
-                <Navbar />
+                {/* Navbar with mobile menu toggle */}
+                <Navbar onMenuToggle={toggle} />
                 <div className="flex-1 overflow-auto">
                     {children}
                 </div>

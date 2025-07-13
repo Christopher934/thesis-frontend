@@ -52,32 +52,40 @@ const MobileSidebar = ({ isOpen, onToggle, onClose }: MobileSidebarProps) => {
 
   return (
     <>
-      {/* Mobile Menu Trigger Button */}
-      <button
-        onClick={onToggle}
-        className="mobile-menu-trigger lg:hidden fixed top-6 left-6 z-[60] p-3 bg-blue-600 rounded-xl shadow-xl border-2 border-blue-700 hover:bg-blue-700 transition-all duration-200 active:scale-95"
-        aria-label="Toggle menu"
-      >
-        {isOpen ? (
-          <X className="w-6 h-6 text-white" />
-        ) : (
-          <MenuIcon className="w-6 h-6 text-white" />
-        )}
-      </button>
-
       {/* Backdrop Overlay */}
       {isOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-[40] transition-opacity duration-300"
+          className="block lg:hidden fixed inset-0 bg-black bg-opacity-50 z-[8000] transition-opacity duration-300"
           onClick={onClose}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 8000
+          }}
         />
       )}
 
       {/* Mobile Sidebar */}
       <div 
-        className={`mobile-sidebar lg:hidden fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-[50] transform transition-transform duration-300 ease-in-out ${
+        className={`mobile-sidebar block lg:hidden fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-[8500] transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          height: '100vh',
+          width: '320px',
+          backgroundColor: 'white',
+          zIndex: 8500,
+          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s ease-in-out',
+          boxShadow: '4px 0 16px rgba(0, 0, 0, 0.1)'
+        }}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -119,18 +127,40 @@ const MobileSidebar = ({ isOpen, onToggle, onClose }: MobileSidebarProps) => {
 
       {/* Custom Styles for Mobile Menu */}
       <style jsx global>{`
-        .mobile-menu-wrapper .lg\\:justify-start {
-          justify-content: flex-start !important;
-        }
-        
+        /* Force show all text labels in mobile sidebar */
         .mobile-menu-wrapper .hidden.lg\\:block {
           display: block !important;
         }
         
-        .mobile-menu-wrapper .lg\\:hidden {
-          display: none !important;
+        /* Force show menu section titles */
+        .mobile-menu-wrapper .hidden {
+          display: block !important;
         }
         
+        /* Ensure proper left alignment for all menu items */
+        .mobile-menu-wrapper .flex.items-center.justify-center.lg\\:justify-start {
+          justify-content: flex-start !important;
+        }
+        
+        /* Force left alignment for all flex items */
+        .mobile-menu-wrapper .flex.items-center {
+          justify-content: flex-start !important;
+          text-align: left !important;
+        }
+        
+        /* Left align button content */
+        .mobile-menu-wrapper button {
+          text-align: left !important;
+          justify-content: flex-start !important;
+        }
+        
+        /* Left align dropdown items */
+        .mobile-menu-wrapper .dropdown-container button {
+          text-align: left !important;
+          justify-content: flex-start !important;
+        }
+        
+        /* Fix dropdown positioning in mobile */
         .mobile-menu-wrapper .dropdown-container .absolute {
           position: static !important;
           box-shadow: none !important;
@@ -138,15 +168,34 @@ const MobileSidebar = ({ isOpen, onToggle, onClose }: MobileSidebarProps) => {
           padding: 0 !important;
           margin-left: 1rem !important;
           margin-top: 0.5rem !important;
+          background: transparent !important;
         }
         
+        /* Remove mobile-specific dropdown styling */
         .mobile-menu-wrapper .mobile-dropdown {
           position: static !important;
           box-shadow: none !important;
-          border: 1px solid #e5e7eb !important;
-          border-radius: 0.5rem !important;
-          background-color: #f9fafb !important;
-          padding: 0.5rem !important;
+          border: none !important;
+          border-radius: 0 !important;
+          background-color: transparent !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        /* Ensure menu items show full content */
+        .mobile-menu-wrapper .lg\\:hidden {
+          display: none !important;
+        }
+        
+        /* Fix text visibility and alignment */
+        .mobile-menu-wrapper span {
+          display: block !important;
+          text-align: left !important;
+        }
+        
+        /* Left align section titles */
+        .mobile-menu-wrapper .text-grey-400 {
+          text-align: left !important;
         }
 
         /* Smooth transitions */

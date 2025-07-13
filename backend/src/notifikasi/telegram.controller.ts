@@ -58,6 +58,20 @@ export class TelegramController {
   }
 
   /**
+   * Get webhook information
+   */
+  @Get('webhook-info')
+  async getWebhookInfo() {
+    try {
+      const info = await this.telegramBotService.getWebhookInfo();
+      return { success: true, data: info };
+    } catch (error) {
+      this.logger.error('Error getting webhook info:', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
    * Set webhook URL (for production deployment)
    */
   @Post('set-webhook')

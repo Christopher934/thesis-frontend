@@ -3,10 +3,70 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Users, Clock, AlertCircle, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Helper function to format time from DateTime string to HH:mm format
+// Helper function to format location/unit names
+const formatLokasiShift = (lokasi: string) => {
+  if (!lokasi) return '-';
+  
+  // Handle specific unit mappings first
+  const unitMappings: { [key: string]: string } = {
+    'RAWAT_INAP_3_SHIFT': 'Rawat Inap',
+    'RAWAT_INAP': 'Rawat Inap',
+    'RAWAT_JALAN': 'Rawat Jalan',
+    'UGD': 'UGD',
+    'ICU': 'ICU',
+    'EMERGENCY': 'Emergency',
+    'KAMAR_OPERASI': 'Kamar Operasi',
+    'LABORATORIUM': 'Laboratorium',
+    'RADIOLOGI': 'Radiologi',
+    'FARMASI': 'Farmasi',
+    'GIZI': 'Gizi',
+    'FISIOTERAPI': 'Fisioterapi',
+    'HEMODIALISA': 'Hemodialisa',
+    'NICU': 'NICU',
+    'PICU': 'PICU'
+  };
+  
+  // Check if we have a direct mapping
+  const upperLokasi = lokasi.toUpperCase();
+  if (unitMappings[upperLokasi]) {
+    return unitMappings[upperLokasi];
+  }
+  
+  // For other cases, process the string
+  let formatted = lokasi
+    .split('_')
+    .map(word => {
+      // Skip numbers and "SHIFT" word
+      if (/^\d+$/.test(word) || word.toUpperCase() === 'SHIFT') {
+        return null;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .filter(word => word !== null)
+    .join(' ');
+  
+  // Clean up any remaining shift references
+  formatted = formatted.replace(/\s*\d+\s*(Shift|shift)/gi, '');
+  
+  // Clean up any trailing spaces and multiple spaces
+  return formatted.replace(/\s+/g, ' ').trim();
+};
+
+// Helper function to format time
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
     return date.toLocaleTimeString('id-ID', { 
@@ -224,13 +284,12 @@ const ShiftManagementDashboard: React.FC = () => {
                   <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px] text-center">Shift</th>
                   <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[110px] text-center">Jam Kerja</th>
                   <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">Status</th>
-                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {scheduleData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-6 text-gray-500">
+                    <td colSpan={6} className="text-center py-6 text-gray-500">
                       Tidak ada jadwal shift hari ini.
                     </td>
                   </tr>
@@ -262,7 +321,7 @@ const ShiftManagementDashboard: React.FC = () => {
                           <div className="text-sm text-gray-900 min-w-[100px] text-center">{jabatan}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap align-middle">
-                          <div className="text-sm text-gray-900 min-w-[100px] text-center">{shift.lokasishift}</div>
+                          <div className="text-sm text-gray-900 min-w-[100px] text-center">{formatLokasiShift(shift.lokasishift)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap align-middle">
                           <div className="text-sm text-gray-900 min-w-[80px] text-center">{shiftType}</div>
@@ -272,10 +331,6 @@ const ShiftManagementDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap align-middle">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}>{statusLabel}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap align-middle text-right text-sm font-medium">
-                          <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                          <button className="text-blue-600 hover:text-blue-900">Detail</button>
                         </td>
                       </tr>
                     );

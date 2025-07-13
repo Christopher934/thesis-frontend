@@ -244,9 +244,33 @@ const ManagemenJadwalPage = () => {
 
     // Update filter counts whenever data changes
     const updateFilterCounts = (data: Jadwal[]) => {
+        // Filter out past dates first for accurate counts
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const activeJadwal = data.filter(item => {
+            try {
+                if (item.originalDate) {
+                    const [year, month, day] = item.originalDate.split('-');
+                    const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    return itemDate >= today;
+                } else if (item.tanggal && item.tanggal.includes('/')) {
+                    const [day, month, year] = item.tanggal.split('/');
+                    const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    return itemDate >= today;
+                } else {
+                    const shiftDate = new Date(item.tanggal);
+                    shiftDate.setHours(0, 0, 0, 0);
+                    return shiftDate >= today;
+                }
+            } catch (error) {
+                return true; // Keep if we can't parse date
+            }
+        });
+        
         const counts = {
-            "": data.length,
-            "PAGI": data.filter(item => {
+            "": activeJadwal.length,
+            "PAGI": activeJadwal.filter(item => {
                 if (item.tipeshift === 'PAGI') return true;
                 if (item.jammulai) {
                     const hour = parseInt(item.jammulai.split(':')[0]);
@@ -254,7 +278,7 @@ const ManagemenJadwalPage = () => {
                 }
                 return false;
             }).length,
-            "SIANG": data.filter(item => {
+            "SIANG": activeJadwal.filter(item => {
                 if (item.tipeshift === 'SIANG') return true;
                 if (item.jammulai) {
                     const hour = parseInt(item.jammulai.split(':')[0]);
@@ -262,7 +286,7 @@ const ManagemenJadwalPage = () => {
                 }
                 return false;
             }).length,
-            "MALAM": data.filter(item => {
+            "MALAM": activeJadwal.filter(item => {
                 if (item.tipeshift === 'MALAM') return true;
                 if (item.jammulai) {
                     const hour = parseInt(item.jammulai.split(':')[0]);
@@ -270,14 +294,14 @@ const ManagemenJadwalPage = () => {
                 }
                 return false;
             }).length,
-            "CRITICAL": data.filter(item => isCriticalUnit(item.lokasishift)).length,
-            "THIS_WEEK": data.filter(item => {
+            "CRITICAL": activeJadwal.filter(item => isCriticalUnit(item.lokasishift)).length,
+            "THIS_WEEK": activeJadwal.filter(item => {
                 const shiftDate = new Date(item.originalDate || item.tanggal);
                 const now = new Date();
                 const oneWeek = 7 * 24 * 60 * 60 * 1000;
                 return Math.abs(shiftDate.getTime() - now.getTime()) <= oneWeek;
             }).length,
-            "THIS_MONTH": data.filter(item => {
+            "THIS_MONTH": activeJadwal.filter(item => {
                 const shiftDate = new Date(item.originalDate || item.tanggal);
                 const now = new Date();
                 return shiftDate.getMonth() === now.getMonth() && shiftDate.getFullYear() === now.getFullYear();
@@ -488,6 +512,35 @@ const ManagemenJadwalPage = () => {
     useEffect(() => {
         let result = [...jadwalData];
         
+        // Filter out past dates (keep only today and future dates)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+        
+        result = result.filter(item => {
+            try {
+                const shiftDate = new Date(item.originalDate || item.tanggal);
+                if (item.originalDate) {
+                    // If we have originalDate in YYYY-MM-DD format
+                    const [year, month, day] = item.originalDate.split('-');
+                    const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    return itemDate >= today;
+                } else if (item.tanggal && item.tanggal.includes('/')) {
+                    // If we have displayed format DD/MM/YYYY
+                    const [day, month, year] = item.tanggal.split('/');
+                    const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    return itemDate >= today;
+                } else {
+                    // Fallback: try to parse the date directly
+                    shiftDate.setHours(0, 0, 0, 0);
+                    return shiftDate >= today;
+                }
+            } catch (error) {
+                console.warn('Error parsing date for filtering:', item.tanggal, error);
+                // If we can't parse the date, keep the item to be safe
+                return true;
+            }
+        });
+        
         // Apply search filter
         if (searchTerm.trim() !== '') {
             const lowercaseSearch = searchTerm.toLowerCase();
@@ -627,6 +680,56 @@ const ManagemenJadwalPage = () => {
                     } else {
                         return stringA < stringB ? 1 : -1;
                     }
+                }
+            });
+        } else {
+            // Default sorting: Present day first, then future dates in ascending order
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            result.sort((a, b) => {
+                let dateA, dateB;
+                
+                try {
+                    // Parse dates from originalDate or tanggal
+                    if (a.originalDate) {
+                        const [year, month, day] = a.originalDate.split('-');
+                        dateA = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    } else if (a.tanggal && a.tanggal.includes('/')) {
+                        const [day, month, year] = a.tanggal.split('/');
+                        dateA = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    } else {
+                        dateA = new Date(a.tanggal);
+                    }
+                    
+                    if (b.originalDate) {
+                        const [year, month, day] = b.originalDate.split('-');
+                        dateB = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    } else if (b.tanggal && b.tanggal.includes('/')) {
+                        const [day, month, year] = b.tanggal.split('/');
+                        dateB = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    } else {
+                        dateB = new Date(b.tanggal);
+                    }
+                    
+                    dateA.setHours(0, 0, 0, 0);
+                    dateB.setHours(0, 0, 0, 0);
+                    
+                    // Check if dates are today
+                    const aIsToday = dateA.getTime() === today.getTime();
+                    const bIsToday = dateB.getTime() === today.getTime();
+                    
+                    // Present day schedules come first
+                    if (aIsToday && !bIsToday) return -1;
+                    if (!aIsToday && bIsToday) return 1;
+                    
+                    // For non-today dates, sort in ascending order (earliest first)
+                    return dateA.getTime() - dateB.getTime();
+                    
+                } catch (error) {
+                    console.warn('Error parsing dates for default sorting:', error);
+                    // If we can't parse dates, maintain original order
+                    return 0;
                 }
             });
         }

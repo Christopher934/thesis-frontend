@@ -56,32 +56,6 @@ const JadwalSayaPage = () => {
   const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'past'>('today');
   const itemsPerPage = 10;
   
-  const memoizedShifts = useMemo(() => shifts, [shifts]);
-  
-  const filterOptions = [
-    { label: "Semua", value: "" },
-    { label: "Tipe: PAGI", value: "PAGI" },
-    { label: "Tipe: SIANG", value: "SIANG" },
-    { label: "Tipe: MALAM", value: "MALAM" },
-    { label: "Tipe: ON CALL", value: "ON_CALL" },
-    { label: "Tipe: JAGA", value: "JAGA" },
-  ];
-
-  const sortOptions = [
-    { label: "Tanggal", value: "tanggal" },
-    { label: "Unit Kerja", value: "lokasishift" },
-    { label: "Jam Mulai", value: "jammulai" },
-  ];
-
-  const handleFilter = (value: string) => {
-    setFilterValue(value);
-  };
-
-  const handleSort = (value: string, direction: "asc" | "desc") => {
-    setSortValue(value);
-    setSortDirection(direction);
-  };
-  
   const filteredShifts = useMemo(() => {
     if (!shifts.length) return [];
     
@@ -152,18 +126,76 @@ const JadwalSayaPage = () => {
     });
   }, [filteredShifts, activeTab, todayDate]);
 
+  // Memoized shifts for calendar - use all shifts regardless of tab filter
+  const memoizedShifts = useMemo(() => {
+    console.log('JadwalSaya: Memoizing shifts for calendar');
+    console.log('JadwalSaya: activeTab:', activeTab);
+    console.log('JadwalSaya: All shifts count:', shifts.length);
+    console.log('JadwalSaya: Filtered by tab count:', filteredByTab.length);
+    
+    // For calendar view, show all shifts regardless of tab, but check for duplicates
+    console.log('JadwalSaya: 🔍 Checking for duplicate shifts...');
+    
+    // Remove any potential duplicates based on ID
+    const uniqueShifts = shifts.filter((shift, index, self) => 
+      index === self.findIndex((s) => s.id === shift.id)
+    );
+    
+    if (uniqueShifts.length !== shifts.length) {
+      console.warn('JadwalSaya: ⚠️ Found and removed', shifts.length - uniqueShifts.length, 'duplicate shifts');
+    }
+    
+    console.log('JadwalSaya: Using', uniqueShifts.length, 'unique shifts for calendar');
+    console.log('JadwalSaya: Sample shift for calendar:', uniqueShifts[0]);
+    
+    return uniqueShifts;
+  }, [shifts, filteredByTab, activeTab]);
+
+  const filterOptions = [
+    { label: "Semua", value: "" },
+    { label: "Tipe: PAGI", value: "PAGI" },
+    { label: "Tipe: SIANG", value: "SIANG" },
+    { label: "Tipe: MALAM", value: "MALAM" },
+    { label: "Tipe: ON CALL", value: "ON_CALL" },
+    { label: "Tipe: JAGA", value: "JAGA" },
+  ];
+
+  const sortOptions = [
+    { label: "Tanggal", value: "tanggal" },
+    { label: "Unit Kerja", value: "lokasishift" },
+    { label: "Jam Mulai", value: "jammulai" },
+  ];
+
+  const handleFilter = (value: string) => {
+    setFilterValue(value);
+  };
+
+  const handleSort = (value: string, direction: "asc" | "desc") => {
+    setSortValue(value);
+    setSortDirection(direction);
+  };
+
   useEffect(() => {
     async function initialize() {
       try {
+        console.log('JadwalSaya: Initializing...');
+        
         const storedRole = localStorage.getItem("role");
         const storedId = localStorage.getItem("idpegawai");
         const storedNameDepan = localStorage.getItem("nameDepan");
+        
+        console.log('JadwalSaya: Retrieved from localStorage:', {
+          role: storedRole,
+          idpegawai: storedId,
+          nameDepan: storedNameDepan
+        });
         
         let userIdentifier = storedId;
         
         if (!userIdentifier && storedNameDepan) {
           userIdentifier = "jojostaf"; 
           localStorage.setItem("idpegawai", userIdentifier);
+          console.log('JadwalSaya: Set fallback userIdentifier:', userIdentifier);
         }
         
         setRole(storedRole);
@@ -172,10 +204,12 @@ const JadwalSayaPage = () => {
         if (userIdentifier) {
           await fetchShifts(userIdentifier, storedRole);
         } else {
+          console.warn('JadwalSaya: No user identifier found');
           setLoading(false);
           setError("User ID not found. Please log out and log in again.");
         }
       } catch (err) {
+        console.error('JadwalSaya: Initialize error:', err);
         setLoading(false);
         setError("Failed to initialize: " + (err instanceof Error ? err.message : String(err)));
       }
@@ -186,15 +220,22 @@ const JadwalSayaPage = () => {
 
   async function fetchShifts(userIdentifier: string, userRole: string | null) {
     try {
+      console.log('JadwalSaya: Starting fetchShifts...');
+      console.log('JadwalSaya: userIdentifier:', userIdentifier);
+      console.log('JadwalSaya: userRole:', userRole);
+      
       setLoading(true);
       
       const token = localStorage.getItem("token");
       if (!token) {
+        console.error('JadwalSaya: No token found in localStorage');
         throw new Error("Authentication token not found");
       }
+      console.log('JadwalSaya: Token found, length:', token.length);
       
       let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const url = joinUrl(apiUrl, '/shifts');
+      console.log('JadwalSaya: API URL:', url);
       
       const response = await fetch(url, {
         headers: {
@@ -203,37 +244,66 @@ const JadwalSayaPage = () => {
         }
       });
       
+      console.log('JadwalSaya: API response status:', response.status);
+      console.log('JadwalSaya: API response ok:', response.ok);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('JadwalSaya: API error response:', errorText);
         throw new Error(`Failed to fetch shifts: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('JadwalSaya: Raw API data:', data);
+      console.log('JadwalSaya: API data type:', Array.isArray(data) ? 'array' : typeof data);
+      console.log('JadwalSaya: API data length:', Array.isArray(data) ? data.length : 'not array');
+      
       setDataSource('Backend API');
         
       let userShifts: ShiftData[] = [];
       if (!Array.isArray(data)) {
+        console.warn('JadwalSaya: API data is not an array, setting empty shifts');
         userShifts = [];
       } else if (userRole?.toLowerCase() === 'admin') {
+        console.log('JadwalSaya: User is admin, using all shifts');
         userShifts = data;
       } else {
+        console.log('JadwalSaya: Filtering shifts for non-admin user');
         // Ambil userId numeric dari localStorage (hasil login)
         const storedNumericId = localStorage.getItem("userId");
+        console.log('JadwalSaya: storedNumericId:', storedNumericId);
+        console.log('JadwalSaya: userIdentifier:', userIdentifier);
+        
         userShifts = data.filter((shift: ShiftData) => {
+          console.log('JadwalSaya: Checking shift:', {
+            shiftId: shift.id,
+            shiftUserId: shift.userId,
+            shiftIdpegawai: shift.idpegawai
+          });
+          
           // Jika ada userId di data shift dan di localStorage, gunakan itu
           if (shift.userId && storedNumericId) {
-            return shift.userId.toString() === storedNumericId;
+            const match = shift.userId.toString() === storedNumericId;
+            console.log(`JadwalSaya: userId match (${shift.userId} === ${storedNumericId}):`, match);
+            return match;
           }
           // Jika tidak ada userId, fallback ke idpegawai/username
           if (shift.idpegawai && userIdentifier) {
             const exactMatch = shift.idpegawai === userIdentifier;
             const caseInsensitiveMatch = !exactMatch && shift.idpegawai.toLowerCase() === userIdentifier.toLowerCase();
+            console.log(`JadwalSaya: idpegawai match (${shift.idpegawai} === ${userIdentifier}):`, exactMatch || caseInsensitiveMatch);
             return exactMatch || caseInsensitiveMatch;
           }
+          console.log('JadwalSaya: No match for shift');
           return false;
         });
+        
+        console.log('JadwalSaya: Filtered userShifts count:', userShifts.length);
       }
       
       const formattedShifts = userShifts.map((shift: ShiftData) => {
+        console.log('JadwalSaya: Processing raw shift data:', shift);
+        
         const originalDate = shift.tanggal;
         let date;
         
@@ -255,14 +325,25 @@ const JadwalSayaPage = () => {
           return textFormatter.formatLokasiShift(lokasi);
         };
         
-        return {
+        const processedShift = {
           ...shift,
           tanggal: formattedDate,
           originalDate: originalDate,
           formattedLokasi: formatLokasiShift(shift.lokasishift),
           tipeshift: textFormatter.formatTipeShift(shift.tipeshift || '')
         };
+        
+        console.log('JadwalSaya: Processed shift data:', processedShift);
+        return processedShift;
       });
+      
+      console.log('JadwalSaya: Total formatted shifts:', formattedShifts.length);
+      console.log('JadwalSaya: Sample formatted shift:', formattedShifts[0]);
+      
+      if (formattedShifts.length === 0) {
+        console.warn('JadwalSaya: No shifts found for user after filtering');
+        setError(`No shifts found for user ${userIdentifier}. Please contact admin or add some shifts first.`);
+      }
       
       setShifts(formattedShifts);
     } catch (err: any) {
@@ -379,9 +460,32 @@ const JadwalSayaPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Terjadi Kesalahan</h3>
               <p className="text-gray-600 text-center mb-4">{error}</p>
-              <PrimaryButton onClick={() => window.location.reload()}>
-                Muat Ulang
-              </PrimaryButton>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <PrimaryButton onClick={() => window.location.reload()}>
+                  Muat Ulang
+                </PrimaryButton>
+                <button 
+                  onClick={() => window.location.href = '/sign-in'}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Login Ulang
+                </button>
+                <button 
+                  onClick={() => window.location.href = '/auth-debug'}
+                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+                >
+                  Debug Info
+                </button>
+              </div>
+              
+              {error.includes('Authentication') && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    💡 <strong>Tip:</strong> Sepertinya ada masalah autentikasi. Coba login ulang atau periksa debug info.
+                  </p>
+                </div>
+              )}
             </div>
           </ContentCard>
         </div>
@@ -497,24 +601,54 @@ const JadwalSayaPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum Ada Jadwal</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {shifts.length === 0 ? 'Belum Ada Jadwal' : `Tidak Ada Jadwal untuk Tab "${activeTab === 'today' ? 'Hari Ini' : activeTab === 'upcoming' ? 'Mendatang' : 'Lewat'}"`}
+              </h3>
               <p className="text-gray-600 text-center mb-4">
-                {searchValue || filterValue 
-                  ? "Tidak Ada Jadwal Yang Sesuai Dengan Pencarian Anda. Coba Ubah Kata Kunci Atau Filter."
-                  : "Jadwal Shift Anda Belum Tersedia. Hubungi Admin Untuk Informasi Lebih Lanjut."
+                {shifts.length === 0 
+                  ? "Jadwal shift Anda belum tersedia. Hubungi admin untuk informasi lebih lanjut."
+                  : searchValue || filterValue 
+                    ? "Tidak ada jadwal yang sesuai dengan pencarian Anda. Coba ubah kata kunci atau filter."
+                    : `Tidak ada jadwal untuk kategori ${activeTab === 'today' ? 'hari ini' : activeTab === 'upcoming' ? 'mendatang' : 'yang telah lewat'}. Coba pilih tab lain.`
                 }
               </p>
-              {(searchValue || filterValue) && (
-                <PrimaryButton
-                  variant="outline"
-                  onClick={() => {
-                    setSearchValue('');
-                    setFilterValue('');
-                  }}
-                >
-                  Hapus Filter
-                </PrimaryButton>
-              )}
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                {(searchValue || filterValue) && (
+                  <PrimaryButton
+                    variant="outline"
+                    onClick={() => {
+                      setSearchValue('');
+                      setFilterValue('');
+                    }}
+                  >
+                    Hapus Filter
+                  </PrimaryButton>
+                )}
+                
+                {shifts.length === 0 && (
+                  <>
+                    <button 
+                      onClick={() => window.location.href = '/auth-debug'}
+                      className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
+                    >
+                      Cek Status Login
+                    </button>
+                    <PrimaryButton onClick={() => window.location.reload()}>
+                      Muat Ulang Data
+                    </PrimaryButton>
+                  </>
+                )}
+                
+                {shifts.length > 0 && activeTab !== 'upcoming' && (
+                  <button
+                    onClick={() => setActiveTab('upcoming')}
+                    className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100"
+                  >
+                    Lihat Jadwal Mendatang
+                  </button>
+                )}
+              </div>
             </div>
           </ContentCard>
         ) : viewMode === 'table' ? (

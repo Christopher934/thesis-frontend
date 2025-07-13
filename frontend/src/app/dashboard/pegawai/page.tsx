@@ -221,8 +221,7 @@ function PegawaiPage() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Left Column - Main Content */}
           <div className="xl:col-span-2 space-y-8">
-            {/* Quick Actions */}
-            <QuickActions userRole={user?.role} isAdmin={false} />
+     
 
             {/* Calendar Widget */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -264,6 +263,9 @@ function PegawaiPage() {
                 />
               </div>
             </div>
+
+            {/* Quick Actions */}
+            <QuickActions userRole={user?.role} isAdmin={false} />
 
             {/* Recent Activity */}
             {/* <RecentActivity userRole={user?.role} isAdmin={false} /> */}

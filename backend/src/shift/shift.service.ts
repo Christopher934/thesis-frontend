@@ -152,6 +152,8 @@ export class ShiftService {
               : undefined,
             // Add idpegawai at top level for frontend compatibility
             idpegawai: shift.user?.username || shift.user?.employeeId || undefined,
+            // Format tanggal as YYYY-MM-DD
+            tanggal: shift.tanggal.toISOString().split('T')[0],
             // Format time fields properly
             jammulai: formatTime(shift.jammulai),
             jamselesai: formatTime(shift.jamselesai),

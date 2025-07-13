@@ -241,32 +241,37 @@ const ManagemenJadwalPage = () => {
     const [sortValue, setSortValue] = useState("");
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showAllSchedules, setShowAllSchedules] = useState(false); // Toggle untuk melihat semua jadwal
 
     // Update filter counts whenever data changes
     const updateFilterCounts = (data: Jadwal[]) => {
-        // Filter out past dates first for accurate counts
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // Filter out past dates first for accurate counts (unless showing all schedules)
+        let activeJadwal = data;
         
-        const activeJadwal = data.filter(item => {
-            try {
-                if (item.originalDate) {
-                    const [year, month, day] = item.originalDate.split('-');
-                    const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                    return itemDate >= today;
-                } else if (item.tanggal && item.tanggal.includes('/')) {
-                    const [day, month, year] = item.tanggal.split('/');
-                    const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                    return itemDate >= today;
-                } else {
-                    const shiftDate = new Date(item.tanggal);
-                    shiftDate.setHours(0, 0, 0, 0);
-                    return shiftDate >= today;
+        if (!showAllSchedules) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            activeJadwal = data.filter(item => {
+                try {
+                    if (item.originalDate) {
+                        const [year, month, day] = item.originalDate.split('-');
+                        const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                        return itemDate >= today;
+                    } else if (item.tanggal && item.tanggal.includes('/')) {
+                        const [day, month, year] = item.tanggal.split('/');
+                        const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                        return itemDate >= today;
+                    } else {
+                        const shiftDate = new Date(item.tanggal);
+                        shiftDate.setHours(0, 0, 0, 0);
+                        return shiftDate >= today;
+                    }
+                } catch (error) {
+                    return true; // Keep if we can't parse date
                 }
-            } catch (error) {
-                return true; // Keep if we can't parse date
-            }
-        });
+            });
+        }
         
         const counts = {
             "": activeJadwal.length,
@@ -512,34 +517,36 @@ const ManagemenJadwalPage = () => {
     useEffect(() => {
         let result = [...jadwalData];
         
-        // Filter out past dates (keep only today and future dates)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-        
-        result = result.filter(item => {
-            try {
-                const shiftDate = new Date(item.originalDate || item.tanggal);
-                if (item.originalDate) {
-                    // If we have originalDate in YYYY-MM-DD format
-                    const [year, month, day] = item.originalDate.split('-');
-                    const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                    return itemDate >= today;
-                } else if (item.tanggal && item.tanggal.includes('/')) {
-                    // If we have displayed format DD/MM/YYYY
-                    const [day, month, year] = item.tanggal.split('/');
-                    const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                    return itemDate >= today;
-                } else {
-                    // Fallback: try to parse the date directly
-                    shiftDate.setHours(0, 0, 0, 0);
-                    return shiftDate >= today;
+        // Filter out past dates (keep only today and future dates) - unless showAllSchedules is true
+        if (!showAllSchedules) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+            
+            result = result.filter(item => {
+                try {
+                    const shiftDate = new Date(item.originalDate || item.tanggal);
+                    if (item.originalDate) {
+                        // If we have originalDate in YYYY-MM-DD format
+                        const [year, month, day] = item.originalDate.split('-');
+                        const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                        return itemDate >= today;
+                    } else if (item.tanggal && item.tanggal.includes('/')) {
+                        // If we have displayed format DD/MM/YYYY
+                        const [day, month, year] = item.tanggal.split('/');
+                        const itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                        return itemDate >= today;
+                    } else {
+                        // Fallback: try to parse the date directly
+                        shiftDate.setHours(0, 0, 0, 0);
+                        return shiftDate >= today;
+                    }
+                } catch (error) {
+                    console.warn('Error parsing date for filtering:', item.tanggal, error);
+                    // If we can't parse the date, keep the item to be safe
+                    return true;
                 }
-            } catch (error) {
-                console.warn('Error parsing date for filtering:', item.tanggal, error);
-                // If we can't parse the date, keep the item to be safe
-                return true;
-            }
-        });
+            });
+        }
         
         // Apply search filter
         if (searchTerm.trim() !== '') {
@@ -684,6 +691,7 @@ const ManagemenJadwalPage = () => {
             });
         } else {
             // Default sorting: Present day first, then future dates in ascending order
+            // When showing all schedules, also include past dates at the end
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
@@ -715,16 +723,35 @@ const ManagemenJadwalPage = () => {
                     dateA.setHours(0, 0, 0, 0);
                     dateB.setHours(0, 0, 0, 0);
                     
-                    // Check if dates are today
-                    const aIsToday = dateA.getTime() === today.getTime();
-                    const bIsToday = dateB.getTime() === today.getTime();
-                    
-                    // Present day schedules come first
-                    if (aIsToday && !bIsToday) return -1;
-                    if (!aIsToday && bIsToday) return 1;
-                    
-                    // For non-today dates, sort in ascending order (earliest first)
-                    return dateA.getTime() - dateB.getTime();
+                    if (showAllSchedules) {
+                        // When showing all schedules: Past dates first (oldest first), then present day, then future
+                        const aIsPast = dateA.getTime() < today.getTime();
+                        const bIsPast = dateB.getTime() < today.getTime();
+                        const aIsToday = dateA.getTime() === today.getTime();
+                        const bIsToday = dateB.getTime() === today.getTime();
+                        
+                        // Past dates come first
+                        if (aIsPast && !bIsPast) return -1;
+                        if (!aIsPast && bIsPast) return 1;
+                        
+                        // Present day comes after past but before future
+                        if (aIsToday && !bIsToday && !bIsPast) return -1;
+                        if (!aIsToday && bIsToday && !aIsPast) return 1;
+                        
+                        // Within the same category, sort chronologically
+                        return dateA.getTime() - dateB.getTime();
+                    } else {
+                        // Original logic: Present day first, then future dates
+                        const aIsToday = dateA.getTime() === today.getTime();
+                        const bIsToday = dateB.getTime() === today.getTime();
+                        
+                        // Present day schedules come first
+                        if (aIsToday && !bIsToday) return -1;
+                        if (!aIsToday && bIsToday) return 1;
+                        
+                        // For non-today dates, sort in ascending order (earliest first)
+                        return dateA.getTime() - dateB.getTime();
+                    }
                     
                 } catch (error) {
                     console.warn('Error parsing dates for default sorting:', error);
@@ -741,7 +768,7 @@ const ManagemenJadwalPage = () => {
         
         // Reset to first page when filtering changes
         setCurrentPage(1);
-    }, [jadwalData, searchTerm, filterValue, sortValue, sortDirection]);
+    }, [jadwalData, searchTerm, filterValue, sortValue, sortDirection, showAllSchedules]);
 
     // Update filter counts when jadwal data changes
     useEffect(() => {
@@ -814,21 +841,56 @@ const ManagemenJadwalPage = () => {
         const formattedShiftType = formatTipeShift(item.tipeshift || '');
         const timeRange = `${formatTime(item.jammulai)} - ${formatTime(item.jamselesai)}`;
         
+        // Check if this schedule is in the past
+        const isPastSchedule = (() => {
+            if (!showAllSchedules) return false; // Only check when showing all schedules
+            
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                let itemDate;
+                if (item.originalDate) {
+                    const [year, month, day] = item.originalDate.split('-');
+                    itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                } else if (item.tanggal && item.tanggal.includes('/')) {
+                    const [day, month, year] = item.tanggal.split('/');
+                    itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                } else {
+                    itemDate = new Date(item.tanggal);
+                    itemDate.setHours(0, 0, 0, 0);
+                }
+                
+                return itemDate.getTime() < today.getTime();
+            } catch (error) {
+                return false;
+            }
+        })();
+        
         return (
-            <tr key={item.id} className="border-b border-gray-500 even:bg-slate-50 text-md hover:bg-gray-50 transition-colors">
+            <tr key={item.id} className={`border-b border-gray-500 even:bg-slate-50 text-md hover:bg-gray-50 transition-colors ${
+                isPastSchedule ? 'opacity-60 bg-gray-50' : ''
+            }`}>
                 <td className="flex items-center gap-4 p-4">
                     <div className="flex flex-col">
-                        <h3 className="font-semibold capitalize">{fullName}</h3>
-                        <p className="text-xs text-gray-500">{timeRange}</p>
-                        <p className="text-xs text-blue-600">{formattedLocation}</p>
+                        <h3 className={`font-semibold capitalize ${isPastSchedule ? 'text-gray-500' : ''}`}>
+                            {fullName}
+                            {isPastSchedule && <span className="text-xs text-red-500 ml-2">(Selesai)</span>}
+                        </h3>
+                        <p className={`text-xs ${isPastSchedule ? 'text-gray-400' : 'text-gray-500'}`}>{timeRange}</p>
+                        <p className={`text-xs ${isPastSchedule ? 'text-gray-400' : 'text-blue-600'}`}>{formattedLocation}</p>
                     </div>
                 </td>
                 {/* <td className="hidden md:table-cell">{item.idpegawai}</td> */}
-                <td className="hidden md:table-cell">{item.tanggal}</td>
-                <td className="hidden md:table-cell">{formatTime(item.jammulai)}</td>
-                <td className="hidden md:table-cell">{formatTime(item.jamselesai)}</td>
+                <td className={`hidden md:table-cell ${isPastSchedule ? 'text-gray-500' : ''}`}>{item.tanggal}</td>
+                <td className={`hidden md:table-cell ${isPastSchedule ? 'text-gray-500' : ''}`}>{formatTime(item.jammulai)}</td>
+                <td className={`hidden md:table-cell ${isPastSchedule ? 'text-gray-500' : ''}`}>{formatTime(item.jamselesai)}</td>
                 <td className="hidden md:table-cell">
-                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        isPastSchedule 
+                            ? 'bg-gray-100 text-gray-600' 
+                            : 'bg-blue-100 text-blue-800'
+                    }`}>
                         {formattedShiftType}
                     </span>
                 </td>
@@ -1028,8 +1090,10 @@ const ManagemenJadwalPage = () => {
         <div className='bg-white p-4 rounded-md flex-1 m-4 mt-0'>
             {/* TOP */}
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-900">Manajemen Jadwal</h1>
-                <p className="text-gray-600 mt-1">Kelola jadwal shift pegawai rumah sakit</p>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-bold text-gray-900">Manajemen Jadwal</h1>
+                    <p className="text-gray-600 mt-1">Kelola jadwal shift pegawai rumah sakit</p>
+                </div>
                 <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
                     <TableSearch 
                         placeholder="Cari berdasarkan nama pegawai, lokasi, atau tanggal..." 
@@ -1037,6 +1101,21 @@ const ManagemenJadwalPage = () => {
                         onChange={setSearchTerm}
                     />
                     <div className="flex items-center gap-4 self-end">
+                        {/* Toggle untuk melihat semua jadwal */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setShowAllSchedules(!showAllSchedules)}
+                                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                                    showAllSchedules 
+                                        ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                                }`}
+                                title={showAllSchedules ? 'Sembunyikan jadwal yang sudah lewat' : 'Tampilkan semua jadwal termasuk yang sudah lewat'}
+                            >
+                                {showAllSchedules ? '📅 Semua Jadwal' : '⏰ Jadwal Aktif'}
+                            </button>
+                        </div>
+                        
                         <FilterButton 
                             options={filterOptions} 
                             onFilter={handleFilter}

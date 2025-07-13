@@ -202,10 +202,19 @@ const JadwalSayaPage = () => {
     return filtered;
   }, [shifts, searchValue, filterValue, sortValue, sortDirection]);
 
-  // Fungsi untuk dapatkan tanggal hari ini (format YYYY-MM-DD)
+  // Fungsi untuk dapatkan tanggal hari ini (format YYYY-MM-DD) dengan timezone lokal
   const getToday = () => {
     const now = new Date();
-    return now.toISOString().slice(0, 10);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    
+    console.log('getToday: Current date (local timezone):', today);
+    console.log('getToday: Current timestamp:', now.getTime());
+    console.log('getToday: Current date object:', now);
+    
+    return today;
   };
   const todayDate = getToday();
 
@@ -214,9 +223,27 @@ const JadwalSayaPage = () => {
     return filteredShifts.filter((item) => {
       // item.originalDate harus format YYYY-MM-DD
       if (!item.originalDate) return false;
-      if (activeTab === 'today') return item.originalDate === todayDate;
-      if (activeTab === 'upcoming') return item.originalDate > todayDate;
-      if (activeTab === 'past') return item.originalDate < todayDate;
+      
+      console.log('Filter debug:');
+      console.log('- Item date:', item.originalDate);
+      console.log('- Today date:', todayDate);
+      console.log('- Active tab:', activeTab);
+      
+      if (activeTab === 'today') {
+        const isToday = item.originalDate === todayDate;
+        console.log('- Is today?', isToday);
+        return isToday;
+      }
+      if (activeTab === 'upcoming') {
+        const isUpcoming = item.originalDate > todayDate;
+        console.log('- Is upcoming?', isUpcoming);
+        return isUpcoming;
+      }
+      if (activeTab === 'past') {
+        const isPast = item.originalDate < todayDate;
+        console.log('- Is past?', isPast);
+        return isPast;
+      }
       return true;
     });
   }, [filteredShifts, activeTab, todayDate]);
@@ -412,13 +439,21 @@ const JadwalSayaPage = () => {
         
         const originalDate = shift.tanggal;
         let date;
+        let normalizedDate; // Format YYYY-MM-DD untuk konsistensi
         
         if (originalDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
           const [year, month, day] = originalDate.split('-').map(Number);
           date = new Date(year, month - 1, day);
+          normalizedDate = originalDate; // Sudah format YYYY-MM-DD
         } else {
           date = new Date(originalDate);
+          normalizedDate = date.toISOString().slice(0, 10); // Convert ke YYYY-MM-DD
         }
+        
+        console.log('JadwalSaya: Date processing:');
+        console.log('- Original date:', originalDate);
+        console.log('- Normalized date:', normalizedDate);
+        console.log('- Date object:', date);
         
         const formattedDate = date.toLocaleDateString('id-ID', {
           weekday: 'long',
@@ -434,7 +469,7 @@ const JadwalSayaPage = () => {
         const processedShift = {
           ...shift,
           tanggal: formattedDate,
-          originalDate: originalDate,
+          originalDate: normalizedDate, // Gunakan format yang sudah di-normalize
           formattedLokasi: formatLokasiShift(shift.lokasishift),
           tipeshift: textFormatter.formatTipeShift(shift.tipeshift || '')
         };

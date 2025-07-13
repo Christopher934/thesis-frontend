@@ -135,12 +135,14 @@ export class ShiftService {
 
       // Jika ada data shift dari database, return itu
       if (shifts && shifts.length > 0) {
-        // Map the shifts to include the user's full name
+        // Map the shifts to include the user's full name and idpegawai for frontend compatibility
         return shifts.map((shift) => ({
           ...shift,
           nama: shift.user
             ? `${shift.user.namaDepan} ${shift.user.namaBelakang}`
             : undefined,
+          // Add idpegawai at top level for frontend compatibility
+          idpegawai: shift.user?.username || shift.user?.employeeId || undefined,
         }));
       }
 

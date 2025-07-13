@@ -21,7 +21,7 @@ const localizer = momentLocalizer(moment);
 // Interface for shift data from JadwalSaya
 interface ShiftData {
   id: number;
-  idpegawai: string;
+  idpegawai?: string; // Optional since backend might not provide this directly
   tipeshift?: string;
   tanggal: string;
   originalDate?: string; // Original date before formatting
@@ -29,6 +29,14 @@ interface ShiftData {
   jammulai: string;
   jamselesai: string;
   nama?: string;
+  userId?: number;
+  user?: {
+    id: number;
+    employeeId?: string;
+    namaDepan?: string;
+    namaBelakang?: string;
+    username: string;
+  };
 }
 
 // Interface for calendar event
@@ -51,6 +59,23 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
   console.log('BigCalendar: Received shifts prop:', shifts);
   console.log('BigCalendar: Shifts count:', shifts?.length || 0);
   console.log('BigCalendar: useDefaultEvents:', useDefaultEvents);
+  
+  // DEBUG: Log each individual shift
+  if (shifts && shifts.length > 0) {
+    shifts.forEach((shift, index) => {
+      console.log(`BigCalendar: Shift ${index + 1}:`, {
+        id: shift.id,
+        idpegawai: shift.idpegawai,
+        userInfo: shift.user,
+        userUsername: shift.user?.username,
+        tanggal: shift.tanggal,
+        originalDate: shift.originalDate,
+        lokasishift: shift.lokasishift,
+        jammulai: shift.jammulai,
+        jamselesai: shift.jamselesai
+      });
+    });
+  }
   
   // Only use actual shifts data - no fallback test data
   const activeShifts = shifts;
@@ -116,66 +141,120 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
           jamselesai: shift.jamselesai
         });
         
-        // Parse date and time - simplified approach
+        // Parse date and time - more robust approach
         const dateStr = shift.originalDate || shift.tanggal;
-        console.log(`BigCalendar: Using date string: "${dateStr}" for ${shift.lokasishift}`);
+        console.log(`BigCalendar: Processing date string: "${dateStr}" for shift ${shift.id}`);
         let date;
         
         try {
-          // Simplified date parsing - prioritize ISO format
+          // Try multiple date formats
           if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
             // Handle YYYY-MM-DD format (most reliable)
             console.log(`BigCalendar: Parsing ISO date: ${dateStr}`);
             const [year, month, day] = dateStr.split('-').map(Number);
             date = new Date(year, month - 1, day);
             console.log(`BigCalendar: Created date from ISO: ${date.toISOString()}`);
+          } else if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+            // Handle DD/MM/YYYY or D/M/YYYY format
+            console.log(`BigCalendar: Parsing DD/MM/YYYY format: ${dateStr}`);
+            const [day, month, year] = dateStr.split('/').map(Number);
+            date = new Date(year, month - 1, day);
+            console.log(`BigCalendar: Created date from DD/MM/YYYY: ${date.toISOString()}`);
+          } else if (dateStr.includes(',')) {
+            // Handle "Senin, 14 Juli 2025" format
+            console.log(`BigCalendar: Parsing Indonesian format: ${dateStr}`);
+            // For Indonesian format, let's try to extract the date part
+            const parts = dateStr.split(',');
+            if (parts.length > 1) {
+              const datePart = parts[1].trim(); // "14 Juli 2025"
+              const [day, monthName, year] = datePart.split(' ');
+              
+              // Map Indonesian month names to numbers
+              const monthMap: { [key: string]: number } = {
+                'januari': 0, 'februari': 1, 'maret': 2, 'april': 3,
+                'mei': 4, 'juni': 5, 'juli': 6, 'agustus': 7,
+                'september': 8, 'oktober': 9, 'november': 10, 'desember': 11
+              };
+              
+              const monthNum = monthMap[monthName.toLowerCase()];
+              if (monthNum !== undefined) {
+                date = new Date(parseInt(year), monthNum, parseInt(day));
+                console.log(`BigCalendar: Created date from Indonesian format: ${date.toISOString()}`);
+              } else {
+                throw new Error(`Unknown month: ${monthName}`);
+              }
+            } else {
+              throw new Error('Invalid Indonesian date format');
+            }
           } else {
-            // For any other format, try to parse and convert to consistent format
-            console.log(`BigCalendar: Attempting to parse non-ISO date: ${dateStr}`);
-            // Create a reliable date - for testing, use July 2025 dates
-            const testDate = new Date(2025, 6, 13 + (shift.id % 7)); // Spread test dates over a week
-            date = testDate;
-            console.log(`BigCalendar: Using test date: ${date.toISOString()}`);
+            // Fallback to standard Date parsing
+            console.log(`BigCalendar: Using fallback parsing for: ${dateStr}`);
+            date = new Date(dateStr);
+            console.log(`BigCalendar: Created date from fallback: ${date.toISOString()}`);
           }
           
           // Ensure we have a valid date
           if (isNaN(date.getTime())) {
-            console.error(`BigCalendar: Date parsing error for "${dateStr}" - using current date`);
-            date = new Date(); // Fallback to current date
+            console.error(`BigCalendar: Invalid date created from "${dateStr}"`);
+            // Use today's date as fallback
+            date = new Date();
+            console.log(`BigCalendar: Using today as fallback: ${date.toISOString()}`);
           }
         } catch (error) {
           console.error(`BigCalendar: Date parsing exception for "${dateStr}":`, error);
-          date = new Date(); // Fallback to current date
+          // Use today's date as fallback
+          date = new Date();
+          console.log(`BigCalendar: Using today as fallback after error: ${date.toISOString()}`);
         }
         
         try {
-          // Simplified time parsing with better defaults
+          // More robust time parsing with better validation
           let startHours = 8, startMinutes = 0; // Default to 8:00 AM
           let endHours = 16, endMinutes = 0;    // Default to 4:00 PM
           
+          console.log(`BigCalendar: Parsing times - start: "${shift.jammulai}", end: "${shift.jamselesai}"`);
+          
           // Parse start time
-          if (shift.jammulai && shift.jammulai.includes(':')) {
-            const [hours, minutes] = shift.jammulai.split(':').map(Number);
-            if (!isNaN(hours) && !isNaN(minutes)) {
-              startHours = Math.max(0, Math.min(23, hours));
-              startMinutes = Math.max(0, Math.min(59, minutes));
+          if (shift.jammulai && typeof shift.jammulai === 'string') {
+            if (shift.jammulai.includes(':')) {
+              const [hours, minutes] = shift.jammulai.split(':').map(Number);
+              if (!isNaN(hours) && !isNaN(minutes)) {
+                startHours = Math.max(0, Math.min(23, hours));
+                startMinutes = Math.max(0, Math.min(59, minutes));
+                console.log(`BigCalendar: Parsed start time: ${startHours}:${startMinutes}`);
+              } else {
+                console.warn(`BigCalendar: Invalid start time format: "${shift.jammulai}"`);
+              }
+            } else {
+              console.warn(`BigCalendar: Start time missing colon: "${shift.jammulai}"`);
             }
+          } else {
+            console.warn(`BigCalendar: Start time is missing or not string: "${shift.jammulai}"`);
           }
           
           // Parse end time
-          if (shift.jamselesai && shift.jamselesai.includes(':')) {
-            const [hours, minutes] = shift.jamselesai.split(':').map(Number);
-            if (!isNaN(hours) && !isNaN(minutes)) {
-              endHours = Math.max(0, Math.min(23, hours));
-              endMinutes = Math.max(0, Math.min(59, minutes));
+          if (shift.jamselesai && typeof shift.jamselesai === 'string') {
+            if (shift.jamselesai.includes(':')) {
+              const [hours, minutes] = shift.jamselesai.split(':').map(Number);
+              if (!isNaN(hours) && !isNaN(minutes)) {
+                endHours = Math.max(0, Math.min(23, hours));
+                endMinutes = Math.max(0, Math.min(59, minutes));
+                console.log(`BigCalendar: Parsed end time: ${endHours}:${endMinutes}`);
+              } else {
+                console.warn(`BigCalendar: Invalid end time format: "${shift.jamselesai}"`);
+              }
+            } else {
+              console.warn(`BigCalendar: End time missing colon: "${shift.jamselesai}"`);
             }
           } else {
+            console.warn(`BigCalendar: End time is missing or not string: "${shift.jamselesai}"`);
             // If no end time, make it 8 hours after start time
             endHours = (startHours + 8) % 24;
             endMinutes = startMinutes;
+            console.log(`BigCalendar: Using calculated end time: ${endHours}:${endMinutes}`);
           }
           
-          console.log(`BigCalendar: Time - start: ${startHours}:${startMinutes}, end: ${endHours}:${endMinutes}`);
+          console.log(`BigCalendar: Final times - start: ${startHours}:${startMinutes}, end: ${endHours}:${endMinutes}`);
           
           // Create date objects
           const startDate = new Date(date);
@@ -186,10 +265,11 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
           
           // Handle overnight shifts
           if (endDate <= startDate) {
+            console.log(`BigCalendar: Detected overnight shift, adding day to end date`);
             endDate.setDate(endDate.getDate() + 1);
           }
           
-          console.log(`BigCalendar: Final times - start: ${startDate.toISOString()}, end: ${endDate.toISOString()}`);
+          console.log(`BigCalendar: Event dates - start: ${startDate.toISOString()}, end: ${endDate.toISOString()}`);
           
           // Simplified location formatting
           const formatLokasiShift = (lokasi: string) => {

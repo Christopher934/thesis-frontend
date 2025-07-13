@@ -41,7 +41,7 @@ interface UserInfo {
 // Interface for shift data
 interface ShiftData {
   id: number;
-  idpegawai: string;
+  idpegawai?: string; // Optional since backend might not provide this directly
   tipeshift?: string;
   tanggal: string;
   originalDate?: string;
@@ -50,6 +50,13 @@ interface ShiftData {
   jamselesai: string;
   nama?: string;
   userId?: number;
+  user?: {
+    id: number;
+    employeeId?: string;
+    namaDepan?: string;
+    namaBelakang?: string;
+    username: string;
+  };
 }
 
 function PegawaiPage() {
@@ -94,7 +101,13 @@ function PegawaiPage() {
 
   // Fetch shifts data for calendar
   const fetchShifts = useCallback(async () => {
-    if (!user) return;
+    console.log('PegawaiDashboard: 🚀 fetchShifts called');
+    console.log('PegawaiDashboard: 👤 Current user:', user);
+    
+    if (!user) {
+      console.log('PegawaiDashboard: ❌ No user data, aborting fetchShifts');
+      return;
+    }
 
     try {
       setShiftsLoading(true);
@@ -113,32 +126,87 @@ function PegawaiPage() {
         }
       });
 
+      console.log('PegawaiDashboard: 🔍 API Response received');
+      console.log('PegawaiDashboard: Response status:', response.status);
+      console.log('PegawaiDashboard: Response ok:', response.ok);
+
       if (!response.ok) {
         throw new Error(`Failed to fetch shifts: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('PegawaiDashboard: 📊 Raw API data:', data);
+      console.log('PegawaiDashboard: 📊 Data type:', typeof data, Array.isArray(data) ? '(array)' : '(not array)');
+      
+      // DEBUG: Log first few shifts to see actual structure
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('PegawaiDashboard: 🔍 First shift structure:', data[0]);
+        console.log('PegawaiDashboard: 🔍 First shift keys:', Object.keys(data[0]));
+        if (data.length > 1) {
+          console.log('PegawaiDashboard: 🔍 Second shift structure:', data[1]);
+        }
+      }
       
       let userShifts: ShiftData[] = [];
       if (Array.isArray(data)) {
+        console.log('PegawaiDashboard: 👤 User info for filtering:', {
+          role: user.role,
+          username: user.username,
+          id: user.id
+        });
+        
         if (user.role?.toLowerCase() === 'admin') {
           // Admin sees all shifts
           userShifts = data;
+          console.log('PegawaiDashboard: 👑 Admin mode - showing all shifts:', userShifts.length);
         } else {
           // Regular users see only their shifts
+          console.log('PegawaiDashboard: 🔍 Filtering shifts for regular user...');
+          console.log('PegawaiDashboard: Total shifts before filter:', data.length);
+          
           userShifts = data.filter((shift: ShiftData) => {
-            if (!shift.idpegawai || !user.username) return false;
+            // Backend mengembalikan data dengan relasi user, bukan idpegawai langsung
+            const shiftUsername = shift.idpegawai || shift.user?.username || shift.user?.employeeId;
             
-            const exactMatch = shift.idpegawai === user.username;
+            if (!shiftUsername || !user.username) {
+              console.log('PegawaiDashboard: ❌ Skipping shift - missing user identification:', {
+                shift: shift,
+                shiftUsername,
+                hasShiftUsername: !!shiftUsername,
+                userUsername: user.username,
+                hasUserUsername: !!user.username,
+                shiftUserData: shift.user
+              });
+              return false;
+            }
+            
+            const exactMatch = shiftUsername === user.username;
             const caseInsensitiveMatch = !exactMatch && 
-                                        shift.idpegawai.toLowerCase() === user.username.toLowerCase();
+                                        shiftUsername.toLowerCase() === user.username.toLowerCase();
             const userIdMatch = shift.userId && shift.userId === user.id;
+            
+            console.log('PegawaiDashboard: 🔍 Checking shift:', {
+              shiftId: shift.id,
+              shiftUsername,
+              userUsername: user.username,
+              userId: user.id,
+              shiftUserId: shift.userId,
+              exactMatch,
+              caseInsensitiveMatch,
+              userIdMatch,
+              willInclude: exactMatch || caseInsensitiveMatch || userIdMatch
+            });
             
             return exactMatch || caseInsensitiveMatch || userIdMatch;
           });
+          
+          console.log('PegawaiDashboard: ✅ Filtered shifts count:', userShifts.length);
         }
+      } else {
+        console.log('PegawaiDashboard: ❌ API data is not an array:', data);
       }
 
+      console.log('PegawaiDashboard: 🎯 Final shifts to display:', userShifts);
       setShifts(userShifts);
     } catch (error) {
       console.error('Error fetching shifts:', error);

@@ -4,10 +4,21 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Calendar, Download, Filter, TrendingUp, Users, Clock, AlertTriangle } from 'lucide-react';
 
-// Helper function to format time from DateTime string to HH:mm format
+// Helper function to format time
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
     return date.toLocaleTimeString('id-ID', { 

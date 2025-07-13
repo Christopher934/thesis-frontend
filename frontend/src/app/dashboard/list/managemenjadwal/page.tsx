@@ -165,6 +165,7 @@ const columns = [
     { 
         headers: "Info Pegawai", 
         accessor: "nama",
+        className: "",
         tooltip: "Informasi pegawai dan waktu kerja"
     },
     { 
@@ -194,6 +195,7 @@ const columns = [
     { 
         headers: "Aksi", 
         accessor: "action",
+        className: "",
         tooltip: "Tindakan yang tersedia"
     },
 ];
@@ -784,11 +786,49 @@ const ManagemenJadwalPage = () => {
     const formatLokasiShift = (lokasi: string) => {
         if (!lokasi) return '-';
         
-        // Replace underscores with spaces and capitalize each word
-        return lokasi
+        // Handle specific unit mappings first
+        const unitMappings: { [key: string]: string } = {
+            'RAWAT_INAP_3_SHIFT': 'Rawat Inap',
+            'RAWAT_INAP': 'Rawat Inap',
+            'RAWAT_JALAN': 'Rawat Jalan',
+            'UGD': 'UGD',
+            'ICU': 'ICU',
+            'EMERGENCY': 'Emergency',
+            'KAMAR_OPERASI': 'Kamar Operasi',
+            'LABORATORIUM': 'Laboratorium',
+            'RADIOLOGI': 'Radiologi',
+            'FARMASI': 'Farmasi',
+            'GIZI': 'Gizi',
+            'FISIOTERAPI': 'Fisioterapi',
+            'HEMODIALISA': 'Hemodialisa',
+            'NICU': 'NICU',
+            'PICU': 'PICU'
+        };
+        
+        // Check if we have a direct mapping
+        const upperLokasi = lokasi.toUpperCase();
+        if (unitMappings[upperLokasi]) {
+            return unitMappings[upperLokasi];
+        }
+        
+        // For other cases, process the string
+        let formatted = lokasi
             .split('_')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .map(word => {
+                // Skip numbers and "SHIFT" word
+                if (/^\d+$/.test(word) || word.toUpperCase() === 'SHIFT') {
+                    return null;
+                }
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            })
+            .filter(word => word !== null)
             .join(' ');
+        
+        // Clean up any remaining shift references
+        formatted = formatted.replace(/\s*\d+\s*(Shift|shift)/gi, '');
+        
+        // Clean up any trailing spaces and multiple spaces
+        return formatted.replace(/\s+/g, ' ').trim();
     };
     
     // Format shift type for display (convert PAGI -> Shift Pagi, etc.)
@@ -871,7 +911,8 @@ const ManagemenJadwalPage = () => {
             <tr key={item.id} className={`border-b border-gray-500 even:bg-slate-50 text-md hover:bg-gray-50 transition-colors ${
                 isPastSchedule ? 'opacity-60 bg-gray-50' : ''
             }`}>
-                <td className="flex items-center gap-4 p-4">
+                {/* Info Pegawai - Sesuai kolom pertama */}
+                <td className="px-4 lg:px-6 py-3">
                     <div className="flex flex-col">
                         <h3 className={`font-semibold capitalize ${isPastSchedule ? 'text-gray-500' : ''}`}>
                             {fullName}
@@ -881,11 +922,24 @@ const ManagemenJadwalPage = () => {
                         <p className={`text-xs ${isPastSchedule ? 'text-gray-400' : 'text-blue-600'}`}>{formattedLocation}</p>
                     </div>
                 </td>
-                {/* <td className="hidden md:table-cell">{item.idpegawai}</td> */}
-                <td className={`hidden md:table-cell ${isPastSchedule ? 'text-gray-500' : ''}`}>{item.tanggal}</td>
-                <td className={`hidden md:table-cell ${isPastSchedule ? 'text-gray-500' : ''}`}>{formatTime(item.jammulai)}</td>
-                <td className={`hidden md:table-cell ${isPastSchedule ? 'text-gray-500' : ''}`}>{formatTime(item.jamselesai)}</td>
-                <td className="hidden md:table-cell">
+                
+                {/* Tanggal - Sesuai kolom kedua */}
+                <td className={`hidden md:table-cell px-4 lg:px-6 py-3 ${isPastSchedule ? 'text-gray-500' : ''}`}>
+                    {item.tanggal}
+                </td>
+                
+                {/* Jam Mulai - Sesuai kolom ketiga */}
+                <td className={`hidden md:table-cell px-4 lg:px-6 py-3 ${isPastSchedule ? 'text-gray-500' : ''}`}>
+                    {formatTime(item.jammulai)}
+                </td>
+                
+                {/* Jam Selesai - Sesuai kolom keempat */}
+                <td className={`hidden md:table-cell px-4 lg:px-6 py-3 ${isPastSchedule ? 'text-gray-500' : ''}`}>
+                    {formatTime(item.jamselesai)}
+                </td>
+                
+                {/* Tipe Shift - Sesuai kolom kelima */}
+                <td className="hidden md:table-cell px-4 lg:px-6 py-3">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         isPastSchedule 
                             ? 'bg-gray-100 text-gray-600' 
@@ -894,7 +948,9 @@ const ManagemenJadwalPage = () => {
                         {formattedShiftType}
                     </span>
                 </td>
-                <td>
+                
+                {/* Aksi - Sesuai kolom keenam */}
+                <td className="px-4 lg:px-6 py-3">
                     <div className="flex items-center gap-2">
                         {(userRole === "admin" || userRole === "supervisor") && (
                             <>

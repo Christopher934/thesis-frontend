@@ -16,6 +16,101 @@ import { textFormatter } from "@/lib/textFormatter";
 // Dynamic import to prevent hydration issues and optimization
 const BigCalendar = lazy(() => import("@/components/common/BigCalendar"));
 
+// Utility function to format time from backend timestamp
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '--:--';
+  
+  console.log('formatTime: Input:', timeString);
+  
+  try {
+    // If it's already in HH:MM format, return as is
+    if (timeString.match(/^\d{1,2}:\d{2}$/)) {
+      console.log('formatTime: Already HH:MM format');
+      return timeString;
+    }
+    
+    // If it's a full timestamp (1970-01-01T07:00:00.000Z), extract time
+    if (timeString.includes('T') && timeString.includes('Z')) {
+      console.log('formatTime: Processing ISO timestamp');
+      const date = new Date(timeString);
+      if (!isNaN(date.getTime())) {
+        // Use local time instead of UTC to preserve the intended time
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const result = `${hours}:${minutes}`;
+        console.log('formatTime: Extracted time from ISO (local time):', result);
+        return result;
+      }
+    }
+    
+    // If it's Date object toString format
+    if (timeString.includes('GMT') || timeString.includes('UTC')) {
+      console.log('formatTime: Processing Date string');
+      const date = new Date(timeString);
+      if (!isNaN(date.getTime())) {
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const result = `${hours}:${minutes}`;
+        console.log('formatTime: Extracted time from Date:', result);
+        return result;
+      }
+    }
+    
+    // If it's just time part like "07:00:00.000Z" or "07:00:00"
+    if (timeString.includes(':')) {
+      console.log('formatTime: Processing time with colons');
+      const timePart = timeString.split('T')[1] || timeString;
+      const cleanTime = timePart.replace('Z', '').split('.')[0]; // Remove Z and milliseconds
+      const [hours, minutes] = cleanTime.split(':');
+      if (hours && minutes) {
+        const result = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+        console.log('formatTime: Extracted time from colon format:', result);
+        return result;
+      }
+    }
+    
+    // Try to parse as Date directly
+    const date = new Date(timeString);
+    if (!isNaN(date.getTime())) {
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const result = `${hours}:${minutes}`;
+      console.log('formatTime: Parsed as Date object:', result);
+      return result;
+    }
+    
+    // Fallback
+    console.warn('formatTime: Unable to parse time, using original:', timeString);
+    return timeString; // Return original if can't parse
+  } catch (error) {
+    console.error('formatTime: Error formatting time:', error);
+    return '--:--';
+  }
+};
+
+// Utility function to format date
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '--';
+  
+  try {
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+    
+    // If it's already formatted, return as is
+    return dateString;
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
+  }
+};
+
 // Interface for shift data
 interface ShiftData {
   id: number;
@@ -258,6 +353,17 @@ const JadwalSayaPage = () => {
       console.log('JadwalSaya: API data type:', Array.isArray(data) ? 'array' : typeof data);
       console.log('JadwalSaya: API data length:', Array.isArray(data) ? data.length : 'not array');
       
+      // DEBUG: Log first shift to see time format
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('JadwalSaya: 🔍 First shift data structure:', data[0]);
+        console.log('JadwalSaya: 🕐 Time format check:', {
+          jammulai: data[0].jammulai,
+          jamselesai: data[0].jamselesai,
+          jammulaiType: typeof data[0].jammulai,
+          jamselesaiType: typeof data[0].jamselesai
+        });
+      }
+      
       setDataSource('Backend API');
         
       let userShifts: ShiftData[] = [];
@@ -380,7 +486,7 @@ const JadwalSayaPage = () => {
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className="font-medium">{item.tanggal}</span>
+                <span className="font-medium">{formatDate(item.tanggal)}</span>
               </div>
             </div>
             <div className="flex items-center justify-center text-sm">
@@ -389,14 +495,14 @@ const JadwalSayaPage = () => {
                   <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="font-medium">{item.jammulai}</span>
+                  <span className="font-medium">{formatTime(item.jammulai)}</span>
                 </div>
                 <span className="text-gray-400">-</span>
                 <div className="flex items-center gap-1 text-gray-600">
                   <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="font-medium">{item.jamselesai}</span>
+                  <span className="font-medium">{formatTime(item.jamselesai)}</span>
                 </div>
               </div>
             </div>
@@ -409,7 +515,7 @@ const JadwalSayaPage = () => {
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          {item.tanggal}
+          {formatDate(item.tanggal)}
         </div>
       </td>
       <td className="hidden lg:table-cell px-6 py-5 text-gray-700 font-medium whitespace-nowrap text-left">
@@ -417,7 +523,7 @@ const JadwalSayaPage = () => {
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          {item.jammulai}
+          <span className="font-mono">{formatTime(item.jammulai)}</span>
         </div>
       </td>
       <td className="hidden lg:table-cell px-6 py-5 text-gray-700 font-medium whitespace-nowrap text-left">
@@ -425,7 +531,7 @@ const JadwalSayaPage = () => {
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          {item.jamselesai}
+          <span className="font-mono">{formatTime(item.jamselesai)}</span>
         </div>
       </td>
     </tr>

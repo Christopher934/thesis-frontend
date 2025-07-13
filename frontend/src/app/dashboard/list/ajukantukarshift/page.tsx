@@ -15,10 +15,21 @@ import FormModal from "@/components/common/FormModal";
 import { PageHeader, PrimaryButton, ContentCard, Tabs } from "@/components/ui";
 import { textFormatter } from "@/lib/textFormatter";
 
-// Helper function to format time from DateTime string to HH:mm format
+// Helper function to format time
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
     return date.toLocaleTimeString('id-ID', { 
@@ -188,6 +199,13 @@ export default function AjukanTukarShiftPage() {
           setCurrentUser(user);
           setCurrentUserId(user.id);
           setCurrentUserRole(user.role);
+          
+          // Set default tab based on role
+          if (user.role && user.role.toUpperCase() === 'ADMIN') {
+            setActiveTab('supervisor-approvals');
+          } else {
+            setActiveTab('my-requests');
+          }
         } catch (error) {
           // Error parsing user data
         }
@@ -471,77 +489,11 @@ export default function AjukanTukarShiftPage() {
     </div>
   );
 
-  // Tab configuration
-  const tabs = [
-    {
-      id: 'my-requests',
-      label: 'Permintaan Saya',
-      content: (
-        <ContentCard padding="none">
-          {processedData.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="p-3 bg-gray-100 rounded-full mx-auto w-fit mb-4">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum Ada Permintaan</h3>
-              <p className="text-gray-600 mb-4">Anda belum mengajukan permintaan tukar shift.</p>
-              <PrimaryButton onClick={() => setShowCreateModal(true)}>
-                Ajukan Tukar Shift
-              </PrimaryButton>
-            </div>
-          ) : (
-            <div>
-              {processedData.map(renderRequestCard)}
-              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                <Pagination 
-                  totalItems={processedData.length} 
-                  itemsPerPage={itemsPerPage} 
-                  currentPage={currentPage} 
-                  onPageChange={setCurrentPage} 
-                />
-              </div>
-            </div>
-          )}
-        </ContentCard>
-      )
-    },
-    {
-      id: 'requests-to-me',
-      label: 'Permintaan ke Saya',
-      content: (
-        <ContentCard padding="none">
-          {processedData.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="p-3 bg-gray-100 rounded-full mx-auto w-fit mb-4">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum Ada Permintaan</h3>
-              <p className="text-gray-600">Belum ada rekan yang mengajukan tukar shift dengan Anda.</p>
-            </div>
-          ) : (
-            <div>
-              {processedData.map(renderRequestCard)}
-              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                <Pagination 
-                  totalItems={processedData.length} 
-                  itemsPerPage={itemsPerPage} 
-                  currentPage={currentPage} 
-                  onPageChange={setCurrentPage} 
-                />
-              </div>
-            </div>
-          )}
-        </ContentCard>
-      )
-    }
-  ];
+  // Tab configuration - Different for Admin vs Regular users
+  const tabs = [];
 
-  // Add supervisor approval tab if user is supervisor/admin
-  if (currentUserRole && ['ADMIN', 'SUPERVISOR'].includes(currentUserRole.toUpperCase())) {
+  // For Admin users - only show approval tab
+  if (currentUserRole && currentUserRole.toUpperCase() === 'ADMIN') {
     tabs.push({
       id: 'supervisor-approvals',
       label: 'Persetujuan',
@@ -573,6 +525,110 @@ export default function AjukanTukarShiftPage() {
         </ContentCard>
       )
     });
+  } else {
+    // For regular users and supervisors - show all tabs
+    tabs.push(
+      {
+        id: 'my-requests',
+        label: 'Permintaan Saya',
+        content: (
+          <ContentCard padding="none">
+            {processedData.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="p-3 bg-gray-100 rounded-full mx-auto w-fit mb-4">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum Ada Permintaan</h3>
+                <p className="text-gray-600 mb-4">Anda belum mengajukan permintaan tukar shift.</p>
+                <PrimaryButton onClick={() => setShowCreateModal(true)}>
+                  Ajukan Tukar Shift
+                </PrimaryButton>
+              </div>
+            ) : (
+              <div>
+                {processedData.map(renderRequestCard)}
+                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                  <Pagination 
+                    totalItems={processedData.length} 
+                    itemsPerPage={itemsPerPage} 
+                    currentPage={currentPage} 
+                    onPageChange={setCurrentPage} 
+                  />
+                </div>
+              </div>
+            )}
+          </ContentCard>
+        )
+      },
+      {
+        id: 'requests-to-me',
+        label: 'Permintaan ke Saya',
+        content: (
+          <ContentCard padding="none">
+            {processedData.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="p-3 bg-gray-100 rounded-full mx-auto w-fit mb-4">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum Ada Permintaan</h3>
+                <p className="text-gray-600">Belum ada rekan yang mengajukan tukar shift dengan Anda.</p>
+              </div>
+            ) : (
+              <div>
+                {processedData.map(renderRequestCard)}
+                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                  <Pagination 
+                    totalItems={processedData.length} 
+                    itemsPerPage={itemsPerPage} 
+                    currentPage={currentPage} 
+                    onPageChange={setCurrentPage} 
+                  />
+                </div>
+              </div>
+            )}
+          </ContentCard>
+        )
+      }
+    );
+
+    // Add supervisor approval tab if user is supervisor
+    if (currentUserRole && currentUserRole.toUpperCase() === 'SUPERVISOR') {
+      tabs.push({
+        id: 'supervisor-approvals',
+        label: 'Persetujuan',
+        content: (
+          <ContentCard padding="none">
+            {processedData.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="p-3 bg-blue-100 rounded-full mx-auto w-fit mb-4">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Tidak Ada Permintaan Persetujuan</h3>
+                <p className="text-gray-600">Saat ini tidak ada permintaan tukar shift yang menunggu persetujuan Anda.</p>
+              </div>
+            ) : (
+              <div>
+                {processedData.map(renderRequestCard)}
+                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                  <Pagination 
+                    totalItems={processedData.length} 
+                    itemsPerPage={itemsPerPage} 
+                    currentPage={currentPage} 
+                    onPageChange={setCurrentPage} 
+                  />
+                </div>
+              </div>
+            )}
+          </ContentCard>
+        )
+      });
+    }
   }
 
   if (loading) {
@@ -619,7 +675,11 @@ export default function AjukanTukarShiftPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader 
           title="Ajukan Tukar Shift"
-          description="Kelola permintaan tukar shift Anda"
+          description={
+            currentUserRole && currentUserRole.toUpperCase() === 'ADMIN' 
+              ? "Kelola persetujuan permintaan tukar shift" 
+              : "Kelola permintaan tukar shift Anda"
+          }
           action={
             <div className="flex items-center gap-3">
               <div className="w-64">
@@ -640,9 +700,12 @@ export default function AjukanTukarShiftPage() {
                 onSort={handleSort} 
               />
               
-              <PrimaryButton onClick={() => setShowCreateModal(true)}>
-                Ajukan Baru
-              </PrimaryButton>
+              {/* Only show "Ajukan Baru" button for non-admin users */}
+              {currentUserRole && currentUserRole.toUpperCase() !== 'ADMIN' && (
+                <PrimaryButton onClick={() => setShowCreateModal(true)}>
+                  Ajukan Baru
+                </PrimaryButton>
+              )}
             </div>
           }
         />
@@ -653,8 +716,8 @@ export default function AjukanTukarShiftPage() {
           onTabChange={(tabId) => setActiveTab(tabId as 'my-requests' | 'requests-to-me' | 'supervisor-approvals')}
         />
 
-        {/* Modal untuk form tukar shift baru */}
-        {showCreateModal && (
+        {/* Modal untuk form tukar shift baru - Only show for non-admin users */}
+        {showCreateModal && currentUserRole && currentUserRole.toUpperCase() !== 'ADMIN' && (
           <FormModal
             table="tukarshift"
             type="create"

@@ -13,6 +13,7 @@ export { default as InputField } from './InputField';
 export { default as LoginFooter } from './LoginFooter';
 export { default as Menu } from './Menu';
 export { default as MobileCalendarWrapper } from './MobileCalendarWrapper';
+export { default as MobileSidebar } from './MobileSidebar';
 export { default as Navbar } from './Navbar';
 export { default as Pagination } from './Pagination';
 export { default as Select } from './Select';

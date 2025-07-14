@@ -5,7 +5,6 @@ import nextDynamic from 'next/dynamic';
 import withAuth from '@/lib/withAuth';
 
 // Import dashboard components
-import QuickActions from '@/components/dashboard/QuickActions';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import ShiftManagementDashboard from '@/components/dashboard/ShiftManagementDashboard';
 
@@ -155,8 +154,6 @@ const AdminPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <QuickActions userRole={user?.role} isAdmin={true} />
 
             {/* Recent Activity */}
             <RecentActivity userRole={user?.role} isAdmin={true} />

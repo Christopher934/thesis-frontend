@@ -5,7 +5,6 @@ import nextDynamic from 'next/dynamic';
 import withAuth from '@/lib/withAuth';
 
 // Import dashboard components
-import DashboardStats from '@/components/dashboard/DashboardStats';
 import QuickActions from '@/components/dashboard/QuickActions';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import RecentActivity from '@/components/dashboard/RecentActivity';
@@ -17,22 +16,11 @@ const UserCard = nextDynamic(() => import('@/components/common/UserCard'), {
   ssr: false,
   loading: () => <div className="animate-pulse bg-gray-200 h-32 rounded-lg" />
 });
-const CountChart = nextDynamic(() => import('@/components/common/CountChart'), { 
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg" />
-});
-const AttendanceChart = nextDynamic(() => import('@/components/common/AttandenceChart'), { 
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg" />
-});
 const EventCalendar = nextDynamic(() => import('@/components/common/EventCalendar'), { 
   ssr: false,
   loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded-lg" />
 });
-const Announcements = nextDynamic(() => import('@/components/common/Announcement'), { 
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-gray-200 h-48 rounded-lg" />
-});
+
 
 // Force dynamic rendering for real-time admin dashboard data
 export const dynamic = 'force-dynamic';
@@ -158,20 +146,12 @@ const AdminPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <QuickActions userRole={user?.role} isAdmin={true} />
-
             {/* Recent Activity */}
             <RecentActivity userRole={user?.role} isAdmin={true} />
           </div>
 
           {/* Right Column - Sidebar */}
           <div className="space-y-8">
-            {/* Notifications */}
-            <NotificationCenter userRole={user?.role} userId={user?.id?.toString()} />
-
-            {/* Today's Schedule - Admin Overview */}
-            <TodaySchedule userRole={user?.role} userId={user?.id?.toString()} />
 
             {/* Event Calendar */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">

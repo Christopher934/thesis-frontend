@@ -84,7 +84,8 @@ function PegawaiPage() {
     };
 
     const updateTime = () => {
-      const now = new Date();
+      // Use Indonesian timezone (GMT+7)
+      const now = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
       setCurrentTime(now.toLocaleTimeString('id-ID', { 
         hour: '2-digit', 
         minute: '2-digit',
@@ -233,7 +234,9 @@ function PegawaiPage() {
   }, [user, fetchShifts]);
 
   const getCurrentDate = () => {
-    return new Date().toLocaleDateString('id-ID', {
+    // Use Indonesian timezone (GMT+7)
+    const now = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
+    return now.toLocaleDateString('id-ID', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -242,7 +245,8 @@ function PegawaiPage() {
   };
 
   const getGreeting = () => {
-    const hour = new Date().getHours();
+    // Use Indonesian timezone (GMT+7)
+    const hour = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).getHours();
     if (hour < 12) return 'Selamat Pagi';
     if (hour < 15) return 'Selamat Siang';
     if (hour < 18) return 'Selamat Sore';
@@ -332,8 +336,6 @@ function PegawaiPage() {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <QuickActions userRole={user?.role} isAdmin={false} />
 
             {/* Recent Activity */}
             {/* <RecentActivity userRole={user?.role} isAdmin={false} /> */}
@@ -341,12 +343,6 @@ function PegawaiPage() {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-8">
-            {/* Today's Schedule */}
-            <TodaySchedule userRole={user?.role} userId={user?.id?.toString()} />
-
-            {/* Notifications */}
-            <NotificationCenter userRole={user?.role} userId={user?.id?.toString()} />
-
             {/* Event Calendar */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
@@ -360,6 +356,11 @@ function PegawaiPage() {
               </div>
               <EventCalendar />
             </div>
+            {/* Today's Schedule */}
+            {/* <TodaySchedule userRole={user?.role} userId={user?.id?.toString()} /> */}
+
+            {/* Notifications */}
+            {/* <NotificationCenter userRole={user?.role} userId={user?.id?.toString()} /> */}
 
           </div>
         </div>

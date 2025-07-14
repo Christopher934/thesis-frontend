@@ -140,8 +140,8 @@ export class ShiftService {
           // Format time fields from DateTime to HH:MM string
           const formatTime = (timeValue: Date): string => {
             if (!timeValue) return '';
-            const hours = timeValue.getUTCHours().toString().padStart(2, '0');
-            const minutes = timeValue.getUTCMinutes().toString().padStart(2, '0');
+            const hours = timeValue.getHours().toString().padStart(2, '0');
+            const minutes = timeValue.getMinutes().toString().padStart(2, '0');
             return `${hours}:${minutes}`;
           };
 

@@ -72,6 +72,34 @@ export class ShiftSwapRequestController {
     return this.shiftSwapRequestService.getPendingApprovals(userId);
   }
 
+  @Get('admin/monitoring')
+  @UseGuards(JwtAuthGuard)
+  async getAdminMonitoringData(@Request() req: AuthenticatedRequest) {
+    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback for testing
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    return this.shiftSwapRequestService.getAdminMonitoringData(userId);
+  }
+
+  @Get('monitoring')
+  @UseGuards(JwtAuthGuard)
+  async getMonitoringData(@Request() req: AuthenticatedRequest) {
+    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback for testing
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    return this.shiftSwapRequestService.getAdminMonitoringData(userId);
+  }
+
+  @Get('monitoring/test')
+  async getMonitoringDataTest(@Query('userId') userId: string) {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    return this.shiftSwapRequestService.getAdminMonitoringData(parseInt(userId, 10));
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.shiftSwapRequestService.findOne(id);

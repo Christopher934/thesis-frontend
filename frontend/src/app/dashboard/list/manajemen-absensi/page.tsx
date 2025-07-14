@@ -274,8 +274,8 @@ export default function ManajemenAbsensi() {
             <AlertTriangle className="h-8 w-8 text-red-600" />
           </div>
           <div className="mt-4">
-            {stats.usersNotCheckedIn.slice(0, 3).map((user) => (
-              <div key={user.id} className="text-sm text-gray-700 py-1">
+            {stats.usersNotCheckedIn.slice(0, 3).map((user, index) => (
+              <div key={`${user.id}-${index}`} className="text-sm text-gray-700 py-1">
                 {capitalizeWords(`${user.namaDepan} ${user.namaBelakang}`)}
               </div>
             ))}
@@ -287,21 +287,6 @@ export default function ManajemenAbsensi() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
-          <div className="space-y-2">
-            <button className="w-full text-left px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100">
-              Laporan Harian
-            </button>
-            <button className="w-full text-left px-3 py-2 text-sm bg-green-50 text-green-700 rounded hover:bg-green-100">
-              Laporan Bulanan
-            </button>
-            <button className="w-full text-left px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded hover:bg-purple-100">
-              Statistik
-            </button>
-          </div>
-        </div>
 
         {/* Summary */}
         <div className="bg-white rounded-lg shadow p-6">

@@ -153,7 +153,7 @@ const filterOptions = [
 
 // Enhanced sort options
 const sortOptions = [
-    { label: "Tanggal Terbaru", value: "tanggal" },
+    { label: "Hari Ini", value: "tanggal" },
     { label: "Nama Pegawai", value: "nama" },
     { label: "Lokasi Unit", value: "lokasishift" },
     { label: "Jam Mulai", value: "jammulai" },

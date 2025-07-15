@@ -219,11 +219,11 @@ export default function LoginPage() {
                   </label>
                 </div>
 
-                <div className="text-sm">
+                {/* <div className="text-sm">
                   <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
                     Lupa password?
                   </a>
-                </div>
+                </div> */}
               </div>
 
               {error && (
@@ -267,12 +267,12 @@ export default function LoginPage() {
                 </button>
               </div>
             </form>
-            <LoginFooter />
+            {/* <LoginFooter /> */}
           </div>
         </div>
         
         {/* System Notifications */}
-        <SystemNotifications />
+        {/* <SystemNotifications /> */}
         
         {/* Hidden AuthDebug for development */}
         <div className="mt-4 opacity-50 hover:opacity-100 transition-opacity">

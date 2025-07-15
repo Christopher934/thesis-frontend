@@ -101,6 +101,30 @@ export class ShiftService {
         },
       });
 
+      // Kirim notifikasi shift baru
+      if (this.notificationService && shift.user) {
+        try {
+          // Gunakan method yang sudah ada di notifikasi service
+          await this.notificationService.sendNotification(
+            shift.userId,
+            'SHIFT_BARU_DITAMBAHKAN',
+            '📅 Shift Baru Ditambahkan',
+            `Shift baru telah ditambahkan untuk Anda pada ${shift.tanggal.toLocaleDateString('id-ID')} dari ${shift.jammulai.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})} - ${shift.jamselesai.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})} di ${shift.lokasishift}`,
+            {
+              shiftId: shift.id,
+              tanggal: shift.tanggal,
+              jammulai: shift.jammulai,
+              jamselesai: shift.jamselesai,
+              lokasishift: shift.lokasishift,
+              tipeshift: shift.tipeshift,
+            }
+          );
+        } catch (notificationError) {
+          console.error('[ShiftService][create] Notification error:', notificationError);
+          // Don't throw error if notification fails, just log it
+        }
+      }
+
       // Format the response
       return {
         ...shift,

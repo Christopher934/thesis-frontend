@@ -40,12 +40,12 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
 
       {/* Icon and User - Right side */}
       <div className='flex items-center gap-6'>
-        <div className='bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer'>
+        {/* <div className='bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer'>
           <MessageSquare size={20} className="text-gray-600" />
-        </div>
+        </div> */}
         
         {/* Notification Center */}
-        <NotificationCenter bellSize={20} />
+        {/* <NotificationCenter bellSize={20} /> */}
 
         <div className="flex flex-col text-right">
           <span className='text-xs leading-3 font-medium'>

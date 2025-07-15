@@ -145,12 +145,12 @@ const LaporanPage = () => {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <h1 className="text-lg font-semibold">Laporan & Statistik</h1>
-                    <button className="px-3 py-1 text-sm rounded-md bg-blue-500 text-white hover:bg-blue-600">
+                    {/* <button className="px-3 py-1 text-sm rounded-md bg-blue-500 text-white hover:bg-blue-600">
                         Unduh PDF
                     </button>
                     <button className="px-3 py-1 text-sm rounded-md bg-green-500 text-white hover:bg-green-600">
                         Unduh Excel
-                    </button>
+                    </button> */}
                 </div>
                 <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
                     <TableSearch 

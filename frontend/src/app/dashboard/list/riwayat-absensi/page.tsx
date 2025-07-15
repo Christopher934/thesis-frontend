@@ -137,10 +137,10 @@ export default function RiwayatAbsensi() {
     setCurrentPage(1);
   };
 
-  const exportToPDF = () => {
-    // Placeholder for PDF export functionality
-    alert('Fitur export PDF akan segera tersedia');
-  };
+  // const exportToPDF = () => {
+  //   // Placeholder for PDF export functionality
+  //   alert('Fitur export PDF akan segera tersedia');
+  // };
 
   // Mobile Card Component
   const MobileCard = ({ item }: { item: Absensi }) => (
@@ -185,7 +185,7 @@ export default function RiwayatAbsensi() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Riwayat Absensi</h1>
         <div className="flex items-center gap-2">
-          <button
+          {/* <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
@@ -198,7 +198,7 @@ export default function RiwayatAbsensi() {
           >
             <Download className="h-4 w-4" />
             Export PDF
-          </button>
+          </button> */}
         </div>
       </div>
 

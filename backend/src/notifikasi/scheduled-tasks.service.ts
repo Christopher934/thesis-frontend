@@ -225,4 +225,173 @@ export class ScheduledTasksService {
       this.logger.error('Error sending daily activity summary:', error);
     }
   }
+
+  // Jalankan setiap 10 menit untuk kirim reminder absensi
+  @Cron('*/10 * * * *')
+  async sendAttendanceReminders() {
+    this.logger.log('Checking for shifts to send attendance reminders...');
+    try {
+      const now = new Date();
+      const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000); // +30 menit
+      
+      const today = new Date();
+      const todayStart = new Date(today.toDateString());
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const allShiftsToday = await this.prisma.shift.findMany({
+        where: {
+          tanggal: {
+            gte: todayStart,
+            lt: todayEnd,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              telegramChatId: true,
+            },
+          },
+          absensi: true,
+        },
+      });
+      
+      // Filter shifts yang akan dimulai dalam 30 menit (dengan toleransi 10 menit)
+      const upcomingShifts = allShiftsToday.filter(shift => {
+        const shiftStart = new Date(shift.jammulai);
+        const shiftTimeInMinutes = shiftStart.getHours() * 60 + shiftStart.getMinutes();
+        const targetTimeInMinutes = thirtyMinutesFromNow.getHours() * 60 + thirtyMinutesFromNow.getMinutes();
+        const timeDiff = Math.abs(shiftTimeInMinutes - targetTimeInMinutes);
+        
+        // Hanya kirim jika belum ada absensi masuk dan dalam rentang 30 menit
+        return timeDiff <= 10 && !shift.absensi?.jamMasuk;
+      });
+      
+      for (const shift of upcomingShifts) {
+        // Cek apakah reminder sudah dikirim hari ini
+        const existingReminder = await this.prisma.notifikasi.findFirst({
+          where: {
+            userId: shift.userId,
+            jenis: 'PERSONAL_REMINDER_ABSENSI',
+            createdAt: {
+              gte: todayStart,
+            },
+            data: {
+              path: ['shiftId'],
+              equals: shift.id,
+            },
+          },
+        });
+        
+        if (!existingReminder) {
+          const shiftTimeString = `${new Date(shift.jammulai).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})} - ${new Date(shift.jamselesai).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}`;
+          
+          await this.notifikasiService.sendPersonalAttendanceReminder(
+            shift.userId,
+            {
+              shiftTime: shiftTimeString,
+              location: shift.lokasishift,
+              reminderMinutes: 30,
+            },
+          );
+          
+          this.logger.log(
+            `Attendance reminder sent to user ${shift.user.namaDepan} ${shift.user.namaBelakang} for shift at ${shiftTimeString}`,
+          );
+        }
+      }
+      
+      this.logger.log(`Processed ${upcomingShifts.length} upcoming shifts for attendance reminders`);
+    } catch (error) {
+      this.logger.error('Error sending attendance reminders:', error);
+    }
+  }
+
+  // Jalankan setiap 15 menit untuk cek reminder absensi (30 menit sebelum shift)
+  @Cron('*/15 * * * *')
+  async sendAttendanceReminders30Mins() {
+    this.logger.log('Checking for upcoming shifts to send attendance reminders...');
+    try {
+      const today = new Date();
+      const todayStart = new Date(today.toDateString());
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const allShiftsToday = await this.prisma.shift.findMany({
+        where: {
+          tanggal: {
+            gte: todayStart,
+            lt: todayEnd,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              telegramChatId: true,
+            },
+          },
+          absensi: true,
+        },
+      });
+
+      // Filter shifts yang akan dimulai dalam 30 menit
+      const thirtyMinutesFromNow = new Date();
+      thirtyMinutesFromNow.setMinutes(thirtyMinutesFromNow.getMinutes() + 30);
+      
+      const upcomingShifts = allShiftsToday.filter(shift => {
+        const shiftStart = new Date(shift.jammulai);
+        const shiftTimeInMinutes = shiftStart.getHours() * 60 + shiftStart.getMinutes();
+        const targetTimeInMinutes = thirtyMinutesFromNow.getHours() * 60 + thirtyMinutesFromNow.getMinutes();
+        const timeDiff = Math.abs(shiftTimeInMinutes - targetTimeInMinutes);
+        
+        // Hanya kirim jika belum ada absensi masuk
+        return timeDiff <= 15 && !shift.absensi?.jamMasuk;
+      });
+
+      for (const shift of upcomingShifts) {
+        // Cek apakah reminder absensi sudah dikirim hari ini
+        const existingReminder = await this.prisma.notifikasi.findFirst({
+          where: {
+            userId: shift.userId,
+            jenis: 'PERSONAL_REMINDER_ABSENSI',
+            createdAt: {
+              gte: todayStart,
+            },
+            data: {
+              path: ['shiftId'],
+              equals: shift.id,
+            },
+          },
+        });
+
+        if (!existingReminder) {
+          const shiftStart = new Date(shift.jammulai);
+          const shiftTimeString = `${shiftStart.getHours().toString().padStart(2, '0')}:${shiftStart.getMinutes().toString().padStart(2, '0')}`;
+          const shiftEnd = new Date(shift.jamselesai);
+          const shiftEndString = `${shiftEnd.getHours().toString().padStart(2, '0')}:${shiftEnd.getMinutes().toString().padStart(2, '0')}`;
+          
+          await this.notifikasiService.sendPersonalAttendanceReminder(
+            shift.userId,
+            {
+              shiftTime: `${shiftTimeString} - ${shiftEndString}`,
+              location: shift.lokasishift,
+              reminderMinutes: 30,
+            },
+          );
+          
+          this.logger.log(
+            `Attendance reminder sent to user ${shift.user.namaDepan} ${shift.user.namaBelakang} for shift at ${shiftTimeString}`,
+          );
+        }
+      }
+      
+      this.logger.log(`Processed ${upcomingShifts.length} upcoming shifts for attendance reminders`);
+    } catch (error) {
+      this.logger.error('Error sending attendance reminders:', error);
+    }
+  }
 }

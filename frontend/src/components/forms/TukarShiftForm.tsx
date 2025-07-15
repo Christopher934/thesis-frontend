@@ -12,6 +12,7 @@ const formatTime = (timeString: string): string => {
   
   try {
     const date = new Date(timeString);
+    if (isNaN(date.getTime())) return timeString;
     return date.toLocaleTimeString('id-ID', { 
       hour: '2-digit', 
       minute: '2-digit',
@@ -20,6 +21,24 @@ const formatTime = (timeString: string): string => {
   } catch (error) {
     console.error('Error formatting time:', error);
     return timeString;
+  }
+};
+
+// Helper function to format date from DateTime string to DD/MM/YYYY format
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
   }
 };
 
@@ -200,10 +219,22 @@ function TukarShiftForm({
         });
         if (response.ok) {
           const shifts = await response.json();
+          console.log('Received shifts data:', shifts);
+          
           const futureShifts = shifts.filter((shift: Shift) => {
-            const shiftDate = new Date(shift.tanggal);
-            const today = new Date();
-            return shiftDate >= today;
+            try {
+              const shiftDate = new Date(shift.tanggal);
+              const today = new Date();
+              // Check if date is valid
+              if (isNaN(shiftDate.getTime())) {
+                console.warn('Invalid date format for shift:', shift.tanggal);
+                return false;
+              }
+              return shiftDate >= today;
+            } catch (error) {
+              console.error('Error parsing shift date:', shift.tanggal, error);
+              return false;
+            }
           });
           // Only show shifts owned by current user
           const userToUse = userObj || currentUser;
@@ -411,7 +442,7 @@ function TukarShiftForm({
                   <option value={0} className="text-gray-500">Pilih shift Anda...</option>
                   {currentUserShifts.map(shift => (
                     <option key={shift.id} value={shift.id} className="text-gray-900">
-                      {shift.tanggal} | {formatTime(shift.jammulai)}-{formatTime(shift.jamselesai)} | {formatLokasiShift(shift.lokasishift)}
+                      {formatDate(shift.tanggal)} | {formatTime(shift.jammulai)}-{formatTime(shift.jamselesai)} | {formatLokasiShift(shift.lokasishift)}
                     </option>
                   ))}
                 </select>

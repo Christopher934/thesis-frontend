@@ -12,6 +12,9 @@ import Pagination from '@/components/common/Pagination';
 import Image from 'next/image';
 import FilterButton from '@/components/common/FilterButton';
 import SortButton from '@/components/common/SortButton';
+import { Brain, Calendar, Clock, MapPin, Users, AlertTriangle, CheckCircle, Loader2, Grid, List, Zap, Plus, RefreshCw } from 'lucide-react';
+import WorkloadCounterWidget from '@/components/WorkloadCounterWidget';
+import MonthlyScheduleView from '@/components/MonthlyScheduleView';
 
 // Enhanced utility functions
 const joinUrl = (base: string, path: string) => {
@@ -200,6 +203,54 @@ const columns = [
     },
 ];
 
+// Type for Auto Scheduler Request
+interface AutoScheduleRequest {
+  date: string;
+  location: string;
+  shiftType: string;
+  requiredCount: number;
+  preferredRoles: string[];
+  priority: string;
+}
+
+// Type for Auto Scheduler Result
+interface AutoScheduleResult {
+    assignments: any[];
+    conflicts: any[];
+    workloadAlerts: any[];
+    locationCapacityStatus: any[];
+    fulfillmentRate: number;
+    recommendations: string[];
+}
+
+// Bulk Scheduling Interfaces
+interface WeeklyScheduleRequest {
+    startDate: string;
+    locations: string[];
+    shiftPattern: { [location: string]: { PAGI?: number; SIANG?: number; MALAM?: number; } };
+    priority: string;
+}
+
+interface MonthlyScheduleRequest {
+    year: number;
+    month: number;
+    locations: string[];
+    averageStaffPerShift: { [location: string]: number };
+    workloadLimits: {
+        maxShiftsPerPerson: number;
+        maxConsecutiveDays: number;
+    };
+}
+
+interface BulkScheduleResult {
+    totalShifts: number;
+    successfulAssignments: number;
+    conflicts: any[];
+    recommendations: string[];
+    createdShifts: number;
+    fulfillmentRate?: number;
+    workloadDistribution?: { [userId: number]: number };
+}
 // Type for User data 
 type User = {
     id: number;
@@ -244,6 +295,220 @@ const ManagemenJadwalPage = () => {
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showAllSchedules, setShowAllSchedules] = useState(false); // Toggle untuk melihat semua jadwal
+    const [viewMode, setViewMode] = useState<'table' | 'monthly'>('table'); // Toggle untuk view mode
+    const [showWorkloadCounters, setShowWorkloadCounters] = useState(true); // Toggle untuk workload counters
+    
+    // Additional state variables for missing functionality
+    const [isCreateShiftModalOpen, setIsCreateShiftModalOpen] = useState(false);
+    const [swapShiftEmployeeId, setSwapShiftEmployeeId] = useState<string | null>(null);
+    const [showSwapRequests, setShowSwapRequests] = useState(false);
+    
+    // Pagination data
+    const totalPages = Math.ceil(filteredJadwal.length / itemsPerPage);
+    const filteredShifts = filteredJadwal;
+    const paginatedShifts = filteredJadwal.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    
+    // Handle create shift function
+    const handleCreateShift = (shiftData: any) => {
+        console.log('Creating shift:', shiftData);
+        // Add implementation here
+    };
+    
+    // Auto Scheduler States
+    const [isAutoScheduleModalOpen, setIsAutoScheduleModalOpen] = useState(false);
+    const [autoScheduleRequests, setAutoScheduleRequests] = useState<AutoScheduleRequest[]>([
+        {
+            date: new Date().toISOString().split('T')[0],
+            location: 'ICU',
+            shiftType: 'PAGI',
+            requiredCount: 3,
+            preferredRoles: ['PERAWAT'],
+            priority: 'HIGH'
+        }
+    ]);
+    const [autoScheduleResult, setAutoScheduleResult] = useState<AutoScheduleResult | null>(null);
+    const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+    const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
+
+    // Bulk Scheduling States
+    const [isBulkScheduleModalOpen, setIsBulkScheduleModalOpen] = useState(false);
+    const [bulkScheduleType, setBulkScheduleType] = useState<'weekly' | 'monthly'>('weekly');
+    const [isBulkScheduling, setIsBulkScheduling] = useState(false);
+    const [bulkScheduleError, setBulkScheduleError] = useState<string | null>(null);
+    const [bulkScheduleResult, setBulkScheduleResult] = useState<BulkScheduleResult | null>(null);
+    
+    // Weekly schedule state
+    const [weeklyRequest, setWeeklyRequest] = useState<WeeklyScheduleRequest>({
+        startDate: new Date().toISOString().split('T')[0],
+        locations: ['ICU', 'RAWAT_INAP', 'GAWAT_DARURAT'],
+        shiftPattern: {
+            ICU: { PAGI: 4, SIANG: 4, MALAM: 3 },
+            RAWAT_INAP: { PAGI: 3, SIANG: 3, MALAM: 2 },
+            GAWAT_DARURAT: { PAGI: 5, SIANG: 5, MALAM: 3 }
+        },
+        priority: 'HIGH'
+    });
+
+    // Monthly schedule state
+    const [monthlyRequest, setMonthlyRequest] = useState<MonthlyScheduleRequest>({
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        locations: ['ICU', 'RAWAT_INAP', 'GAWAT_DARURAT', 'RAWAT_JALAN'],
+        averageStaffPerShift: {
+            ICU: 4,
+            RAWAT_INAP: 3,
+            GAWAT_DARURAT: 5,
+            RAWAT_JALAN: 2
+        },
+        workloadLimits: {
+            maxShiftsPerPerson: 18,
+            maxConsecutiveDays: 4
+        }
+    });
+
+    // Auto Scheduler Functions
+    const locations = [
+        'ICU', 'NICU', 'GAWAT_DARURAT', 'RAWAT_INAP', 'RAWAT_JALAN',
+        'LABORATORIUM', 'FARMASI', 'RADIOLOGI'
+    ];
+
+    const shiftTypes = ['PAGI', 'SIANG', 'MALAM', 'ON_CALL', 'JAGA'];
+    const priorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
+    const roles = ['DOKTER', 'PERAWAT', 'STAF'];
+
+    const addAutoScheduleRequest = () => {
+        setAutoScheduleRequests([...autoScheduleRequests, {
+            date: new Date().toISOString().split('T')[0],
+            location: 'ICU',
+            shiftType: 'PAGI',
+            requiredCount: 1,
+            preferredRoles: ['PERAWAT'],
+            priority: 'NORMAL'
+        }]);
+    };
+
+    const updateAutoScheduleRequest = (index: number, field: keyof AutoScheduleRequest, value: any) => {
+        const updated = [...autoScheduleRequests];
+        updated[index] = { ...updated[index], [field]: value };
+        setAutoScheduleRequests(updated);
+    };
+
+    const removeAutoScheduleRequest = (index: number) => {
+        setAutoScheduleRequests(autoScheduleRequests.filter((_, i) => i !== index));
+    };
+
+    const executeAutoScheduling = async () => {
+        setIsAutoScheduling(true);
+        setAutoScheduleError(null);
+        setAutoScheduleResult(null);
+
+        try {
+            const response = await fetch('/api/admin/create-optimal-shifts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(autoScheduleRequests),
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal membuat jadwal optimal');
+            }
+
+            const result = await response.json();
+            setAutoScheduleResult(result);
+            
+            // Refresh jadwal data after successful auto scheduling
+            window.location.reload();
+        } catch (err) {
+            setAutoScheduleError(err instanceof Error ? err.message : 'Terjadi kesalahan');
+        } finally {
+            setIsAutoScheduling(false);
+        }
+    };
+
+    // Bulk Scheduling Functions
+    const handleCreateWeeklySchedule = async () => {
+        setIsBulkScheduling(true);
+        setBulkScheduleError(null);
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Token tidak ditemukan');
+            }
+
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            const response = await fetch(`${apiUrl}/admin/shift-optimization/create-weekly-schedule`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(weeklyRequest),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Gagal membuat jadwal mingguan');
+            }
+
+            const result = await response.json();
+            setBulkScheduleResult(result);
+            setIsBulkScheduleModalOpen(false);
+            window.location.reload();
+        } catch (error: any) {
+            setBulkScheduleError(error.message);
+        } finally {
+            setIsBulkScheduling(false);
+        }
+    };
+
+    const handleCreateMonthlySchedule = async () => {
+        setIsBulkScheduling(true);
+        setBulkScheduleError(null);
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Token tidak ditemukan');
+            }
+
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            const response = await fetch(`${apiUrl}/admin/shift-optimization/create-monthly-schedule`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(monthlyRequest),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Gagal membuat jadwal bulanan');
+            }
+
+            const result = await response.json();
+            setBulkScheduleResult(result);
+            setIsBulkScheduleModalOpen(false);
+            window.location.reload();
+        } catch (error: any) {
+            setBulkScheduleError(error.message);
+        } finally {
+            setIsBulkScheduling(false);
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'URGENT': return 'bg-red-500 text-white';
+            case 'HIGH': return 'bg-orange-500 text-white';
+            case 'NORMAL': return 'bg-blue-500 text-white';
+            case 'LOW': return 'bg-gray-500 text-white';
+            default: return 'bg-gray-500 text-white';
+        }
+    };
 
     // Update filter counts whenever data changes
     const updateFilterCounts = (data: Jadwal[]) => {
@@ -349,7 +614,7 @@ const ManagemenJadwalPage = () => {
                 // Get token from localStorage
                 const token = localStorage.getItem('token');
                 
-                let shiftsData, usersData;
+                let shiftsData, usersResponse, usersData;
                 
                 try {
                     // Try to fetch from the API server first
@@ -372,13 +637,22 @@ const ManagemenJadwalPage = () => {
                         throw new Error("API server returned an error");
                     }
                     
-                    [shiftsData, usersData] = await Promise.all([
+                    [shiftsData, usersResponse] = await Promise.all([
                         jadwalRes.json(),
                         usersRes.json()
                     ]);
                     
+                    // Extract users array from response object
+                    usersData = usersResponse.data || usersResponse;
+                    
                 } catch (apiError) {
                     console.error('Error fetching from API:', apiError);
+                    
+                    // Show more specific error for connection issues
+                    if (apiError instanceof TypeError && apiError.message.includes('fetch')) {
+                        throw new Error('❌ Backend server tidak dapat diakses. Pastikan backend server berjalan di port 3001.\n\n💡 Untuk menjalankan backend:\n1. Buka terminal baru\n2. Jalankan: cd /Users/jo/Downloads/Thesis\n3. Jalankan: ./start-backend.sh\n\nAtau jalankan: npm run start:dev di folder backend/');
+                    }
+                    
                     throw new Error(`Failed to fetch data from backend: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
                 }
                 
@@ -409,10 +683,11 @@ const ManagemenJadwalPage = () => {
                 // Format dates and map user names to jadwal data
                 const enhancedJadwalData = filteredShiftsData.map((jadwal: Jadwal) => {
                     // Find the user by either userId or idpegawai
-                    const user = usersData.find((u: User) => 
+                    // Ensure usersData is an array before using find
+                    const user = Array.isArray(usersData) ? usersData.find((u: User) => 
                         u.id === jadwal.userId || 
                         u.username === jadwal.idpegawai
-                    );
+                    ) : null;
                     
                     // Format date for better display
                     const { formatted, original } = formatDateForDisplay(jadwal.tanggal);
@@ -427,6 +702,18 @@ const ManagemenJadwalPage = () => {
                 });
                 
                 setJadwalData(enhancedJadwalData);
+                console.log('Fetched jadwal data:', enhancedJadwalData.length, 'items');
+                console.log('Sample data:', enhancedJadwalData.slice(0, 2));
+                
+                // Debug: Check why data might be empty
+                if (enhancedJadwalData.length === 0) {
+                    console.log('❌ No shift data found! Reasons might be:');
+                    console.log('1. Database is empty');
+                    console.log('2. API endpoint is not working');
+                    console.log('3. Data is being filtered out');
+                    console.log('Original shifts data:', shiftsData?.length || 0, 'items');
+                    console.log('Deleted IDs:', deletedIds?.length || 0, 'items');
+                }
             } catch (error: any) {
                 console.error('Error fetching data:', error);
                 setError(error.message || 'An error occurred while fetching data');
@@ -592,6 +879,13 @@ const ManagemenJadwalPage = () => {
                         
                     case 'CRITICAL':
                         return isCriticalUnit(item.lokasishift);
+                        
+                    case 'THIS_WEEK':
+                        const todayShiftDate = new Date(item.originalDate || item.tanggal);
+                        const today = new Date();
+                        todayShiftDate.setHours(0, 0, 0, 0);
+                        today.setHours(0, 0, 0, 0);
+                        return todayShiftDate.getTime() === today.getTime();
                         
                     case 'THIS_WEEK':
                         const shiftDate = new Date(item.originalDate || item.tanggal);
@@ -994,20 +1288,56 @@ const ManagemenJadwalPage = () => {
     if (error) {
         return (
             <div className='bg-white p-4 rounded-md flex-1 m-4 mt-0'>
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                    <div className="flex items-center">
-                        <svg className="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 className="text-red-700 font-semibold">Error</h3>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
+                        <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-red-800 mb-2">Koneksi Backend Bermasalah</h3>
+                            
+                            {error.includes('Backend server tidak dapat diakses') ? (
+                                <div className="space-y-4">
+                                    <p className="text-red-700">
+                                        Backend server tidak dapat diakses. Aplikasi memerlukan backend server untuk mengambil data jadwal shift.
+                                    </p>
+                                    
+                                    <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+                                        <h4 className="font-medium text-yellow-800 mb-2">🔧 Cara Mengatasi:</h4>
+                                        <ol className="list-decimal list-inside space-y-1 text-sm text-yellow-700">
+                                            <li>Buka terminal baru</li>
+                                            <li>Navigasi ke: <code className="bg-yellow-200 px-1 rounded text-xs">/Users/jo/Downloads/Thesis</code></li>
+                                            <li>Jalankan: <code className="bg-yellow-200 px-1 rounded text-xs">./start-backend.sh</code></li>
+                                            <li>Tunggu server aktif (biasanya 10-30 detik)</li>
+                                            <li>Refresh halaman ini</li>
+                                        </ol>
+                                    </div>
+                                    
+                                    <div className="bg-blue-50 border border-blue-300 rounded-lg p-3">
+                                        <p className="text-sm text-blue-700">
+                                            <strong>💡 Tips:</strong> Backend server perlu dijalankan terpisah dari frontend. 
+                                            Server akan menyediakan API untuk data pegawai, jadwal shift, dan fitur Auto Schedule AI.
+                                        </p>
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={() => window.location.reload()}
+                                        className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                                    >
+                                        🔄 Coba Lagi
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <p className="text-red-700">{error}</p>
+                                    <button 
+                                        onClick={() => window.location.reload()}
+                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                                    >
+                                        🔄 Refresh Halaman
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <p className="text-red-700 mt-2">{error}</p>
-                    <button 
-                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                        onClick={() => window.location.reload()}
-                    >
-                        Refresh Halaman
-                    </button>
                 </div>
             </div>
         );
@@ -1022,32 +1352,45 @@ const ManagemenJadwalPage = () => {
                 <h3 className="text-xl font-semibold text-gray-500">Data Jadwal Kosong</h3>
                 <p className="text-gray-400 mt-2">Belum Ada Jadwal Shift Yang Tersedia</p>
                 {(userRole === "admin" || userRole === "supervisor") && (
-                    <div className="mt-4">
+                    <div className="mt-6 flex flex-col items-center gap-4">
+                        {/* Auto Schedule AI Button - Primary CTA */}
                         <button 
-                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all shadow-lg font-medium"
+                            onClick={() => setIsAutoScheduleModalOpen(true)}
+                            title="Buat jadwal otomatis menggunakan AI Hybrid Algorithm"
                         >
-                            Tambah Jadwal Baru
+                            <Brain className="w-5 h-5" />
+                            Gunakan Auto Schedule AI
                         </button>
+                        
+                        {/* Bulk Schedule Button */}
+                        <button 
+                            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg font-medium"
+                            onClick={() => setIsBulkScheduleModalOpen(true)}
+                            title="Buat jadwal mingguan atau bulanan"
+                        >
+                            <Calendar className="w-5 h-5" />
+                            Jadwal Mingguan/Bulanan
+                        </button>
+                        <p className="text-sm text-gray-500 text-center max-w-md">
+                            Buat jadwal shift optimal secara otomatis menggunakan algoritma Greedy + Backtracking
+                        </p>
+                        
+                        {/* Alternative manual option */}
+                        <div className="text-center">
+                            <p className="text-xs text-gray-400 mb-2">atau</p>
+                            <button 
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm"
+                                onClick={() => setIsModalOpen(true)}
+                            >
+                                Tambah Jadwal Manual
+                            </button>
+                        </div>
                     </div>
-                )}
-                
-                {/* Modal Tambah Jadwal */}
-                {isModalOpen && (
-                    <FormModal
-                        table="jadwal"
-                        type="create"
-                        onCreated={handleJadwalCreated}
-                        onUpdated={() => {}}
-                        onDeleted={() => {}}
-                        renderTrigger={false}
-                        initialOpen={true}
-                        onAfterClose={() => setIsModalOpen(false)}
-                    />
                 )}
             </div>
         );
-    }
+    };
     
     // Export functionality for analytics
     const exportToCSV = () => {
@@ -1143,96 +1486,1034 @@ const ManagemenJadwalPage = () => {
     };
     
     return (
-        <div className='bg-white p-4 rounded-md flex-1 m-4 mt-0'>
-            {/* TOP */}
-            <div className="flex items-center justify-between">
+        <div className='bg-white p-6 rounded-xl flex-1 m-6 mt-0 shadow-sm'>
+            {/* TOP SECTION */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-6">
                 <div className="flex flex-col">
-                    <h1 className="text-2xl font-bold text-gray-900">Manajemen Jadwal</h1>
-                    <p className="text-gray-600 mt-1">Kelola jadwal shift pegawai rumah sakit</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Manajemen Jadwal</h1>
+                    <p className="text-gray-600">Kelola jadwal shift pegawai rumah sakit</p>
                 </div>
-                <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
-                    <TableSearch 
-                        placeholder="Cari berdasarkan nama pegawai, lokasi, atau tanggal..." 
-                        value={searchTerm} 
-                        onChange={setSearchTerm}
-                    />
-                    <div className="flex items-center gap-4 self-end">
-                        {/* Toggle untuk melihat semua jadwal */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setShowAllSchedules(!showAllSchedules)}
-                                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                                    showAllSchedules 
-                                        ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
-                                }`}
-                                title={showAllSchedules ? 'Sembunyikan jadwal yang sudah lewat' : 'Tampilkan semua jadwal termasuk yang sudah lewat'}
-                            >
-                                {showAllSchedules ? '📅 Semua Jadwal' : '⏰ Jadwal Aktif'}
-                            </button>
-                        </div>
-                        
-                        <FilterButton 
-                            options={filterOptions} 
-                            onFilter={handleFilter}
+                
+                {/* SEARCH AND CONTROLS */}
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 w-full lg:w-auto">
+                    <div className="flex-1 md:min-w-[300px]">
+                        <TableSearch 
+                            placeholder="Cari berdasarkan nama pegawai, lokasi, atau tanggal..." 
+                            value={searchTerm} 
+                            onChange={setSearchTerm}
                         />
-                        <SortButton 
-                            options={sortOptions} 
-                            onSort={handleSort} 
-                        />
-                        {(userRole === "admin" || userRole === "supervisor") && (
-                            <button 
-                                className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:opacity-90 transition"
-                                onClick={() => setIsModalOpen(true)}
-                            >
-                                <Image src="/create.png" alt="Create" width={16} height={16} />
-                            </button>
-                        )}
-                        
-                        {/* Modal Tambah Jadwal */}
-                        {isModalOpen && (
-                            <FormModal 
-                                table="jadwal" 
-                                type="create"
-                                onCreated={handleJadwalCreated}
-                                onUpdated={() => {}}
-                                onDeleted={() => {}}
-                                renderTrigger={false}
-                                initialOpen={true}
-                                onAfterClose={() => setIsModalOpen(false)}
-                            />
-                        )}
                     </div>
                 </div>
             </div>
-            
-            {/* Show empty search results message if needed */}
-            {filteredJadwal.length === 0 && searchTerm.trim() !== '' ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                    <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <h3 className="text-lg font-semibold text-gray-500">Tidak ada hasil</h3>
-                    <p className="text-gray-400">Tidak ada jadwal yang cocok dengan pencarian &quot;{searchTerm}&quot;</p>
-                    <button 
-                        onClick={() => setSearchTerm('')}
-                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+
+            {/* CONTROLS SECTION */}
+            <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                {/* Toggle untuk melihat semua jadwal */}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowAllSchedules(!showAllSchedules)}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            showAllSchedules 
+                                ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                        }`}
+                        title={showAllSchedules ? 'Sembunyikan jadwal yang sudah lewat' : 'Tampilkan semua jadwal termasuk yang sudah lewat'}
                     >
-                        Hapus Filter
+                        {showAllSchedules ? '📅 Semua Jadwal' : '⏰ Jadwal Aktif'}
                     </button>
                 </div>
-            ) : (
-                <>
-                    {/* List */}
-                    <Table columns={columns} data={currentItems} renderRow={renderRow} />
-                    {/* Pagination */}
-                    <Pagination 
-                        totalItems={filteredJadwal.length}
-                        itemsPerPage={itemsPerPage}
-                        currentPage={currentPage}
-                        onPageChange={setCurrentPage}
+
+                {/* Tab untuk view mode */}
+                <div className="flex gap-1 p-1 bg-white rounded-lg border border-gray-200">
+                    <button
+                        onClick={() => setViewMode('table')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            viewMode === 'table' 
+                                ? 'bg-blue-600 text-white shadow-sm' 
+                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                    >
+                        <List className="w-4 h-4" />
+                        <span>Tabel</span>
+                    </button>
+                    <button
+                        onClick={() => setViewMode('monthly')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            viewMode === 'monthly' 
+                                ? 'bg-blue-600 text-white shadow-sm' 
+                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                        title="Tampilan kalender bulanan untuk melihat jadwal shift secara visual"
+                    >
+                        <Calendar className="w-4 h-4" />
+                        <span>Kalender</span>
+                    </button>
+                </div>
+
+                {/* Info about calendar functionality */}
+                {viewMode === 'monthly' && jadwalData.length === 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-start gap-2">
+                            <Calendar className="w-4 h-4 text-blue-600 mt-0.5" />
+                            <div className="text-sm text-blue-800">
+                                <p className="font-medium">Tentang Kalender Shift:</p>
+                                <p className="text-blue-700 mt-1">
+                                    Kalender menampilkan jadwal shift semua pegawai dalam tampilan bulanan. 
+                                    Setiap hari akan menunjukkan daftar pegawai yang bertugas, lokasi, dan jam kerja.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Toggle untuk workload counters */}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowWorkloadCounters(!showWorkloadCounters)}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            showWorkloadCounters 
+                                ? 'bg-purple-100 text-purple-800 border border-purple-300' 
+                                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                        }`}
+                        title={showWorkloadCounters ? 'Sembunyikan counter beban kerja' : 'Tampilkan counter beban kerja'}
+                    >
+                        <Users className="w-4 h-4 inline mr-2" />
+                        {showWorkloadCounters ? 'Counter ON' : 'Counter OFF'}
+                    </button>
+                </div>
+                
+                {/* Filter and Sort Controls */}
+                <div className="flex items-center gap-3 ml-auto">
+                    <FilterButton 
+                        options={filterOptions} 
+                        onFilter={handleFilter}
                     />
-                </>
+                    <SortButton 
+                        options={sortOptions} 
+                        onSort={handleSort} 
+                    />
+                </div>
+            </div>
+
+            {/* ACTION BUTTONS SECTION */}
+            {(userRole === "admin" || userRole === "supervisor") && (
+                <div className="flex flex-wrap items-center gap-4 mb-6">
+                    <button 
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 transition-all shadow-md text-sm font-medium"
+                        onClick={() => setIsAutoScheduleModalOpen(true)}
+                        title="Buat jadwal otomatis menggunakan AI Hybrid Algorithm"
+                    >
+                        <Zap className="w-4 h-4" />
+                        Jadwal Otomatis AI
+                    </button>
+                    
+                    <button 
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transition-all shadow-md text-sm font-medium"
+                        onClick={() => setIsCreateShiftModalOpen(true)}
+                        title="Buat shift baru secara manual"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Tambah Shift Manual
+                    </button>
+                    
+                    <button 
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 transition-all shadow-md text-sm font-medium"
+                        onClick={() => setIsBulkScheduleModalOpen(true)}
+                        title="Buat jadwal untuk banyak pegawai sekaligus"
+                    >
+                        <Calendar className="w-4 h-4" />
+                        Bulk Scheduling
+                    </button>
+                    
+                    <button 
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-600 hover:to-red-700 transition-all shadow-md text-sm font-medium"
+                        onClick={() => {
+                            setSwapShiftEmployeeId(null);
+                            setShowSwapRequests(true);
+                        }}
+                        title="Kelola permintaan tukar shift"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        Kelola Swap Request
+                    </button>
+                </div>
+            )}
+
+            {/* STATISTICS AND COUNTERS SECTION */}
+            {showWorkloadCounters && (
+                <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Analisis Beban Kerja</h3>
+                    {jadwalData.length === 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
+                                <div className="text-2xl font-bold text-blue-600">0</div>
+                                <div className="text-sm text-gray-600">Total Shift</div>
+                                <div className="text-xs text-gray-400 mt-1">Belum ada data</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg border border-green-200 shadow-sm">
+                                <div className="text-2xl font-bold text-green-600">0</div>
+                                <div className="text-sm text-gray-600">Pegawai Aktif</div>
+                                <div className="text-xs text-gray-400 mt-1">Belum ada data</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg border border-purple-200 shadow-sm">
+                                <div className="text-2xl font-bold text-purple-600">0</div>
+                                <div className="text-sm text-gray-600">Lokasi Aktif</div>
+                                <div className="text-xs text-gray-400 mt-1">Belum ada data</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg border border-orange-200 shadow-sm">
+                                <div className="text-2xl font-bold text-orange-600">0</div>
+                                <div className="text-sm text-gray-600">Rata-rata/Hari</div>
+                                <div className="text-xs text-gray-400 mt-1">Belum ada data</div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {/* Quick Statistics based on actual data */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
+                                    <div className="text-2xl font-bold text-blue-600">{jadwalData.length}</div>
+                                    <div className="text-sm text-gray-600">Total Shift</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-lg border border-green-200 shadow-sm">
+                                    <div className="text-2xl font-bold text-green-600">
+                                        {[...new Set(jadwalData.map(j => j.idpegawai))].length}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Pegawai Aktif</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-lg border border-purple-200 shadow-sm">
+                                    <div className="text-2xl font-bold text-purple-600">
+                                        {[...new Set(jadwalData.map(j => j.lokasishift))].length}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Lokasi Aktif</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-lg border border-orange-200 shadow-sm">
+                                    <div className="text-2xl font-bold text-orange-600">
+                                        {Math.round(jadwalData.length / Math.max(1, [...new Set(jadwalData.map(j => j.tanggal))].length))}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Rata-rata/Hari</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* CONTENT SECTION */}
+            <div className="min-h-[600px]">
+                {isLoading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    </div>
+                ) : viewMode === 'table' ? (
+                    filteredShifts.length === 0 && searchTerm.trim() !== '' ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                            <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <h3 className="text-lg font-semibold text-gray-500 mb-2">Tidak ada hasil</h3>
+                            <p className="text-gray-400 mb-4">Tidak ada jadwal yang cocok dengan pencarian "{searchTerm}"</p>
+                            <button 
+                                onClick={() => setSearchTerm('')}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                                Hapus Filter
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <Table
+                                columns={columns}
+                                data={paginatedShifts}
+                                renderRow={renderRow}
+                            />
+                            {/* PAGINATION */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                    <p className="text-sm text-gray-700">
+                                        Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredShifts.length)} 
+                                        - {Math.min(currentPage * itemsPerPage, filteredShifts.length)} 
+                                        dari {filteredShifts.length} shift
+                                    </p>
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalItems={filteredShifts.length}
+                                        itemsPerPage={itemsPerPage}
+                                        onPageChange={setCurrentPage}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )
+                ) : (
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                        {filteredJadwal.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 px-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                                <div className="text-center max-w-md">
+                                    <svg className="w-16 h-16 text-gray-400 mb-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <h3 className="text-xl font-semibold text-gray-600 mb-2">Kalender Kosong</h3>
+                                    <p className="text-gray-500 mb-4">
+                                        Belum ada jadwal shift yang tersedia. 
+                                        {filteredJadwal.length === 0 && jadwalData.length === 0 ? 
+                                            ' Database belum memiliki data shift.' : 
+                                            ' Filter yang Anda gunakan tidak menghasilkan data.'}
+                                    </p>
+                                    
+                                    {jadwalData.length === 0 ? (
+                                        <div className="space-y-3">
+                                            <p className="text-sm text-blue-600 font-medium">
+                                                💡 Mulai buat jadwal shift pertama dengan:
+                                            </p>
+                                            
+                                            {(userRole === "admin" || userRole === "supervisor") && (
+                                                <div className="flex flex-col gap-2">
+                                                    <button 
+                                                        className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all shadow-md text-sm font-medium"
+                                                        onClick={() => setIsAutoScheduleModalOpen(true)}
+                                                    >
+                                                        <Brain className="w-4 h-4" />
+                                                        Auto Schedule AI
+                                                    </button>
+                                                    <button 
+                                                        className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                                        onClick={() => setIsModalOpen(true)}
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                        Tambah Manual
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-gray-600">
+                                                Coba ubah filter atau reset pencarian
+                                            </p>
+                                            <button 
+                                                onClick={() => {
+                                                    setFilterValue('');
+                                                    setSearchTerm('');
+                                                }}
+                                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                                            >
+                                                Reset Filter
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <MonthlyScheduleView 
+                                shifts={filteredJadwal as any}
+                                onShiftClick={(shift) => {
+                                    console.log('Shift clicked:', shift);
+                                }}
+                                showWorkloadCounters={showWorkloadCounters}
+                            />
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Modal Bulk Schedule */}
+            {isBulkScheduleModalOpen && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            {/* Header */}
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center">
+                                    <Calendar className="w-6 h-6 mr-3 text-emerald-600" />
+                                    <h2 className="text-xl font-semibold">Jadwal Otomatis Mingguan/Bulanan</h2>
+                                </div>
+                                <button
+                                    onClick={() => setIsBulkScheduleModalOpen(false)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Bulk Schedule Type Selector */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Tipe Jadwal</label>
+                                <div className="flex space-x-4">
+                                    <button
+                                        onClick={() => setBulkScheduleType('weekly')}
+                                        className={`px-4 py-2 rounded-lg font-medium ${
+                                            bulkScheduleType === 'weekly'
+                                                ? 'bg-emerald-500 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        Jadwal Mingguan
+                                    </button>
+                                    <button
+                                        onClick={() => setBulkScheduleType('monthly')}
+                                        className={`px-4 py-2 rounded-lg font-medium ${
+                                            bulkScheduleType === 'monthly'
+                                                ? 'bg-emerald-500 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        Jadwal Bulanan
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Weekly Schedule Form */}
+                            {bulkScheduleType === 'weekly' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Tanggal Mulai
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={weeklyRequest.startDate}
+                                            onChange={(e) => setWeeklyRequest({ ...weeklyRequest, startDate: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Lokasi (pilih semua yang diperlukan)
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {locations.map((location) => (
+                                                <label key={location} className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={weeklyRequest.locations.includes(location)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setWeeklyRequest({
+                                                                    ...weeklyRequest,
+                                                                    locations: [...weeklyRequest.locations, location]
+                                                                });
+                                                            } else {
+                                                                setWeeklyRequest({
+                                                                    ...weeklyRequest,
+                                                                    locations: weeklyRequest.locations.filter(l => l !== location)
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="mr-2"
+                                                    />
+                                                    <span className="text-sm">{location}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Prioritas
+                                        </label>
+                                        <select
+                                            value={weeklyRequest.priority}
+                                            onChange={(e) => setWeeklyRequest({ ...weeklyRequest, priority: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        >
+                                            {priorities.map((priority) => (
+                                                <option key={priority} value={priority}>{priority}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Shift Pattern Configuration */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                                            Konfigurasi Pola Shift per Lokasi
+                                        </label>
+                                        {weeklyRequest.locations.map((location) => (
+                                            <div key={location} className="mb-4 p-4 border border-gray-200 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-3">{location}</h4>
+                                                <div className="grid grid-cols-3 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs text-gray-600 mb-1">PAGI</label>
+                                                        <input
+                                                            type="number"
+                                                            value={weeklyRequest.shiftPattern[location]?.PAGI || 0}
+                                                            onChange={(e) => setWeeklyRequest({
+                                                                ...weeklyRequest,
+                                                                shiftPattern: {
+                                                                    ...weeklyRequest.shiftPattern,
+                                                                    [location]: {
+                                                                        ...weeklyRequest.shiftPattern[location],
+                                                                        PAGI: parseInt(e.target.value) || 0
+                                                                    }
+                                                                }
+                                                            })}
+                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                            min="0"
+                                                            max="10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-gray-600 mb-1">SIANG</label>
+                                                        <input
+                                                            type="number"
+                                                            value={weeklyRequest.shiftPattern[location]?.SIANG || 0}
+                                                            onChange={(e) => setWeeklyRequest({
+                                                                ...weeklyRequest,
+                                                                shiftPattern: {
+                                                                    ...weeklyRequest.shiftPattern,
+                                                                    [location]: {
+                                                                        ...weeklyRequest.shiftPattern[location],
+                                                                        SIANG: parseInt(e.target.value) || 0
+                                                                    }
+                                                                }
+                                                            })}
+                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                            min="0"
+                                                            max="10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-gray-600 mb-1">MALAM</label>
+                                                        <input
+                                                            type="number"
+                                                            value={weeklyRequest.shiftPattern[location]?.MALAM || 0}
+                                                            onChange={(e) => setWeeklyRequest({
+                                                                ...weeklyRequest,
+                                                                shiftPattern: {
+                                                                    ...weeklyRequest.shiftPattern,
+                                                                    [location]: {
+                                                                        ...weeklyRequest.shiftPattern[location],
+                                                                        MALAM: parseInt(e.target.value) || 0
+                                                                    }
+                                                                }
+                                                            })}
+                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                            min="0"
+                                                            max="10"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Monthly Schedule Form */}
+                            {bulkScheduleType === 'monthly' && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Tahun
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={monthlyRequest.year}
+                                                onChange={(e) => setMonthlyRequest({ ...monthlyRequest, year: parseInt(e.target.value) })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                min="2024"
+                                                max="2030"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Bulan
+                                            </label>
+                                            <select
+                                                value={monthlyRequest.month}
+                                                onChange={(e) => setMonthlyRequest({ ...monthlyRequest, month: parseInt(e.target.value) })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                            >
+                                                {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                                                    <option key={month} value={month}>
+                                                        {new Date(2024, month - 1).toLocaleString('id-ID', { month: 'long' })}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Lokasi (pilih semua yang diperlukan)
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {locations.map((location) => (
+                                                <label key={location} className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={monthlyRequest.locations.includes(location)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setMonthlyRequest({
+                                                                    ...monthlyRequest,
+                                                                    locations: [...monthlyRequest.locations, location]
+                                                                });
+                                                            } else {
+                                                                setMonthlyRequest({
+                                                                    ...monthlyRequest,
+                                                                    locations: monthlyRequest.locations.filter(l => l !== location)
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="mr-2"
+                                                    />
+                                                    <span className="text-sm">{location}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Batas Beban Kerja
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs text-gray-600 mb-1">Max Shift per Orang</label>
+                                                <input
+                                                    type="number"
+                                                    value={monthlyRequest.workloadLimits.maxShiftsPerPerson}
+                                                    onChange={(e) => setMonthlyRequest({
+                                                        ...monthlyRequest,
+                                                        workloadLimits: {
+                                                            ...monthlyRequest.workloadLimits,
+                                                            maxShiftsPerPerson: parseInt(e.target.value)
+                                                        }
+                                                    })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                    min="1"
+                                                    max="31"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gray-600 mb-1">Max Hari Berturut-turut</label>
+                                                <input
+                                                    type="number"
+                                                    value={monthlyRequest.workloadLimits.maxConsecutiveDays}
+                                                    onChange={(e) => setMonthlyRequest({
+                                                        ...monthlyRequest,
+                                                        workloadLimits: {
+                                                            ...monthlyRequest.workloadLimits,
+                                                            maxConsecutiveDays: parseInt(e.target.value)
+                                                        }
+                                                    })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                    min="1"
+                                                    max="7"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Average Staff Configuration */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                                            Rata-rata Staff per Shift per Lokasi
+                                        </label>
+                                        {monthlyRequest.locations.map((location) => (
+                                            <div key={location} className="mb-3 flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                                                <span className="font-medium text-gray-800">{location}</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <input
+                                                        type="number"
+                                                        value={monthlyRequest.averageStaffPerShift[location] || 0}
+                                                        onChange={(e) => setMonthlyRequest({
+                                                            ...monthlyRequest,
+                                                            averageStaffPerShift: {
+                                                                ...monthlyRequest.averageStaffPerShift,
+                                                                [location]: parseInt(e.target.value) || 0
+                                                            }
+                                                        })}
+                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                        min="0"
+                                                        max="20"
+                                                    />
+                                                    <span className="text-xs text-gray-600">orang/shift</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Error Message */}
+                            {bulkScheduleError && (
+                                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <div className="flex items-center text-red-800">
+                                        <AlertTriangle className="w-5 h-5 mr-2" />
+                                        <span className="font-medium">{bulkScheduleError}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Bulk Schedule Result */}
+                            {bulkScheduleResult && (
+                                <div className="mt-6 border-t pt-6">
+                                    <div className="flex items-center mb-4">
+                                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                                        <h3 className="text-lg font-semibold">Hasil Jadwal {bulkScheduleType === 'weekly' ? 'Mingguan' : 'Bulanan'}</h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                        <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                                            <div className="text-2xl font-bold text-green-600">
+                                                {bulkScheduleResult.createdShifts}
+                                            </div>
+                                            <div className="text-sm text-green-700">Shift Dibuat</div>
+                                        </div>
+                                        <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div className="text-2xl font-bold text-blue-600">
+                                                {bulkScheduleResult.fulfillmentRate?.toFixed(1)}%
+                                            </div>
+                                            <div className="text-sm text-blue-700">Tingkat Pemenuhan</div>
+                                        </div>
+                                        <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                            <div className="text-2xl font-bold text-orange-600">
+                                                {bulkScheduleResult.conflicts?.length || 0}
+                                            </div>
+                                            <div className="text-sm text-orange-700">Konflik</div>
+                                        </div>
+                                        <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                            <div className="text-2xl font-bold text-purple-600">
+                                                {bulkScheduleResult.recommendations?.length || 0}
+                                            </div>
+                                            <div className="text-sm text-purple-700">Rekomendasi</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <div className="flex items-center text-green-800">
+                                            <CheckCircle className="w-5 h-5 mr-2" />
+                                            <span className="font-medium">
+                                                Jadwal {bulkScheduleType === 'weekly' ? 'mingguan' : 'bulanan'} berhasil dibuat! 
+                                                Halaman akan dimuat ulang untuk menampilkan jadwal baru.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex justify-end space-x-4 mt-6">
+                                <button
+                                    onClick={() => setIsBulkScheduleModalOpen(false)}
+                                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={bulkScheduleType === 'weekly' ? handleCreateWeeklySchedule : handleCreateMonthlySchedule}
+                                    disabled={isBulkScheduling}
+                                    className="px-6 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                >
+                                    {isBulkScheduling ? (
+                                        <>
+                                            <Loader2 className="animate-spin w-4 h-4 mr-2" />
+                                            Membuat Jadwal...
+                                        </>
+                                    ) : (
+                                        `Buat Jadwal ${bulkScheduleType === 'weekly' ? 'Mingguan' : 'Bulanan'}`
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODALS SECTION */}
+            
+            {/* Modal Tambah/Create Shift */}
+            {(isModalOpen || isCreateShiftModalOpen) && (
+                <FormModal 
+                    table="jadwal" 
+                    type="create"
+                    onCreated={handleJadwalCreated}
+                    onUpdated={() => {}}
+                    onDeleted={() => {}}
+                    renderTrigger={false}
+                    initialOpen={true}
+                    onAfterClose={() => {
+                        setIsModalOpen(false);
+                        setIsCreateShiftModalOpen(false);
+                    }}
+                />
+            )}
+
+            {/* Modal Auto Schedule AI */}
+            {isAutoScheduleModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <Brain className="w-6 h-6 text-purple-600" />
+                                    <h2 className="text-xl font-semibold">AI Auto Schedule - Hybrid Algorithm</h2>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setIsAutoScheduleModalOpen(false);
+                                        setAutoScheduleResult(null);
+                                        setAutoScheduleError(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-blue-800">
+                                            AI Auto Schedule Information
+                                        </h3>
+                                        <div className="mt-2 text-sm text-blue-700">
+                                            <p>Buat jadwal shift optimal otomatis menggunakan algoritma AI Hybrid (Greedy + Backtracking).</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Auto Schedule Form */}
+                            <div className="space-y-6">
+                                <h3 className="text-lg font-semibold text-gray-800">Konfigurasi Auto Schedule</h3>
+                                
+                                {/* Auto Schedule Requests */}
+                                <div className="space-y-4">
+                                    {autoScheduleRequests.map((request, index) => (
+                                        <div key={index} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="font-medium text-gray-700">Request #{index + 1}</h4>
+                                                {autoScheduleRequests.length > 1 && (
+                                                    <button
+                                                        onClick={() => removeAutoScheduleRequest(index)}
+                                                        className="text-red-500 hover:text-red-700"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                                                    <input
+                                                        type="date"
+                                                        value={request.date}
+                                                        onChange={(e) => updateAutoScheduleRequest(index, 'date', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                    />
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
+                                                    <select
+                                                        value={request.location}
+                                                        onChange={(e) => updateAutoScheduleRequest(index, 'location', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                    >
+                                                        {locations.map(location => (
+                                                            <option key={location} value={location}>{location}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Shift</label>
+                                                    <select
+                                                        value={request.shiftType}
+                                                        onChange={(e) => updateAutoScheduleRequest(index, 'shiftType', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                    >
+                                                        {shiftTypes.map(type => (
+                                                            <option key={type} value={type}>{type}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Staff</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="20"
+                                                        value={request.requiredCount}
+                                                        onChange={(e) => updateAutoScheduleRequest(index, 'requiredCount', parseInt(e.target.value))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                    />
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Prioritas</label>
+                                                    <select
+                                                        value={request.priority}
+                                                        onChange={(e) => updateAutoScheduleRequest(index, 'priority', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                    >
+                                                        {priorities.map(priority => (
+                                                            <option key={priority} value={priority}>
+                                                                {priority}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Role Preferensi</label>
+                                                    <select
+                                                        value={request.preferredRoles[0] || ''}
+                                                        onChange={(e) => updateAutoScheduleRequest(index, 'preferredRoles', [e.target.value])}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                    >
+                                                        {roles.map(role => (
+                                                            <option key={role} value={role}>{role}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Add Request Button */}
+                                <button
+                                    onClick={addAutoScheduleRequest}
+                                    className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-purple-400 hover:text-purple-600 transition-colors"
+                                >
+                                    + Tambah Request Jadwal
+                                </button>
+
+                                {/* Error Display */}
+                                {autoScheduleError && (
+                                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                        <div className="flex items-center text-red-800">
+                                            <AlertTriangle className="w-5 h-5 mr-2" />
+                                            <span className="font-medium">Error:</span>
+                                        </div>
+                                        <p className="text-red-700 mt-1">{autoScheduleError}</p>
+                                    </div>
+                                )}
+
+                                {/* Success Result */}
+                                {autoScheduleResult && (
+                                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <div className="flex items-center text-green-800">
+                                            <CheckCircle className="w-5 h-5 mr-2" />
+                                            <span className="font-medium">
+                                                Jadwal berhasil dibuat! Halaman akan dimuat ulang untuk menampilkan jadwal baru.
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex justify-end space-x-4 mt-6">
+                                <button
+                                    onClick={() => setIsAutoScheduleModalOpen(false)}
+                                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                                >
+                                    Batal
+                                </button>
+                                <button 
+                                    onClick={executeAutoScheduling}
+                                    disabled={isAutoScheduling}
+                                    className="px-6 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                >
+                                    {isAutoScheduling ? (
+                                        <>
+                                            <Loader2 className="animate-spin w-4 h-4 mr-2" />
+                                            Membuat Jadwal...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Brain className="w-4 h-4 mr-2" />
+                                            Buat Jadwal AI
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Swap Requests */}
+            {showSwapRequests && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <RefreshCw className="w-6 h-6 text-orange-600" />
+                                    <h2 className="text-xl font-semibold">Kelola Permintaan Tukar Shift</h2>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setShowSwapRequests(false);
+                                        setSwapShiftEmployeeId(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-6">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-orange-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-orange-800">
+                                            Swap Request Management
+                                        </h3>
+                                        <div className="mt-2 text-sm text-orange-700">
+                                            <p>Kelola permintaan tukar shift dari pegawai. Anda dapat menyetujui atau menolak permintaan.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {/* Placeholder content - you can replace this with actual swap request data */}
+                                <div className="text-center py-8">
+                                    <RefreshCw className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-600 mb-4">Belum ada permintaan tukar shift</p>
+                                    <p className="text-sm text-gray-400">
+                                        Permintaan tukar shift dari pegawai akan muncul di sini
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end space-x-4">
+                                <button
+                                    onClick={() => setShowSwapRequests(false)}
+                                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

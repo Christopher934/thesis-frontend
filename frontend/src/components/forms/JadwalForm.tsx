@@ -5,8 +5,11 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import InputField from "../common/InputField";
+import WarningModal from "../common/WarningModal";
+import { useShiftValidation } from "@/hooks/useShiftValidation";
 import { joinUrl } from "@/lib/urlUtils";
 import { Calendar, Clock, Users, Building2, AlertCircle, CheckCircle2, Info, User, MapPin } from "lucide-react";
+import { LOKASI_SHIFT_ENUM, LOKASI_SHIFT_OPTIONS } from "../../lib/lokasiShiftEnum";
 
 
 // Type for User data 
@@ -37,6 +40,11 @@ const LokasiShiftEnum = z.enum([
     'SUPIR',
     'ICU',
     'NICU',
+    'HEMODIALISA',
+    'FISIOTERAPI',
+    'KAMAR_OPERASI',
+    'RECOVERY_ROOM',
+    'EMERGENCY_ROOM',
 ]);
 
 // Define the TipeShift enum to match Prisma schema
@@ -258,6 +266,17 @@ const JadwalForm = ({
     const [users, setUsers] = useState<User[]>([]);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     
+    // Warning modal states
+    const [showWarningModal, setShowWarningModal] = useState(false);
+    const [warningData, setWarningData] = useState<{
+        warnings: any[];
+        canProceed: boolean;
+        formData: any;
+    } | null>(null);
+    
+    // Validation hook
+    const { validateShift, isValidating } = useShiftValidation();
+    
     const {
         register,
         handleSubmit,
@@ -413,6 +432,50 @@ const JadwalForm = ({
             formData.nama = `${user.namaDepan} ${user.namaBelakang}`;
             console.log(`User validated for form submission: ${user.namaDepan} ${user.namaBelakang} (${user.username})`);
             
+            // Only validate for new shift creation (not edits)
+            if (type === "create") {
+                console.log('Validating shift before creation...');
+                
+                const validationRequest = {
+                    employeeId: user.id,
+                    date: formData.tanggal,
+                    shiftType: formData.tipejadwal,
+                    location: formData.lokasi,
+                    startTime: formData.jammulai,
+                    endTime: formData.jamselesai,
+                    duration: 8, // Default 8 hours
+                    requiredRole: user.role
+                };
+                
+                const validationResult = await validateShift(validationRequest);
+                
+                // If there are warnings or violations, show modal
+                if (!validationResult.isValid || validationResult.warnings.length > 0) {
+                    setWarningData({
+                        warnings: validationResult.warnings,
+                        canProceed: validationResult.canProceed,
+                        formData: formData
+                    });
+                    setShowWarningModal(true);
+                    setIsSubmitting(false);
+                    return; // Stop submission, let user decide
+                }
+            }
+            
+            // If validation passed or this is an edit, proceed with actual submission
+            await submitShift(formData);
+            
+        } catch (error: any) {
+            console.error('Error:', error);
+            setErrorMessage(error.message || 'Something went wrong');
+            setIsSubmitting(false);
+        }
+    });
+
+    // Separate function for actual shift submission
+    const submitShift = async (formData: any) => {
+        try {
+            const token = localStorage.getItem('token');
             
             // Use the real API
             let apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -458,12 +521,28 @@ const JadwalForm = ({
             onClose();
             
         } catch (error: any) {
-            console.error('Error:', error);
+            console.error('Error submitting shift:', error);
             setErrorMessage(error.message || 'Something went wrong');
         } finally {
             setIsSubmitting(false);
         }
-    });
+    };
+
+    // Handle proceed from warning modal
+    const handleProceedWithWarnings = async () => {
+        if (warningData?.formData) {
+            setShowWarningModal(false);
+            setIsSubmitting(true);
+            await submitShift(warningData.formData);
+        }
+    };
+
+    // Handle cancel from warning modal
+    const handleCancelSubmission = () => {
+        setShowWarningModal(false);
+        setWarningData(null);
+        setIsSubmitting(false);
+    };
     return (
         <div className="w-full max-w-3xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden">
             {/* Header */}
@@ -621,9 +700,9 @@ const JadwalForm = ({
                                     defaultValue={data?.lokasishift || ""}
                                 >
                                     <option value="">-- Pilih Unit Kerja --</option>
-                                    {Object.entries(DEPARTMENT_CONFIGS).map(([key, config]) => (
-                                        <option key={key} value={key}>
-                                            {config.name}
+                                    {LOKASI_SHIFT_OPTIONS.map(({ value, label }) => (
+                                        <option key={value} value={value}>
+                                            {label}
                                         </option>
                                     ))}
                                 </select>
@@ -795,6 +874,20 @@ const JadwalForm = ({
                     </button>
                 </div>
             </form>
+
+            {/* Warning Modal */}
+            {showWarningModal && warningData && (
+                <WarningModal
+                    isOpen={showWarningModal}
+                    onClose={handleCancelSubmission}
+                    title="Peringatan Validasi Shift"
+                    warnings={warningData.warnings}
+                    canProceed={warningData.canProceed}
+                    onProceed={handleProceedWithWarnings}
+                    proceedText="Buat Shift Tetap"
+                    showProceedButton={warningData.canProceed}
+                />
+            )}
         </div>
     )
 }

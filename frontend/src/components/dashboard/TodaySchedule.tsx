@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, MapPin, User } from 'lucide-react';
+import { formatLokasiShift } from '../../lib/textFormatter';
 
 // Helper function to format time
 const formatTime = (timeString: string): string => {
@@ -161,59 +162,10 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
         const durationMs = endTime.getTime() - startTime.getTime();
         const durationHours = Math.round(durationMs / (1000 * 60 * 60));
 
-        // Format location
-        const formatLocation = (location: string) => {
-          if (!location) return '-';
-          
-          // Handle specific unit mappings first
-          const unitMappings: { [key: string]: string } = {
-            'RAWAT_INAP_3_SHIFT': 'Rawat Inap',
-            'RAWAT_INAP': 'Rawat Inap',
-            'RAWAT_JALAN': 'Rawat Jalan',
-            'UGD': 'UGD',
-            'ICU': 'ICU',
-            'EMERGENCY': 'Emergency',
-            'KAMAR_OPERASI': 'Kamar Operasi',
-            'LABORATORIUM': 'Laboratorium',
-            'RADIOLOGI': 'Radiologi',
-            'FARMASI': 'Farmasi',
-            'GIZI': 'Gizi',
-            'FISIOTERAPI': 'Fisioterapi',
-            'HEMODIALISA': 'Hemodialisa',
-            'NICU': 'NICU',
-            'PICU': 'PICU'
-          };
-          
-          // Check if we have a direct mapping
-          const upperLocation = location.toUpperCase();
-          if (unitMappings[upperLocation]) {
-            return unitMappings[upperLocation];
-          }
-          
-          // For other cases, process the string
-          let formatted = location
-            .split('_')
-            .map(word => {
-              // Skip numbers and "SHIFT" word
-              if (/^\d+$/.test(word) || word.toUpperCase() === 'SHIFT') {
-                return null;
-              }
-              return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-            })
-            .filter(word => word !== null)
-            .join(' ');
-          
-          // Clean up any remaining shift references
-          formatted = formatted.replace(/\s*\d+\s*(Shift|shift)/gi, '');
-          
-          // Clean up any trailing spaces and multiple spaces
-          return formatted.replace(/\s+/g, ' ').trim();
-        };
-
         return {
           id: shift.id.toString(),
           time: formatTime(shift.jammulai),
-          location: formatLocation(shift.lokasishift),
+          location: formatLokasiShift(shift.lokasishift),
           type: `Shift ${shift.tipeshift}`,
           status,
           duration: `${durationHours} jam`

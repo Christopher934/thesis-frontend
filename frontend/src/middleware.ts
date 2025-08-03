@@ -4,7 +4,7 @@ import { hasRoutePermission, getRedirectPathForRole } from '@/lib/permissions';
 
 // Enhanced cache for better performance
 const authCheckCache = new Map<string, { result: NextResponse; timestamp: number }>();
-const CACHE_DURATION = 10000; // 10 seconds cache for better performance
+const CACHE_DURATION = 30000; // 30 seconds cache to reduce excessive checks
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl;
@@ -36,6 +36,10 @@ export function middleware(request: NextRequest) {
   
   // Use cached result if available and still valid
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    // Avoid redirect loops by checking if we're already at the destination
+    if (cached.result.headers.get('location') === url.toString()) {
+      return NextResponse.next();
+    }
     return cached.result;
   }
 
@@ -45,7 +49,12 @@ export function middleware(request: NextRequest) {
   if (url.pathname === '/') {
     if (token) {
       const redirectPath = getRedirectPathForRole(role || null);
-      response = NextResponse.redirect(new URL(redirectPath, request.url));
+      // Avoid redirect if already at target path
+      if (url.pathname === redirectPath) {
+        response = NextResponse.next();
+      } else {
+        response = NextResponse.redirect(new URL(redirectPath, request.url));
+      }
     } else {
       response = NextResponse.next();
     }
@@ -54,7 +63,12 @@ export function middleware(request: NextRequest) {
   else if (url.pathname === '/sign-in') {
     if (token) {
       const redirectPath = getRedirectPathForRole(role || null);
-      response = NextResponse.redirect(new URL(redirectPath, request.url));
+      // Avoid redirect if already at target path
+      if (url.pathname === redirectPath) {
+        response = NextResponse.next();
+      } else {
+        response = NextResponse.redirect(new URL(redirectPath, request.url));
+      }
     } else {
       response = NextResponse.next();
     }
@@ -62,12 +76,22 @@ export function middleware(request: NextRequest) {
   // Handle protected routes
   else {
     if (!token) {
-      response = NextResponse.redirect(new URL('/sign-in', request.url));
+      // Avoid redirect loop to sign-in
+      if (url.pathname === '/sign-in') {
+        response = NextResponse.next();
+      } else {
+        response = NextResponse.redirect(new URL('/sign-in', request.url));
+      }
     } else {
       const hasPermission = hasRoutePermission(url.pathname, role || null);
       if (!hasPermission) {
         const redirectPath = getRedirectPathForRole(role || null);
-        response = NextResponse.redirect(new URL(redirectPath, request.url));
+        // Avoid redirect if already at target path
+        if (url.pathname === redirectPath) {
+          response = NextResponse.next();
+        } else {
+          response = NextResponse.redirect(new URL(redirectPath, request.url));
+        }
       } else {
         response = NextResponse.next();
       }
@@ -98,7 +122,9 @@ export const config = {
     // Only run middleware on essential routes that need immediate redirects
     '/',
     '/sign-in',
-    // Remove most /list paths since they're protected by withAuth HOC
+    '/admin',
+    // Protected dashboard routes
     '/dashboard/admin/:path*',
+    '/dashboard/pegawai/:path*',
   ],
 };

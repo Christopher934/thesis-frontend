@@ -7,6 +7,7 @@ import {
   Post,
   Put,
   Delete,
+  Query,
   ValidationPipe,
   UsePipes,
   UseGuards,
@@ -16,14 +17,21 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+interface PaginationQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+}
+
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findAll() {
-    return this.userService.findAll();
+  async findAll(@Query() query: PaginationQuery) {
+    return this.userService.findAll(query);
   }
 
   @Get('count-by-gender')

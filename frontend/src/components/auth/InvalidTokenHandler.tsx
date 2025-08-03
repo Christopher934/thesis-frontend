@@ -32,7 +32,7 @@ export default function InvalidTokenHandler() {
       Cookies.remove('userRole');
       
       // Redirect to login
-      router.push('/auth/login');
+      router.push('/sign-in');
     };
 
     // Function to validate current token with backend

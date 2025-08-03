@@ -4,7 +4,10 @@
  * Check if the user is authenticated
  */
 export function isAuthenticated(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    console.log('[AuthUtils] isAuthenticated: Window is undefined (SSR)');
+    return false;
+  }
   
   // Check both localStorage and cookies for token
   const localToken = localStorage.getItem('token');
@@ -15,34 +18,57 @@ export function isAuthenticated(): boolean {
     .find(row => row.startsWith('token='))
     ?.split('=')[1];
   
-  return !!(localToken || cookieToken);
+  const isAuth = !!(localToken || cookieToken);
+  console.log('[AuthUtils] isAuthenticated result:', {
+    localToken: !!localToken,
+    cookieToken: !!cookieToken,
+    isAuthenticated: isAuth
+  });
+  
+  return isAuth;
 }
 
 /**
  * Get the user's role
  */
 export function getUserRole(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    console.log('[AuthUtils] getUserRole: Window is undefined (SSR)');
+    return null;
+  }
   
-  return localStorage.getItem('role')?.toLowerCase() || null;
+  const role = localStorage.getItem('role')?.toLowerCase() || null;
+  console.log('[AuthUtils] getUserRole result:', role);
+  return role;
 }
 
 /**
  * Check if user should be redirected from sign-in page
  */
 export function shouldRedirectFromSignIn(): { redirect: boolean; path: string } {
+  console.log('[AuthUtils] shouldRedirectFromSignIn: Starting check...');
+  
   const authenticated = isAuthenticated();
-  if (!authenticated) return { redirect: false, path: '' };
+  if (!authenticated) {
+    console.log('[AuthUtils] shouldRedirectFromSignIn: User not authenticated, no redirect');
+    return { redirect: false, path: '' };
+  }
   
   const role = getUserRole();
+  console.log('[AuthUtils] shouldRedirectFromSignIn: User authenticated with role:', role);
+  
   if (role === 'admin' || role === 'supervisor') {
-    return { redirect: true, path: '/admin' };
+    console.log('[AuthUtils] shouldRedirectFromSignIn: Redirecting admin/supervisor to /dashboard/admin');
+    return { redirect: true, path: '/dashboard/admin' };
   } else if (role === 'perawat' || role === 'dokter' || role === 'staf') {
+    console.log('[AuthUtils] shouldRedirectFromSignIn: Redirecting staff to /dashboard/pegawai');
     return { redirect: true, path: '/dashboard/pegawai' };
   } else if (role) {
+    console.log('[AuthUtils] shouldRedirectFromSignIn: Redirecting unknown role to /dashboard');
     return { redirect: true, path: '/dashboard' };
   }
   
+  console.log('[AuthUtils] shouldRedirectFromSignIn: No valid role, no redirect');
   return { redirect: false, path: '' };
 }
 

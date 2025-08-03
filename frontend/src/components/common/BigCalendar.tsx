@@ -1,10 +1,10 @@
 "use client";
 
-import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
-import moment from 'moment';
-import { calendarEvents } from '@/lib/data';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import 'moment/locale/id'; // Import the locale you want to use
+import { Calendar, dateFnsLocalizer, Views, View } from 'react-big-calendar'
+import { format, parse, startOfWeek, getDay, isSameDay, isToday as dateIsToday } from 'date-fns'
+import { id } from 'date-fns/locale'
+import 'react-big-calendar/lib/css/react-big-calendar.css'
+import { formatLokasiShift } from '../../lib/textFormatter';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 
@@ -16,7 +16,15 @@ const MobileCalendarWrapper = dynamic(() => import('./MobileCalendarWrapper'), {
   </div>
 });
 
-const localizer = momentLocalizer(moment);
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales: {
+    'id': id,
+  },
+});
 
 // Interface for shift data from JadwalSaya
 interface ShiftData {
@@ -131,10 +139,8 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
   const defaultEvents = useMemo(() => {
     if (!useDefaultEvents) return [];
     
-    return calendarEvents.map((event, index) => ({
-      ...event,
-      id: 10000 + index // Use high numbers to avoid conflicts with real shifts
-    }));
+    // No default events - only use real shift data
+    return [];
   }, [useDefaultEvents]);
   
   // Memoize shift events to only recalculate when shifts change
@@ -288,27 +294,6 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
           
           console.log(`BigCalendar: Event dates - start: ${startDate.toISOString()}, end: ${endDate.toISOString()}`);
           
-          // Simplified location formatting
-          const formatLokasiShift = (lokasi: string) => {
-            if (!lokasi) return 'Shift';
-            
-            const unitMappings: { [key: string]: string } = {
-              'RAWAT_INAP_3_SHIFT': 'Rawat Inap',
-              'RAWAT_INAP': 'Rawat Inap',
-              'RAWAT_JALAN': 'Rawat Jalan',
-              'UGD': 'UGD',
-              'ICU': 'ICU',
-              'EMERGENCY': 'Emergency',
-              'KAMAR_OPERASI': 'Kamar Operasi',
-              'LABORATORIUM': 'Laboratorium',
-              'RADIOLOGI': 'Radiologi',
-              'FARMASI': 'Farmasi'
-            };
-            
-            const upperLokasi = lokasi.toUpperCase();
-            return unitMappings[upperLokasi] || lokasi.replace(/_/g, ' ');
-          };
-          
           const calendarEvent = {
             id: shift.id,
             title: `${formatLokasiShift(shift.lokasishift)}${shift.tipeshift ? ` (${shift.tipeshift})` : ''}`,
@@ -389,7 +374,7 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
           fontWeight: '500',
           textShadow: '0 1px 1px rgba(0, 0, 0, 0.1)'
         }}>
-          {moment(event.start).format('HH:mm')} - {moment(event.end).format('HH:mm')}
+          {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
         </div>
       )}
     </div>
@@ -397,10 +382,10 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
   
   // Custom header component for better date display
   const CustomHeader = ({ date, label }: { date: Date; label: string }) => {
-    const isToday = moment(date).isSame(moment(), 'day');
-    const dayName = moment(date).format('ddd');
-    const dateNum = moment(date).format('D');
-    const monthName = moment(date).format('MMM');
+    const isToday = dateIsToday(date);
+    const dayName = format(date, 'eee', { locale: id });
+    const dateNum = format(date, 'd');
+    const monthName = format(date, 'MMM', { locale: id });
     
     return (
       <div className={`custom-header ${isToday ? 'today' : ''}`}>
@@ -440,9 +425,6 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
   
   console.log("Default calendar date:", defaultDate);
   console.log("Current view:", view);
-  
-  // Set up calendar to use Indonesian locale
-  moment.locale('id');
   
   return (
     <>
@@ -1065,7 +1047,7 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
               </div>
               <div className="text-center">
                 <h2 className="text-lg font-semibold text-gray-800">
-                  {moment(props.date).format('MMMM YYYY')}
+                  {format(props.date, 'MMMM yyyy', { locale: id })}
                 </h2>
               </div>
             </div>
@@ -1075,41 +1057,41 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
         formats={{
           dayFormat: (date, culture, localizer) => {
             if (isMobile) {
-              // Mobile: Show only day abbreviation (Min, Sen, Sel, etc.)
-              return localizer?.format(date, 'ddd', culture)?.substring(0, 3) || '';
+              // Mobile: Show only day number to save space
+              return localizer?.format(date, 'd', culture) || '';
             }
             // Desktop: Show day abbreviation with date and month
-            return `${localizer?.format(date, 'ddd', culture)} ${localizer?.format(date, 'D MMM', culture)}` || '';
+            return `${localizer?.format(date, 'ddd', culture)} ${localizer?.format(date, 'd MMM', culture)}` || '';
           },
-          timeGutterFormat: (date) => moment(date).format(isMobile ? 'HH' : 'HH:mm'),
+          timeGutterFormat: (date) => format(date, isMobile ? 'HH' : 'HH:mm'),
           eventTimeRangeFormat: ({ start, end }, culture, localizer) => {
             if (isMobile) {
-              return `${moment(start).format('HH:mm')}`;
+              return `${format(start, 'HH:mm')}`;
             }
-            return `${moment(start).format('HH:mm')} – ${moment(end).format('HH:mm')}`;
+            return `${format(start, 'HH:mm')} – ${format(end, 'HH:mm')}`;
           },
           monthHeaderFormat: (date, culture, localizer) =>
             localizer?.format(date, isMobile ? 'MMM yyyy' : 'MMMM yyyy', culture) || '',
           dayHeaderFormat: (date, culture, localizer) => {
             if (isMobile) {
               // Mobile: Clear day and date format
-              return `${localizer?.format(date, 'dddd', culture)}, ${localizer?.format(date, 'D MMMM', culture)}` || '';
+              return `${localizer?.format(date, 'dddd', culture)}, ${localizer?.format(date, 'd MMMM', culture)}` || '';
             }
             // Desktop: Full day and date format
-            return `${localizer?.format(date, 'dddd', culture)}, ${localizer?.format(date, 'D MMMM YYYY', culture)}` || '';
+            return `${localizer?.format(date, 'dddd', culture)}, ${localizer?.format(date, 'd MMMM yyyy', culture)}` || '';
           },
           agendaHeaderFormat: ({ start, end }, culture, localizer) => {
             if (isMobile) {
-              return `${localizer?.format(start, 'D MMM', culture)} - ${localizer?.format(end, 'D MMM YYYY', culture)}`;
+              return `${localizer?.format(start, 'd MMM', culture)} - ${localizer?.format(end, 'd MMM yyyy', culture)}`;
             }
-            return `${localizer?.format(start, 'D MMMM', culture)} - ${localizer?.format(end, 'D MMMM YYYY', culture)}`;
+            return `${localizer?.format(start, 'd MMMM', culture)} - ${localizer?.format(end, 'd MMMM yyyy', culture)}`;
           },
           // Week view header format - Enhanced for better readability
           dateFormat: (date, culture, localizer) => {
             if (isMobile) {
-              return `${localizer?.format(date, 'D', culture)}` || '';
+              return `${localizer?.format(date, 'd', culture)}` || '';
             }
-            return `${localizer?.format(date, 'D', culture)}` || '';
+            return `${localizer?.format(date, 'd', culture)}` || '';
           },
         }}
         // Mobile scroll behavior
@@ -1170,13 +1152,13 @@ const BigCalendar = ({ shifts = [], useDefaultEvents = true }: BigCalendarProps)
               
               <div>
                 <label className="text-sm font-medium text-gray-600 block">Tanggal:</label>
-                <p className="text-gray-900">{moment(selectedEvent.start).format('dddd, D MMMM YYYY')}</p>
+                <p className="text-gray-900">{format(selectedEvent.start, 'eeee, d MMMM yyyy', { locale: id })}</p>
               </div>
               
               <div>
                 <label className="text-sm font-medium text-gray-600 block">Waktu:</label>
                 <p className="text-gray-900 font-medium">
-                  {moment(selectedEvent.start).format('HH:mm')} - {moment(selectedEvent.end).format('HH:mm')}
+                  {format(selectedEvent.start, 'HH:mm')} - {format(selectedEvent.end, 'HH:mm')}
                 </p>
               </div>
               

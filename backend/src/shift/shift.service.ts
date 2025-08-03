@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationIntegrationService } from '../notifikasi/notification-integration.service';
+import { ShiftValidationService } from '../services/shift-validation.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { 
@@ -17,6 +18,7 @@ export class ShiftService {
   constructor(
     private prisma: PrismaService,
     private notificationService?: NotificationIntegrationService,
+    private validationService?: ShiftValidationService,
   ) {}
 
   async create(createShiftDto: CreateShiftDto) {
@@ -72,6 +74,41 @@ export class ShiftService {
       // Handle overnight shifts (end time before start time)
       if (jamselesaiDate <= jammulaiDate) {
         jamselesaiDate.setDate(jamselesaiDate.getDate() + 1);
+      }
+
+      // Validate shift assignment before creating
+      if (this.validationService) {
+        const validation = await this.validationService.validateShiftAssignment(
+          userId,
+          tanggalDate,
+          (createShiftDto.tipeEnum || createShiftDto.tipeshift) as any,
+          createShiftDto.lokasishift,
+        );
+
+        // Check for high severity conflicts (workload exceeded)
+        const highSeverityConflicts = validation.conflicts.filter(
+          (c) => c.severity === 'HIGH',
+        );
+        if (highSeverityConflicts.length > 0) {
+          const workloadConflicts = highSeverityConflicts.filter(
+            (c) => c.type === 'WORKLOAD_EXCEEDED',
+          );
+          if (workloadConflicts.length > 0) {
+            throw new BadRequestException({
+              message: 'Tidak dapat membuat jadwal - beban kerja berlebihan',
+              details: workloadConflicts[0].message,
+              type: 'WORKLOAD_EXCEEDED',
+              requiresOverworkRequest: true,
+            });
+          }
+          
+          // Other high severity conflicts
+          throw new BadRequestException({
+            message: 'Tidak dapat membuat jadwal - terdapat konflik',
+            details: highSeverityConflicts.map((c) => c.message).join('; '),
+            conflicts: highSeverityConflicts,
+          });
+        }
       }
 
       // Create a new shift in the database

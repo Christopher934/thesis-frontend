@@ -2,55 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar, Users, Clock, AlertCircle, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-
-// Helper function to format location/unit names
-const formatLokasiShift = (lokasi: string) => {
-  if (!lokasi) return '-';
-  
-  // Handle specific unit mappings first
-  const unitMappings: { [key: string]: string } = {
-    'RAWAT_INAP_3_SHIFT': 'Rawat Inap',
-    'RAWAT_INAP': 'Rawat Inap',
-    'RAWAT_JALAN': 'Rawat Jalan',
-    'UGD': 'UGD',
-    'ICU': 'ICU',
-    'EMERGENCY': 'Emergency',
-    'KAMAR_OPERASI': 'Kamar Operasi',
-    'LABORATORIUM': 'Laboratorium',
-    'RADIOLOGI': 'Radiologi',
-    'FARMASI': 'Farmasi',
-    'GIZI': 'Gizi',
-    'FISIOTERAPI': 'Fisioterapi',
-    'HEMODIALISA': 'Hemodialisa',
-    'NICU': 'NICU',
-    'PICU': 'PICU'
-  };
-  
-  // Check if we have a direct mapping
-  const upperLokasi = lokasi.toUpperCase();
-  if (unitMappings[upperLokasi]) {
-    return unitMappings[upperLokasi];
-  }
-  
-  // For other cases, process the string
-  let formatted = lokasi
-    .split('_')
-    .map(word => {
-      // Skip numbers and "SHIFT" word
-      if (/^\d+$/.test(word) || word.toUpperCase() === 'SHIFT') {
-        return null;
-      }
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .filter(word => word !== null)
-    .join(' ');
-  
-  // Clean up any remaining shift references
-  formatted = formatted.replace(/\s*\d+\s*(Shift|shift)/gi, '');
-  
-  // Clean up any trailing spaces and multiple spaces
-  return formatted.replace(/\s+/g, ' ').trim();
-};
+import { formatLokasiShift } from '../../lib/textFormatter';
 
 // Helper function to format time
 const formatTime = (timeString: string): string => {
@@ -156,7 +108,8 @@ const ShiftManagementDashboard: React.FC = () => {
       });
 
       if (usersResponse.ok && shiftsResponse.ok && swapResponse.ok && attendanceResponse.ok) {
-        const users = await usersResponse.json();
+        const usersResult = await usersResponse.json();
+        const users = usersResult.data || []; // API returns { data: users[], meta: {...} }
         const shifts = await shiftsResponse.json();
         const swapRequests = await swapResponse.json();
         const attendanceStats = await attendanceResponse.json();

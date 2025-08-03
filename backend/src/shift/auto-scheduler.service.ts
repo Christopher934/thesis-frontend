@@ -1,11 +1,12 @@
-// import { Injectable, Logger } from '@nestjs/common';
-// import { PrismaService } from '../prisma/prisma.service';
-// import { NotificationIntegrationService } from '../notifikasi/notification-integration.service';
-// import { 
-//   SHIFT_TYPE_CONFIGS, 
-//   ShiftTypeConfig, 
-//   ShiftSchedule 
-// } from './shift-type.config';
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationIntegrationService } from '../notifikasi/notification-integration.service';
+import { WorkloadMonitoringService } from '../services/workload-monitoring.service';
+import { 
+  SHIFT_TYPE_CONFIGS, 
+  ShiftTypeConfig, 
+  ShiftSchedule 
+} from './shift-type.config';
 
 // export interface AutoScheduleRequest {
 //   userId: number;

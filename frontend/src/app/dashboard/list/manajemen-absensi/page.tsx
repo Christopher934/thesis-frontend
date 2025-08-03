@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Users, Clock, AlertTriangle, CheckCircle, XCircle, Eye, Edit, Filter, Download } from 'lucide-react';
+import Pagination from '@/components/common/Pagination';
 
 interface User {
   namaDepan: string;
@@ -486,27 +487,12 @@ export default function ManajemenAbsensi() {
 
       {/* Pagination */}
       {absensiData.length > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Halaman {currentPage}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Sebelumnya
-            </button>
-            <button
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              disabled={absensiData.length < itemsPerPage}
-              className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Selanjutnya
-            </button>
-          </div>
-        </div>
+        <Pagination
+          totalItems={absensiData.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       )}
     </div>
   );

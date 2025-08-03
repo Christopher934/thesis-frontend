@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LaporanController } from './laporan.controller';
 import { LaporanService } from './laporan.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { WorkloadMonitoringService } from '../services/workload-monitoring.service';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     }),
   ],
   controllers: [LaporanController],
-  providers: [LaporanService],
-  exports: [LaporanService],
+  providers: [LaporanService, WorkloadMonitoringService],
+  exports: [LaporanService, WorkloadMonitoringService],
 })
 export class LaporanModule {}

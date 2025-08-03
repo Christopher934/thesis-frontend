@@ -24,6 +24,17 @@ model User {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   telegramChatId String?
+  
+  // New fields for enhanced monitoring
+  totalShifts    Int        @default(0)  // Total shifts assigned
+  currentMonthShifts Int    @default(0)  // Shifts this month  
+  consecutiveDays    Int    @default(0)  // Consecutive working days
+  lastShiftDate      DateTime?           // Last shift date
+  workloadStatus     WorkloadStatus @default(NORMAL) // Current workload status
+  skillLevel         SkillLevel @default(JUNIOR)     // Skill level for better assignment
+  preferredLocations String?            // JSON array of preferred locations
+  maxShiftsPerMonth  Int    @default(25) // Maximum shifts per month limit
+  
   absensi        Absensi[]
   loginLogs      LoginLog[]
   notifications  Notifikasi[]
@@ -34,6 +45,18 @@ model User {
   supervisorApprovals ShiftSwap[] @relation("SupervisorApprover")
   targetApprovals     ShiftSwap[] @relation("TargetApprover")
   unitHeadApprovals   ShiftSwap[] @relation("UnitHeadApprover")
+  
+  // New relation for shift statistics
+  shiftStats     UserShiftStats?
+  preferences    UserPreference[]
+  leaves         Leave[]
+  
+  // New relations for enhanced features
+  auditLogs      AuditLog[]
+  overtimeRequests OvertimeRequest[]
+  leaveRequests    LeaveRequest[]
+  overtimeReviews  OvertimeRequest[] @relation("OvertimeReviewer")
+  leaveReviews     LeaveRequest[]    @relation("LeaveReviewer")
 
   @@map("users")
 }
@@ -52,11 +75,63 @@ model Shift {
   tipeshift   String?
   shiftNumber Int?
   shiftType   ShiftType?
+  
+  // Enhanced shift tracking
+  isAutoAssigned Boolean    @default(false)  // Was this shift auto-assigned by AI?
+  priority       ShiftPriority @default(NORMAL)  // Shift priority level
+  difficulty     ShiftDifficulty @default(STANDARD)  // Shift difficulty level
+  overtimeHours  Float?      // Overtime hours if any
+  notes          String?     // Additional notes for the shift
+  
   absensi     Absensi?
   user        User         @relation("ShiftPegawai", fields: [userId], references: [id], onDelete: Cascade)
   swap        ShiftSwap?
 
   @@map("shifts")
+}
+
+// New model for detailed user shift statistics
+model UserShiftStats {
+  id                    Int      @id @default(autoincrement())
+  userId                Int      @unique
+  totalShifts           Int      @default(0)
+  totalHours            Float    @default(0)
+  totalOvertimeHours    Float    @default(0)
+  shiftsThisMonth       Int      @default(0)
+  shiftsThisWeek        Int      @default(0)
+  consecutiveDays       Int      @default(0)
+  maxConsecutiveDays    Int      @default(0)
+  avgShiftsPerMonth     Float    @default(0)
+  lastShiftDate         DateTime?
+  nextShiftDate         DateTime?
+  workloadScore         Float    @default(0)    // 0-100 workload score
+  performanceRating     Float    @default(5.0)  // 1-10 performance rating
+  preferredShiftTypes   String?  // JSON array of preferred shift types
+  unavailableDates      String?  // JSON array of unavailable dates
+  skillRatings          String?  // JSON object of skill ratings per location
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_shift_stats")
+}
+
+// New model for location capacity tracking
+model LocationCapacity {
+  id                Int      @id @default(autoincrement())
+  location          LokasiShift
+  date              DateTime
+  maxCapacity       Int
+  currentOccupancy  Int      @default(0)
+  utilizationRate   Float    @default(0)
+  peakHours         String?  // JSON array of peak hours
+  isOverloaded      Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([location, date])
+  @@map("location_capacities")
 }
 
 model Absensi {
@@ -241,6 +316,12 @@ enum LokasiShift {
   SUPIR
   ICU
   NICU
+  // Add new locations for better coverage
+  HEMODIALISA
+  FISIOTERAPI
+  KAMAR_OPERASI
+  RECOVERY_ROOM
+  EMERGENCY_ROOM
 }
 
 enum TipeShift {
@@ -249,6 +330,11 @@ enum TipeShift {
   MALAM
   ON_CALL
   JAGA
+  // Add new shift types
+  LIBUR
+  CUTI
+  SAKIT
+  TRAINING
 }
 
 enum ShiftType {
@@ -264,6 +350,43 @@ enum ShiftType {
   LAUNDRY_REGULER
   CLEANING_SERVICE
   SUPIR_2_SHIFT
+  // Add new shift types for enhanced locations
+  HEMODIALISA_2_SHIFT
+  FISIOTERAPI_REGULER
+  KAMAR_OPERASI_3_SHIFT
+}
+
+// New enums for enhanced functionality
+enum WorkloadStatus {
+  UNDERLOADED    // < 50% capacity
+  NORMAL         // 50-80% capacity
+  HIGH           // 80-90% capacity
+  OVERWORKED     // 90-100% capacity
+  CRITICAL       // > 100% capacity
+}
+
+enum SkillLevel {
+  TRAINEE        // New employee, needs supervision
+  JUNIOR         // Basic skills, can handle standard shifts
+  SENIOR         // Advanced skills, can handle complex shifts
+  EXPERT         // Expert level, can train others
+  SPECIALIST     // Specialized skills for specific areas
+}
+
+enum ShiftPriority {
+  LOW            // Can be postponed if needed
+  NORMAL         // Standard priority
+  HIGH           // Important, should be filled
+  URGENT         // Critical, must be filled immediately
+  EMERGENCY      // Emergency coverage needed
+}
+
+enum ShiftDifficulty {
+  EASY           // Low complexity, suitable for juniors
+  STANDARD       // Normal complexity
+  CHALLENGING    // High complexity, needs experienced staff
+  CRITICAL       // Critical care, needs specialists
+  EMERGENCY      // Emergency situations
 }
 
 enum JenisNotifikasi {
@@ -289,4 +412,157 @@ enum StatusNotifikasi {
   UNREAD
   READ
   ARCHIVED
+}
+
+// Model for user preferences
+model UserPreference {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  preferenceType  PreferenceType
+  value           String   // JSON value for complex preferences
+  priority        Int      @default(1) // 1=low, 5=high
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_preferences")
+}
+
+// Model for leave/cuti requests
+model Leave {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  startDate   DateTime
+  endDate     DateTime
+  leaveType   LeaveType
+  reason      String?
+  status      LeaveStatus @default(PENDING)
+  requestedAt DateTime    @default(now())
+  approvedAt  DateTime?
+  approvedBy  Int?
+  rejectedAt  DateTime?
+  notes       String?
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("leaves")
+}
+
+enum PreferenceType {
+  PREFERRED_SHIFT_TYPE
+  DAY_OFF
+  LOCATION_PREFERENCE
+  TIME_PREFERENCE
+  WORKLOAD_LIMIT
+  NOTIFICATION_SETTING
+}
+
+enum LeaveType {
+  ANNUAL_LEAVE
+  SICK_LEAVE
+  EMERGENCY_LEAVE
+  MATERNITY_LEAVE
+  PERSONAL_LEAVE
+  STUDY_LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+// New model for audit trail
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      Int
+  action      AuditAction
+  entityType  EntityType
+  entityId    String
+  oldData     String?   // JSON string of old data
+  newData     String?   // JSON string of new data
+  reason      String?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("audit_logs")
+}
+
+// New model for overtime requests
+model OvertimeRequest {
+  id              String    @id @default(cuid())
+  userId          Int
+  requestDate     DateTime
+  shiftDate       DateTime
+  hoursRequested  Float
+  reason          String
+  status          RequestStatus @default(PENDING)
+  requestedAt     DateTime  @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      Int?
+  reviewerNotes   String?
+  approvedHours   Float?
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer        User?     @relation("OvertimeReviewer", fields: [reviewedBy], references: [id])
+  
+  @@map("overtime_requests")
+}
+
+// New model for leave requests
+model LeaveRequest {
+  id              String      @id @default(cuid())
+  userId          Int
+  leaveType       LeaveType
+  startDate       DateTime
+  endDate         DateTime
+  totalDays       Int
+  reason          String
+  status          RequestStatus @default(PENDING)
+  requestedAt     DateTime    @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      Int?
+  reviewerNotes   String?
+  attachments     String?     // JSON array of file paths
+  emergencyContact String?
+  
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer        User?       @relation("LeaveReviewer", fields: [reviewedBy], references: [id])
+  
+  @@map("leave_requests")
+}
+
+// Enhanced enums
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  REQUEST
+  CANCEL
+  VIEW
+}
+
+enum EntityType {
+  SHIFT
+  OVERTIME
+  LEAVE
+  SWAP
+  USER
+  ATTENDANCE
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  EXPIRED
 }

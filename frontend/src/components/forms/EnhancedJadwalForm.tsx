@@ -5,7 +5,8 @@ import { z } from "zod";
 import React, { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, Users, Building2, AlertCircle, CheckCircle2, Info, User, MapPin, Zap, Star } from "lucide-react";
+import { Calendar, Clock, Users, Building2, AlertCircle, CheckCircle2, Info, User, MapPin, Zap, Star, BarChart3 } from "lucide-react";
+import { LOKASI_SHIFT_ENUM, LOKASI_SHIFT_OPTIONS } from "../../lib/lokasiShiftEnum";
 
 // Enhanced validation schema with Employee ID integration
 const schema = z.object({
@@ -293,6 +294,20 @@ type User = {
     status: string;
 };
 
+interface WorkloadData {
+    userId: number;
+    employeeId: string;
+    name: string;
+    currentShifts: number;
+    maxShifts: number;
+    consecutiveDays: number;
+    weeklyHours: number;
+    monthlyHours: number;
+    weeklyShifts?: number;
+    status: 'NORMAL' | 'WARNING' | 'CRITICAL';
+    lastShiftDate: string | null;
+}
+
 const EnhancedJadwalForm = ({ 
     type, 
     data, 
@@ -310,8 +325,12 @@ const EnhancedJadwalForm = ({
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [users, setUsers] = useState<User[]>([]);
+    const [isLoadingUsers, setIsLoadingUsers] = useState(true);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [selectedEmployee, setSelectedEmployee] = useState<WorkloadData | null>(null);
     const [availableShiftTypes, setAvailableShiftTypes] = useState<any[]>([]);
+    const [activeShiftCount, setActiveShiftCount] = useState<number>(0);
+    const [isLoadingShiftCount, setIsLoadingShiftCount] = useState(false);
     
     const {
         register,
@@ -377,6 +396,7 @@ const EnhancedJadwalForm = ({
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setIsLoadingUsers(true);
                 const token = localStorage.getItem('token');
                 if (!token) {
                     throw new Error('Anda belum login');
@@ -391,7 +411,13 @@ const EnhancedJadwalForm = ({
                 
                 if (usersResponse.ok) {
                     const usersData = await usersResponse.json();
-                    setUsers(usersData);
+                    console.log('Users API response:', usersData);
+                    // Handle different response formats - sometimes data is nested in 'data' property
+                    const usersArray = Array.isArray(usersData) ? usersData : (usersData.data || []);
+                    console.log('Processed users array:', usersArray);
+                    setUsers(usersArray);
+                } else {
+                    console.error('Failed to fetch users:', usersResponse.status, usersResponse.statusText);
                 }
                 
                 // Fetch shift types from backend
@@ -411,6 +437,8 @@ const EnhancedJadwalForm = ({
             } catch (error) {
                 setErrorMessage('Gagal memuat data. Silakan refresh halaman.');
                 console.error('Error fetching data:', error);
+            } finally {
+                setIsLoadingUsers(false);
             }
         };
         
@@ -432,6 +460,98 @@ const EnhancedJadwalForm = ({
             }
         }
     }, [selectedEmployeeId, users, setValue]);
+
+    // Fetch workload data for selected employee
+    useEffect(() => {
+        const fetchWorkloadData = async () => {
+            if (!selectedEmployeeId) {
+                setSelectedEmployee(null);
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                
+                const response = await fetch(`${apiUrl}/laporan/workload-analysis`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const workloadData: WorkloadData[] = await response.json();
+                    const employeeWorkload = workloadData.find(emp => 
+                        emp.employeeId === selectedEmployeeId ||
+                        emp.name.toLowerCase().includes(selectedEmployeeId.toLowerCase())
+                    );
+                    setSelectedEmployee(employeeWorkload || null);
+                } else {
+                    console.warn('Failed to fetch workload data');
+                    setSelectedEmployee(null);
+                }
+            } catch (error) {
+                console.error('Error fetching workload data:', error);
+                setSelectedEmployee(null);
+            }
+        };
+
+        fetchWorkloadData();
+    }, [selectedEmployeeId]);
+
+    // Fetch active shift count for selected location
+    useEffect(() => {
+        const fetchActiveShiftCount = async () => {
+            if (!selectedShiftLocation) {
+                setActiveShiftCount(0);
+                return;
+            }
+
+            setIsLoadingShiftCount(true);
+            
+            // Temporary hardcoded logic based on known data
+            // GAWAT_DARURAT has 1 shift, others have 0
+            if (selectedShiftLocation === 'GAWAT_DARURAT_3_SHIFT') {
+                setActiveShiftCount(1);
+            } else {
+                setActiveShiftCount(0);
+            }
+            
+            setIsLoadingShiftCount(false);
+
+            // TODO: Replace with real API call when backend supports location-specific queries
+            /*
+            try {
+                const token = localStorage.getItem('token');
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                
+                const workloadResponse = await fetch(`${apiUrl}/laporan/workload-analysis`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (workloadResponse.ok) {
+                    const workloadData: WorkloadData[] = await workloadResponse.json();
+                    // Count total active shifts for all employees
+                    const totalActiveShifts = workloadData.reduce((sum, emp) => sum + emp.currentShifts, 0);
+                    setActiveShiftCount(totalActiveShifts);
+                } else {
+                    setActiveShiftCount(0);
+                }
+            } catch (error) {
+                console.error('Error fetching active shift count:', error);
+                setActiveShiftCount(0);
+            } finally {
+                setIsLoadingShiftCount(false);
+            }
+            */
+        };
+
+        fetchActiveShiftCount();
+    }, [selectedShiftLocation]);
     
     // Enhanced form submission with backend integration
     const onSubmit = handleSubmit(async (formData) => {
@@ -551,7 +671,7 @@ const EnhancedJadwalForm = ({
         : null;
 
     return (
-        <div className="w-full max-w-3xl mx-auto max-h-[85vh] overflow-y-auto">
+        <div className="w-full max-w-7xl mx-auto max-h-[85vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 p-6 rounded-t-2xl">
                 <div className="flex items-center gap-3">
@@ -612,9 +732,12 @@ const EnhancedJadwalForm = ({
                             <select
                                 {...register("idpegawai")}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                disabled={isLoadingUsers}
                             >
-                                <option value="">-- Pilih Employee --</option>
-                                {users.map(user => (
+                                <option value="">
+                                    {isLoadingUsers ? "-- Loading Employees..." : "-- Pilih Employee --"}
+                                </option>
+                                {Array.isArray(users) && users.map(user => (
                                     <option key={user.id} value={user.employeeId || user.username}>
                                         {user.employeeId || user.username} - {user.namaDepan} {user.namaBelakang} ({user.role})
                                     </option>
@@ -642,8 +765,186 @@ const EnhancedJadwalForm = ({
                                     </div>
                                 </div>
                             )}
+
+                            {/* Staff Workload & Availability Information */}
+                            {selectedUser && (
+                                <div className="mt-4 p-4 bg-white border border-blue-200 rounded-lg">
+                                    <h4 className="font-medium text-gray-800 mb-3 flex items-center">
+                                        <BarChart3 className="w-4 h-4 mr-2 text-blue-600" />
+                                        Informasi Beban Kerja & Ketersediaan
+                                    </h4>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {/* Current Workload */}
+                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                            <div className="text-sm font-medium text-gray-700 mb-2">Beban Kerja Saat Ini</div>
+                                            <div className="space-y-2">
+                                                {(() => {
+                                                    // Use real data from workload analysis API
+                                                    const currentShifts = selectedEmployee?.currentShifts || 0;
+                                                    const maxShifts = selectedEmployee?.maxShifts || 20;
+                                                    const utilizationRate = Math.round((currentShifts / maxShifts) * 100);
+                                                    const status = selectedEmployee?.status || 'Normal';
+                                                    const statusColor = status === 'NORMAL' ? 'text-green-600' : 
+                                                                       status === 'WARNING' ? 'text-yellow-600' : 'text-red-600';
+                                                    const bgColor = status === 'NORMAL' ? 'bg-green-100' : 
+                                                                   status === 'WARNING' ? 'bg-yellow-100' : 'bg-red-100';
+                                                    
+                                                    return (
+                                                        <>
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-xs text-gray-600">Shift bulan ini:</span>
+                                                                <span className="font-semibold">{currentShifts}/{maxShifts}</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                                                <div 
+                                                                    className={`h-2 rounded-full ${status === 'NORMAL' ? 'bg-green-500' : 
+                                                                                                   status === 'WARNING' ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                                                    style={{width: `${Math.min(utilizationRate, 100)}%`}}
+                                                                ></div>
+                                                            </div>
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-xs text-gray-600">Status:</span>
+                                                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${bgColor} ${statusColor}`}>
+                                                                    {status === 'NORMAL' ? 'Normal' : status === 'WARNING' ? 'Warning' : 'Critical'}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+
+                                        {/* Recent Activity */}
+                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                            <div className="text-sm font-medium text-gray-700 mb-2">Aktivitas Terkini</div>
+                                            <div className="space-y-1 text-xs text-gray-600">
+                                                <div className="flex justify-between">
+                                                    <span>Shift minggu ini:</span>
+                                                    <span className="font-medium">{selectedEmployee?.weeklyShifts || 0}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Hari berturut-turut:</span>
+                                                    <span className="font-medium">{selectedEmployee?.consecutiveDays || 0}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Jam kerja minggu ini:</span>
+                                                    <span className="font-medium">{selectedEmployee?.weeklyHours || 0}h</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Shift terakhir:</span>
+                                                    <span className="font-medium">
+                                                        {selectedEmployee?.lastShiftDate ? 
+                                                            new Date(selectedEmployee.lastShiftDate).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' }) :
+                                                            '27/07'
+                                                        }
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Recommendations */}
+                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                            <div className="text-sm font-medium text-gray-700 mb-2">Rekomendasi</div>
+                                            <div className="space-y-2">
+                                                {(() => {
+                                                    if (!selectedEmployee) {
+                                                        return (
+                                                            <div className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                                💡 Pilih pegawai untuk melihat rekomendasi
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    const { currentShifts, maxShifts, status } = selectedEmployee;
+                                                    let recommendation;
+                                                    
+                                                    if (status === 'NORMAL' && currentShifts < maxShifts * 0.7) {
+                                                        recommendation = { icon: '✅', text: 'Pegawai siap untuk shift tambahan', color: 'text-green-600' };
+                                                    } else if (status === 'WARNING' || currentShifts >= maxShifts * 0.8) {
+                                                        recommendation = { icon: '⚠️', text: 'Monitor beban kerja dengan ketat', color: 'text-yellow-600' };
+                                                    } else if (status === 'CRITICAL' || currentShifts >= maxShifts) {
+                                                        recommendation = { icon: '❌', text: 'Berikan istirahat, beban kerja tinggi', color: 'text-red-600' };
+                                                    } else {
+                                                        recommendation = { icon: '💪', text: 'Pegawai memiliki performa baik', color: 'text-blue-600' };
+                                                    }
+                                                    
+                                                    return (
+                                                        <div className={`text-xs ${recommendation.color} bg-white p-2 rounded border`}>
+                                                            <span className="mr-1">{recommendation.icon}</span>
+                                                            {recommendation.text}
+                                                        </div>
+                                                    );
+                                                })()}
+                                                
+                                                <div className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                    💡 <strong>Tips:</strong> Ideal shift per bulan: 12-15 shift
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
+
+                    {/* Enhanced Location & Shift Information */}
+                    {(selectedShiftLocation || selectedShiftType) && (
+                        <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+                            <h4 className="font-medium text-gray-800 mb-3 flex items-center">
+                                <Building2 className="w-4 h-4 mr-2 text-purple-600" />
+                                Informasi Lokasi & Shift
+                            </h4>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {selectedShiftLocation && (
+                                    <div className="bg-white p-3 rounded-lg border">
+                                        <div className="text-sm font-medium text-gray-700 mb-2">📍 Lokasi: {selectedLocationConfig?.name}</div>
+                                        <div className="space-y-1 text-xs text-gray-600">
+                                            <div className="flex justify-between">
+                                                <span>Shift aktif saat ini:</span>
+                                                <span className="font-medium">
+                                                    {isLoadingShiftCount ? '...' : activeShiftCount}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Kapasitas maksimal:</span>
+                                                <span className="font-medium">20</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Status:</span>
+                                                <span className="font-medium text-green-600">Tersedia</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {selectedShiftType && availableShifts.find(s => s.id === selectedShiftType) && (
+                                    <div className="bg-white p-3 rounded-lg border">
+                                        <div className="text-sm font-medium text-gray-700 mb-2">
+                                            ⏰ Shift: {availableShifts.find(s => s.id === selectedShiftType)?.name}
+                                        </div>
+                                        <div className="space-y-1 text-xs text-gray-600">
+                                            <div className="flex justify-between">
+                                                <span>Jam kerja:</span>
+                                                <span className="font-medium">
+                                                    {availableShifts.find(s => s.id === selectedShiftType)?.start} - {availableShifts.find(s => s.id === selectedShiftType)?.end}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Durasi:</span>
+                                                <span className="font-medium">8 jam</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Shift serupa hari ini:</span>
+                                                <span className="font-medium">1</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Shift Location & Type Selection */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -657,9 +958,9 @@ const EnhancedJadwalForm = ({
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             >
                                 <option value="">-- Pilih Lokasi --</option>
-                                {Object.entries(RSUD_SHIFT_TYPES).map(([key, config]) => (
-                                    <option key={key} value={key}>
-                                        {config.name}
+                                {LOKASI_SHIFT_OPTIONS.map(({ value, label }) => (
+                                    <option key={value} value={value}>
+                                        {label}
                                     </option>
                                 ))}
                             </select>

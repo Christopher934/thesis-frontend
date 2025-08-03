@@ -7,27 +7,60 @@ import { shouldRedirectFromSignIn } from '@/lib/authUtils';
 export default function RedirectIfLoggedIn({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
+  const [debugInfo, setDebugInfo] = useState('');
 
   useEffect(() => {
     const checkAuth = () => {
-      const { redirect, path } = shouldRedirectFromSignIn();
-      
-      if (redirect && path) {
-        router.replace(path);
-      } else {
+      try {
+        console.log('[RedirectIfLoggedIn] Checking authentication...');
+        const { redirect, path } = shouldRedirectFromSignIn();
+        
+        console.log('[RedirectIfLoggedIn] Auth check result:', { redirect, path });
+        setDebugInfo(`Redirect: ${redirect}, Path: ${path}`);
+        
+        if (redirect && path) {
+          console.log('[RedirectIfLoggedIn] Redirecting to:', path);
+          setIsChecking(false); // Stop checking immediately
+          router.replace(path);
+          return true; // Indicate redirect happened
+        } else {
+          console.log('[RedirectIfLoggedIn] No redirect needed, user not authenticated');
+          setIsChecking(false);
+          return false; // No redirect needed
+        }
+      } catch (error) {
+        console.error('[RedirectIfLoggedIn] Error during auth check:', error);
         setIsChecking(false);
+        return false;
       }
     };
 
     // Run immediately
-    checkAuth();
+    const redirected = checkAuth();
 
-    // Set up interval to check continuously (prevent manual navigation back)
-    const interval = setInterval(checkAuth, 1000);
+    // Don't set up interval at all - single check is enough
+    console.log('[RedirectIfLoggedIn] Initial check completed, redirected:', redirected);
     
-    return () => clearInterval(interval);
+    // Cleanup function
+    return () => {
+      console.log('[RedirectIfLoggedIn] Component cleanup');
+    };
   }, [router]);
 
-  // Only render children when we've confirmed the user is not logged in
-  return isChecking ? <div className="flex justify-center items-center h-screen">Checking authentication...</div> : <>{children}</>;
+  // Show debug info in development
+  if (isChecking) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div>Checking authentication...</div>
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-xs text-gray-500 mt-2">{debugInfo}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }

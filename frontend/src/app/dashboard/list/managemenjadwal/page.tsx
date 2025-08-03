@@ -588,6 +588,15 @@ const ManagemenJadwalPage = () => {
         }
     ]);
     const [autoScheduleResult, setAutoScheduleResult] = useState<AutoScheduleResult | null>(null);
+    const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+    const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
+
+    // Bulk Scheduling States
+    const [isBulkScheduleModalOpen, setIsBulkScheduleModalOpen] = useState(false);
+    const [bulkScheduleType, setBulkScheduleType] = useState<'weekly' | 'monthly'>('weekly');
+    const [isBulkScheduling, setIsBulkScheduling] = useState(false);
+    const [bulkScheduleError, setBulkScheduleError] = useState<string | null>(null);
+    const [bulkScheduleResult, setBulkScheduleResult] = useState<BulkScheduleResult | null>(null);
     
     // Debug: Monitor modal state changes
     useEffect(() => {
@@ -613,15 +622,6 @@ const ManagemenJadwalPage = () => {
         setIsBulkScheduleModalOpen(true);
         setIsCreateShiftModalOpen(true);
     };
-    const [isAutoScheduling, setIsAutoScheduling] = useState(false);
-    const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
-
-    // Bulk Scheduling States
-    const [isBulkScheduleModalOpen, setIsBulkScheduleModalOpen] = useState(false);
-    const [bulkScheduleType, setBulkScheduleType] = useState<'weekly' | 'monthly'>('weekly');
-    const [isBulkScheduling, setIsBulkScheduling] = useState(false);
-    const [bulkScheduleError, setBulkScheduleError] = useState<string | null>(null);
-    const [bulkScheduleResult, setBulkScheduleResult] = useState<BulkScheduleResult | null>(null);
     
     // Weekly schedule state
     const [weeklyRequest, setWeeklyRequest] = useState<WeeklyScheduleRequest>({

@@ -588,6 +588,31 @@ const ManagemenJadwalPage = () => {
         }
     ]);
     const [autoScheduleResult, setAutoScheduleResult] = useState<AutoScheduleResult | null>(null);
+    
+    // Debug: Monitor modal state changes
+    useEffect(() => {
+        console.log('Modal states changed:', {
+            isAutoScheduleModalOpen,
+            isBulkScheduleModalOpen,
+            isCreateShiftModalOpen
+        });
+    }, [isAutoScheduleModalOpen, isBulkScheduleModalOpen, isCreateShiftModalOpen]);
+    
+    // Debug function to test state
+    const testModalStates = () => {
+        console.log('Testing modal states...');
+        console.log('Current states:', {
+            isAutoScheduleModalOpen,
+            isBulkScheduleModalOpen,
+            isCreateShiftModalOpen
+        });
+        
+        // Test if setters work
+        console.log('Setting all modals to true...');
+        setIsAutoScheduleModalOpen(true);
+        setIsBulkScheduleModalOpen(true);
+        setIsCreateShiftModalOpen(true);
+    };
     const [isAutoScheduling, setIsAutoScheduling] = useState(false);
     const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
 
@@ -1817,7 +1842,16 @@ const ManagemenJadwalPage = () => {
                         {/* Auto Schedule AI Button - Primary CTA */}
                         <button 
                             className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all shadow-lg font-medium"
-                            onClick={() => setIsAutoScheduleModalOpen(true)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Auto Schedule AI button clicked');
+                                try {
+                                    setIsAutoScheduleModalOpen(true);
+                                } catch (error) {
+                                    console.error('Error opening Auto Schedule modal:', error);
+                                }
+                            }}
                             title="Buat jadwal otomatis menggunakan AI Hybrid Algorithm"
                         >
                             <Brain className="w-5 h-5" />
@@ -1827,7 +1861,16 @@ const ManagemenJadwalPage = () => {
                         {/* Bulk Schedule Button */}
                         <button 
                             className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg font-medium"
-                            onClick={() => setIsBulkScheduleModalOpen(true)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Bulk Schedule button clicked');
+                                try {
+                                    setIsBulkScheduleModalOpen(true);
+                                } catch (error) {
+                                    console.error('Error opening Bulk Schedule modal:', error);
+                                }
+                            }}
                             title="Buat jadwal mingguan atau bulanan"
                         >
                             <Calendar className="w-5 h-5" />
@@ -1842,9 +1885,26 @@ const ManagemenJadwalPage = () => {
                             <p className="text-xs text-gray-400 mb-2">atau</p>
                             <button 
                                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm"
-                                onClick={() => setIsCreateShiftModalOpen(true)}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('Manual Add button clicked');
+                                    try {
+                                        setIsCreateShiftModalOpen(true);
+                                    } catch (error) {
+                                        console.error('Error opening Manual Add modal:', error);
+                                    }
+                                }}
                             >
                                 Tambah Jadwal Manual
+                            </button>
+                            
+                            {/* Debug Test Button */}
+                            <button 
+                                className="mt-2 px-3 py-1 bg-red-100 text-red-700 rounded text-xs"
+                                onClick={testModalStates}
+                            >
+                                🧪 Test Modal States
                             </button>
                         </div>
                     </div>

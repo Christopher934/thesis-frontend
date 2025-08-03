@@ -1829,89 +1829,8 @@ const ManagemenJadwalPage = () => {
         );
     }
     
-    if (jadwalData.length === 0) {
-        return (
-            <div className='bg-white p-4 rounded-md flex-1 m-4 mt-0 flex flex-col items-center justify-center min-h-[300px]'>
-                <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h3 className="text-xl font-semibold text-gray-500">Data Jadwal Kosong</h3>
-                <p className="text-gray-400 mt-2">Belum Ada Jadwal Shift Yang Tersedia</p>
-                {(userRole === "admin" || userRole === "supervisor") && (
-                    <div className="mt-6 flex flex-col items-center gap-4">
-                        {/* Auto Schedule AI Button - Primary CTA */}
-                        <button 
-                            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all shadow-lg font-medium"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('Auto Schedule AI button clicked');
-                                try {
-                                    setIsAutoScheduleModalOpen(true);
-                                } catch (error) {
-                                    console.error('Error opening Auto Schedule modal:', error);
-                                }
-                            }}
-                            title="Buat jadwal otomatis menggunakan AI Hybrid Algorithm"
-                        >
-                            <Brain className="w-5 h-5" />
-                            Gunakan Auto Schedule AI
-                        </button>
-                        
-                        {/* Bulk Schedule Button */}
-                        <button 
-                            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg font-medium"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('Bulk Schedule button clicked');
-                                try {
-                                    setIsBulkScheduleModalOpen(true);
-                                } catch (error) {
-                                    console.error('Error opening Bulk Schedule modal:', error);
-                                }
-                            }}
-                            title="Buat jadwal mingguan atau bulanan"
-                        >
-                            <Calendar className="w-5 h-5" />
-                            Jadwal Mingguan/Bulanan
-                        </button>
-                        <p className="text-sm text-gray-500 text-center max-w-md">
-                            Buat jadwal shift optimal secara otomatis menggunakan algoritma Greedy + Backtracking
-                        </p>
-                        
-                        {/* Alternative manual option */}
-                        <div className="text-center">
-                            <p className="text-xs text-gray-400 mb-2">atau</p>
-                            <button 
-                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    console.log('Manual Add button clicked');
-                                    try {
-                                        setIsCreateShiftModalOpen(true);
-                                    } catch (error) {
-                                        console.error('Error opening Manual Add modal:', error);
-                                    }
-                                }}
-                            >
-                                Tambah Jadwal Manual
-                            </button>
-                            
-                            {/* Debug Test Button */}
-                            <button 
-                                className="mt-2 px-3 py-1 bg-red-100 text-red-700 rounded text-xs"
-                                onClick={testModalStates}
-                            >
-                                🧪 Test Modal States
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
+    // Remove the early return for empty data - let the table handle empty state
+    // This allows the interface to remain consistent
     
     // Export functionality for analytics
     const exportToCSV = () => {
@@ -2298,16 +2217,6 @@ const ManagemenJadwalPage = () => {
                 </div>
             )}
 
-            {/* WORKLOAD ANALYSIS SECTION - Always Show */}
-            {jadwalData.length > 0 && (
-                <div className="mb-6">
-                    <WorkloadAnalysisSection 
-                        jadwalData={jadwalData}
-                        users={users}
-                    />
-                </div>
-            )}
-
             {/* CONTENT SECTION */}
             <div className="min-h-[600px]">
                 {isLoading ? (
@@ -2358,45 +2267,78 @@ const ManagemenJadwalPage = () => {
                         />
                     ) : (
                         /* Standard Table View */
-                        filteredShifts.length === 0 && searchTerm.trim() !== '' ? (
-                            <div className="flex flex-col items-center justify-center py-16 px-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                                <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                <h3 className="text-lg font-semibold text-gray-500 mb-2">Tidak ada hasil</h3>
-                                <p className="text-gray-400 mb-4">Tidak ada jadwal yang cocok dengan pencarian "{searchTerm}"</p>
-                                <button 
-                                    onClick={() => setSearchTerm('')}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                                >
-                                    Hapus Filter
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                <Table
-                                    columns={columns}
-                                    data={paginatedShifts}
-                                    renderRow={renderRow}
-                                />
-                                {/* PAGINATION */}
-                                {totalPages > 1 && (
-                                    <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
-                                        <p className="text-sm text-gray-700">
-                                            Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredShifts.length)} 
-                                            - {Math.min(currentPage * itemsPerPage, filteredShifts.length)} 
-                                            dari {filteredShifts.length} shift
-                                        </p>
-                                        <Pagination
-                                            currentPage={currentPage}
-                                            totalItems={filteredShifts.length}
-                                            itemsPerPage={itemsPerPage}
-                                            onPageChange={setCurrentPage}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        )
+                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            {filteredShifts.length === 0 && searchTerm.trim() !== '' ? (
+                                <div className="flex flex-col items-center justify-center py-16 px-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                                    <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    <h3 className="text-lg font-semibold text-gray-500 mb-2">Tidak ada hasil</h3>
+                                    <p className="text-gray-400 mb-4">Tidak ada jadwal yang cocok dengan pencarian "{searchTerm}"</p>
+                                    <button 
+                                        onClick={() => setSearchTerm('')}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                    >
+                                        Hapus Filter
+                                    </button>
+                                </div>
+                            ) : filteredShifts.length === 0 && jadwalData.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 px-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                                    <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <h3 className="text-xl font-semibold text-gray-500 mb-2">Data Jadwal Kosong</h3>
+                                    <p className="text-gray-400 mb-4">Belum Ada Jadwal Shift Yang Tersedia</p>
+                                    {(userRole === "admin" || userRole === "supervisor") && (
+                                        <div className="flex flex-col items-center gap-3">
+                                            <p className="text-sm text-blue-600 font-medium">
+                                                💡 Mulai buat jadwal shift pertama dengan:
+                                            </p>
+                                            <div className="flex flex-col gap-2">
+                                                <button 
+                                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all shadow-md text-sm font-medium"
+                                                    onClick={() => setIsAutoScheduleModalOpen(true)}
+                                                >
+                                                    <Brain className="w-4 h-4" />
+                                                    Auto Schedule AI
+                                                </button>
+                                                <button 
+                                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                                    onClick={() => setIsCreateShiftModalOpen(true)}
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    Tambah Manual
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    <Table
+                                        columns={columns}
+                                        data={paginatedShifts}
+                                        renderRow={renderRow}
+                                    />
+                                    {/* PAGINATION */}
+                                    {totalPages > 1 && (
+                                        <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
+                                            <p className="text-sm text-gray-700">
+                                                Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredShifts.length)} 
+                                                - {Math.min(currentPage * itemsPerPage, filteredShifts.length)} 
+                                                dari {filteredShifts.length} shift
+                                            </p>
+                                            <Pagination
+                                                currentPage={currentPage}
+                                                totalItems={filteredShifts.length}
+                                                itemsPerPage={itemsPerPage}
+                                                onPageChange={setCurrentPage}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     )
                 ) : (
                     <div className="bg-white rounded-lg border border-gray-200 p-6">

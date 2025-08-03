@@ -1842,7 +1842,7 @@ const ManagemenJadwalPage = () => {
                             <p className="text-xs text-gray-400 mb-2">atau</p>
                             <button 
                                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm"
-                                onClick={() => setIsModalOpen(true)}
+                                onClick={() => setIsCreateShiftModalOpen(true)}
                             >
                                 Tambah Jadwal Manual
                             </button>
@@ -2371,7 +2371,7 @@ const ManagemenJadwalPage = () => {
                                                     </button>
                                                     <button 
                                                         className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                                                        onClick={() => setIsModalOpen(true)}
+                                                        onClick={() => setIsCreateShiftModalOpen(true)}
                                                     >
                                                         <Plus className="w-4 h-4" />
                                                         Tambah Manual

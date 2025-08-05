@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Query, UseGuards, Req, Param } from '@nestjs/common';
-import { AdminShiftOptimizationService } from './admin-shift-optimization.service';
+import { AdminShiftOptimizationService, SchedulingResult } from './admin-shift-optimization.service';
 import { AdminMonitoringService } from './admin-monitoring.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -385,16 +385,47 @@ export class AdminShiftOptimizationController {
 
   // Generate monthly schedule automatically  
   @Post('create-monthly-schedule')
-  async createMonthlySchedule(@Body() request: MonthlyScheduleRequest, @Req() req: UserRequest) {
+  async createMonthlySchedule(
+    @Body() request: MonthlyScheduleRequest,
+    @Req() req: UserRequest,
+  ): Promise<{
+    success: boolean;
+    monthlySchedule: SchedulingResult;
+    message: string;
+    notification?: {
+      type: 'success' | 'warning' | 'error' | 'info';
+      title: string;
+      message: string;
+      actions?: Array<{
+        label: string;
+        action: string;
+        style: 'primary' | 'secondary' | 'danger';
+      }>;
+      details?: any;
+      errorBreakdown?: Array<{
+        type: string;
+        count: number;
+        severity: string;
+        message: string;
+      }>;
+    };
+  }> {
     this.checkAdminAccess(req);
 
     try {
       console.log('📅 Creating monthly schedule:', request);
-      const result = await this.adminOptimizationService.createMonthlySchedule(request);
+      const result =
+        await this.adminOptimizationService.createMonthlySchedule(request);
+      
+      // Generate detailed notification with error breakdown
+      const notification =
+        await this.adminOptimizationService.getSchedulingNotification(result);
+      
       return {
-        success: true,
+        success: result.success,
         monthlySchedule: result,
-        message: `Generated ${result.totalShifts} shifts for ${request.month}/${request.year}`
+        message: notification.message,
+        notification,
       };
     } catch (error) {
       console.error('Monthly schedule creation error:', error);

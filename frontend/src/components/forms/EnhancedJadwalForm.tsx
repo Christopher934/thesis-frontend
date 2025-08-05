@@ -313,13 +313,15 @@ const EnhancedJadwalForm = ({
     data, 
     onClose, 
     onCreate, 
-    onUpdate 
+    onUpdate,
+    onError 
 }: { 
     type: "create" | "update"; 
     data?: any; 
     onClose: () => void;
     onCreate: (newData: any) => void;
     onUpdate?: (updatedData: any) => void;
+    onError?: (error: any) => void;
 }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -404,7 +406,7 @@ const EnhancedJadwalForm = ({
                 
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
                 
-                // Fetch users
+                // Fetch users with workload status filtering
                 const usersResponse = await fetch(`${apiUrl}/users`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -413,8 +415,41 @@ const EnhancedJadwalForm = ({
                     const usersData = await usersResponse.json();
                     console.log('Users API response:', usersData);
                     // Handle different response formats - sometimes data is nested in 'data' property
-                    const usersArray = Array.isArray(usersData) ? usersData : (usersData.data || []);
-                    console.log('Processed users array:', usersArray);
+                    let usersArray = Array.isArray(usersData) ? usersData : (usersData.data || []);
+                    
+                    // Fetch workload status to filter disabled users
+                    try {
+                        const workloadResponse = await fetch(`${apiUrl}/laporan/workload-validation`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        if (workloadResponse.ok) {
+                            const workloadData = await workloadResponse.json();
+                            const workloadStatuses = Array.isArray(workloadData) ? workloadData : (workloadData.data || []);
+                            
+                            // Filter out disabled users who don't have approved overwork requests
+                            usersArray = usersArray.filter(user => {
+                                const workloadStatus = workloadStatuses.find(status => 
+                                    status.employeeId === user.employeeId || 
+                                    status.userId === user.id
+                                );
+                                
+                                // Include user if:
+                                // 1. No workload status found (assume available)
+                                // 2. User is not disabled for shifts
+                                // 3. User is disabled but has approved overwork request
+                                return !workloadStatus || 
+                                       !workloadStatus.isDisabledForShifts || 
+                                       (workloadStatus.isDisabledForShifts && workloadStatus.hasApprovedOverworkRequest);
+                            });
+                            
+                            console.log('Users after filtering disabled:', usersArray.length, 'out of', (Array.isArray(usersData) ? usersData : (usersData.data || [])).length);
+                        }
+                    } catch (workloadError) {
+                        console.warn('Could not fetch workload status, showing all users:', workloadError);
+                    }
+                    
+                    console.log('Processed users array (after filtering disabled):', usersArray);
                     setUsers(usersArray);
                 } else {
                     console.error('Failed to fetch users:', usersResponse.status, usersResponse.statusText);
@@ -469,32 +504,37 @@ const EnhancedJadwalForm = ({
                 return;
             }
 
-            try {
-                const token = localStorage.getItem('token');
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-                
-                const response = await fetch(`${apiUrl}/laporan/workload-analysis`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+            // Debounce to avoid too frequent API calls
+            const timeoutId = setTimeout(async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                    
+                    const response = await fetch(`${apiUrl}/laporan/workload-analysis`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
 
-                if (response.ok) {
-                    const workloadData: WorkloadData[] = await response.json();
-                    const employeeWorkload = workloadData.find(emp => 
-                        emp.employeeId === selectedEmployeeId ||
-                        emp.name.toLowerCase().includes(selectedEmployeeId.toLowerCase())
-                    );
-                    setSelectedEmployee(employeeWorkload || null);
-                } else {
-                    console.warn('Failed to fetch workload data');
+                    if (response.ok) {
+                        const workloadData: WorkloadData[] = await response.json();
+                        const employeeWorkload = workloadData.find(emp => 
+                            emp.employeeId === selectedEmployeeId ||
+                            emp.name.toLowerCase().includes(selectedEmployeeId.toLowerCase())
+                        );
+                        setSelectedEmployee(employeeWorkload || null);
+                    } else {
+                        console.warn('Failed to fetch workload data');
+                        setSelectedEmployee(null);
+                    }
+                } catch (error) {
+                    console.error('Error fetching workload data:', error);
                     setSelectedEmployee(null);
                 }
-            } catch (error) {
-                console.error('Error fetching workload data:', error);
-                setSelectedEmployee(null);
-            }
+            }, 500); // 500ms debounce
+
+            return () => clearTimeout(timeoutId);
         };
 
         fetchWorkloadData();
@@ -553,7 +593,7 @@ const EnhancedJadwalForm = ({
         fetchActiveShiftCount();
     }, [selectedShiftLocation]);
     
-    // Enhanced form submission with backend integration
+    // Enhanced form submission with comprehensive workload validation
     const onSubmit = handleSubmit(async (formData) => {
         setIsSubmitting(true);
         setErrorMessage(null);
@@ -565,14 +605,7 @@ const EnhancedJadwalForm = ({
                 throw new Error('Anda belum login');
             }
             
-            // Validate date for shift type
-            if (formData.tanggal && selectedShiftLocation) {
-                const validationError = validateDateForShiftType(formData.tanggal, selectedShiftLocation);
-                if (validationError) {
-                    throw new Error(validationError);
-                }
-            }
-            
+            // Step 1: Pre-validation checks
             if (!formData.userId || !formData.idpegawai) {
                 throw new Error('Employee ID tidak valid. Silakan pilih dari daftar yang tersedia.');
             }
@@ -582,7 +615,84 @@ const EnhancedJadwalForm = ({
                 throw new Error('Employee tidak ditemukan. Silakan pilih employee yang valid.');
             }
             
-            // Enhanced payload with shift type integration
+            // Step 2: Validate date for shift type
+            if (formData.tanggal && selectedShiftLocation) {
+                const validationError = validateDateForShiftType(formData.tanggal, selectedShiftLocation);
+                if (validationError) {
+                    throw new Error(validationError);
+                }
+            }
+            
+            // Step 3: Pre-submission workload validation
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            
+            try {
+                const workloadResponse = await fetch(`${apiUrl}/laporan/workload-validation`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (workloadResponse.ok) {
+                    const workloadData = await workloadResponse.json();
+                    const workloadStatuses = Array.isArray(workloadData) ? workloadData : (workloadData.data || []);
+                    
+                    const userWorkload = workloadStatuses.find(status => 
+                        status.employeeId === user.employeeId || 
+                        status.userId === user.id
+                    );
+                    
+                    if (userWorkload) {
+                        // Check if user is disabled and needs overwork approval
+                        if (userWorkload.isDisabledForShifts && !userWorkload.hasApprovedOverworkRequest) {
+                            const needsOverworkRequest = userWorkload.status === 'OVERWORKED' || 
+                                                       userWorkload.weeklyHours >= userWorkload.maxWeeklyHours ||
+                                                       userWorkload.monthlyHours >= userWorkload.maxMonthlyHours;
+                            
+                            if (needsOverworkRequest) {
+                                throw new Error(`🚫 WORKLOAD LIMIT EXCEEDED\n\n` +
+                                    `Employee: ${user.namaDepan} ${user.namaBelakang}\n` +
+                                    `Status: ${userWorkload.status}\n` +
+                                    `Weekly Hours: ${userWorkload.weeklyHours}/${userWorkload.maxWeeklyHours}\n` +
+                                    `Monthly Hours: ${userWorkload.monthlyHours}/${userWorkload.maxMonthlyHours}\n\n` +
+                                    `📋 REQUIRED ACTIONS:\n` +
+                                    `1. Employee must submit Overwork Request\n` +
+                                    `2. Request must be approved by supervisor\n` +
+                                    `3. Only then can additional shifts be assigned\n\n` +
+                                    `💡 ALTERNATIVES:\n` +
+                                    `• Assign shift to different employee\n` +
+                                    `• Reschedule to next week/month\n` +
+                                    `• Reduce existing shifts for this employee`);
+                            } else {
+                                throw new Error(`⚠️ EMPLOYEE UNAVAILABLE\n\n` +
+                                    `Employee: ${user.namaDepan} ${user.namaBelakang}\n` +
+                                    `Status: DISABLED for shift assignment\n\n` +
+                                    `📋 POSSIBLE REASONS:\n` +
+                                    `• Currently on leave or medical rest\n` +
+                                    `• Administrative restriction\n` +
+                                    `• Pending disciplinary action\n\n` +
+                                    `💡 CONTACT SUPERVISOR for clarification`);
+                            }
+                        }
+                        
+                        // Warning for users approaching limits
+                        const approachingWeeklyLimit = userWorkload.weeklyHours >= (userWorkload.maxWeeklyHours * 0.8);
+                        const approachingMonthlyLimit = userWorkload.monthlyHours >= (userWorkload.maxMonthlyHours * 0.8);
+                        
+                        if (approachingWeeklyLimit || approachingMonthlyLimit) {
+                            // Show warning but allow submission
+                            console.warn(`⚠️ WORKLOAD WARNING for ${user.namaDepan} ${user.namaBelakang}:`, {
+                                weeklyHours: userWorkload.weeklyHours,
+                                maxWeeklyHours: userWorkload.maxWeeklyHours,
+                                monthlyHours: userWorkload.monthlyHours,
+                                maxMonthlyHours: userWorkload.maxMonthlyHours
+                            });
+                        }
+                    }
+                }
+            } catch (workloadError) {
+                console.warn('Could not validate workload, proceeding with submission:', workloadError);
+            }
+            
+            // Step 4: Build payload for submission
             const payload = {
                 userId: user.id,
                 idpegawai: user.employeeId || user.username,
@@ -599,7 +709,7 @@ const EnhancedJadwalForm = ({
                 shiftOption: convertShiftNameForBackend(selectedShiftType, selectedShiftLocation)
             };
             
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            // Step 5: Submit to backend
             let response;
             
             if (type === 'create') {
@@ -636,8 +746,56 @@ const EnhancedJadwalForm = ({
             }
             
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                const errorData = await response.json().catch(() => ({ 
+                    message: `HTTP ${response.status}: ${response.statusText}` 
+                }));
+                
+                // Parse backend error for detailed feedback
+                let errorMessage = errorData.message || `Gagal ${type === 'create' ? 'membuat' : 'memperbarui'} jadwal shift`;
+                
+                // Check for specific conflict types
+                if (errorMessage.includes('conflict') || errorMessage.includes('konflik')) {
+                    const conflictDetails = errorData.conflicts || [];
+                    const workloadDetails = errorData.workloadIssues || [];
+                    const capacityDetails = errorData.capacityIssues || [];
+                    
+                    let detailedError = `🚫 SHIFT CREATION FAILED\n\n`;
+                    detailedError += `❌ Primary Issue: ${errorMessage}\n\n`;
+                    
+                    if (conflictDetails.length > 0) {
+                        detailedError += `⚠️ SCHEDULING CONFLICTS:\n`;
+                        conflictDetails.forEach((conflict: any, index: number) => {
+                            detailedError += `${index + 1}. ${conflict.type || 'Schedule'}: ${conflict.description || conflict.message}\n`;
+                        });
+                        detailedError += `\n`;
+                    }
+                    
+                    if (workloadDetails.length > 0) {
+                        detailedError += `📊 WORKLOAD ISSUES:\n`;
+                        workloadDetails.forEach((workload: any, index: number) => {
+                            detailedError += `${index + 1}. ${workload.employee || user.namaDepan}: ${workload.issue || workload.message}\n`;
+                        });
+                        detailedError += `\n`;
+                    }
+                    
+                    if (capacityDetails.length > 0) {
+                        detailedError += `🏥 CAPACITY ISSUES:\n`;
+                        capacityDetails.forEach((capacity: any, index: number) => {
+                            detailedError += `${index + 1}. ${capacity.location || selectedShiftLocation}: ${capacity.issue || capacity.message}\n`;
+                        });
+                        detailedError += `\n`;
+                    }
+                    
+                    detailedError += `💡 RECOMMENDATIONS:\n`;
+                    detailedError += `• Choose different date/time slot\n`;
+                    detailedError += `• Select alternative employee\n`;
+                    detailedError += `• Check existing schedule for conflicts\n`;
+                    detailedError += `• Coordinate with team supervisor\n`;
+                    
+                    throw new Error(detailedError);
+                }
+                
+                throw new Error(errorMessage);
             }
             
             const result = await response.json();
@@ -660,7 +818,13 @@ const EnhancedJadwalForm = ({
             
         } catch (error: any) {
             console.error('Error submitting form:', error);
-            setErrorMessage(error.message || 'Terjadi kesalahan sistem');
+            
+            // Use onError callback if provided, otherwise fallback to local error state
+            if (onError) {
+                onError(error);
+            } else {
+                setErrorMessage(error.message || 'Terjadi kesalahan sistem');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -835,7 +999,12 @@ const EnhancedJadwalForm = ({
                                                     <span>Shift terakhir:</span>
                                                     <span className="font-medium">
                                                         {selectedEmployee?.lastShiftDate ? 
-                                                            new Date(selectedEmployee.lastShiftDate).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' }) :
+                                                            (() => {
+                                                                const dateObj = new Date(selectedEmployee.lastShiftDate);
+                                                                const day = String(dateObj.getDate()).padStart(2, '0');
+                                                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                                                return `${day}/${month}`;
+                                                            })() :
                                                             '27/07'
                                                         }
                                                     </span>

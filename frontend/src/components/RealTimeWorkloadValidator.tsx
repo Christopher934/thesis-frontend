@@ -22,11 +22,15 @@ interface UserWorkloadStatus {
 interface RealTimeWorkloadValidatorProps {
   onValidationResult?: (result: any) => void;
   refreshTrigger?: number;
+  autoRefresh?: boolean; // Control auto-refresh behavior
+  refreshInterval?: number; // Customize refresh interval (in ms)
 }
 
 const RealTimeWorkloadValidator: React.FC<RealTimeWorkloadValidatorProps> = ({
   onValidationResult,
-  refreshTrigger = 0
+  refreshTrigger = 0,
+  autoRefresh = true,
+  refreshInterval = 30000 // Default 30 seconds
 }) => {
   const [userStatuses, setUserStatuses] = useState<UserWorkloadStatus[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +38,7 @@ const RealTimeWorkloadValidator: React.FC<RealTimeWorkloadValidatorProps> = ({
 
   // Fetch all users workload status
   const fetchWorkloadStatuses = async () => {
+    console.log('Fetching workload statuses...'); // Debug log
     setLoading(true);
     setError(null);
     
@@ -109,13 +114,18 @@ const RealTimeWorkloadValidator: React.FC<RealTimeWorkloadValidatorProps> = ({
     }
   };
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds and when refreshTrigger changes
   useEffect(() => {
     fetchWorkloadStatuses();
+  }, [refreshTrigger]); // Only fetch when refreshTrigger changes
+
+  // Separate useEffect for interval to avoid multiple intervals
+  useEffect(() => {
+    if (!autoRefresh) return; // Skip if auto-refresh is disabled
     
-    const interval = setInterval(fetchWorkloadStatuses, 30000);
+    const interval = setInterval(fetchWorkloadStatuses, refreshInterval);
     return () => clearInterval(interval);
-  }, [refreshTrigger]);
+  }, [autoRefresh, refreshInterval]); // Re-create interval if settings change
 
   // Status color mapping
   const getStatusColor = (status: string) => {

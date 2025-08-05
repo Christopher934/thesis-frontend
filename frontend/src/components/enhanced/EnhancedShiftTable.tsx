@@ -333,12 +333,43 @@ const EnhancedShiftTable: React.FC<EnhancedShiftTableProps> = ({
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-sm text-gray-900">
-                      {new Date(item.tanggal).toLocaleDateString('id-ID', {
-                        weekday: 'short',
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
+                      {(() => {
+                        try {
+                          // Use originalDate if available, otherwise try to parse tanggal
+                          const dateToUse = (item as any).originalDate || item.tanggal;
+                          let dateObj: Date;
+                          
+                          // Check if it's in YYYY-MM-DD format (backend format)
+                          if (typeof dateToUse === 'string' && dateToUse.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            dateObj = new Date(dateToUse);
+                          }
+                          // Check if it's in DD/MM/YYYY format (frontend display format)
+                          else if (typeof dateToUse === 'string' && dateToUse.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                            const [day, month, year] = dateToUse.split('/').map(num => parseInt(num, 10));
+                            dateObj = new Date(year, month - 1, day); // month is 0-indexed
+                          }
+                          // Fallback to default Date parsing
+                          else {
+                            dateObj = new Date(dateToUse);
+                          }
+                          
+                          if (isNaN(dateObj.getTime())) {
+                            // If parsing fails, display the formatted tanggal as-is
+                            return item.tanggal;
+                          }
+                          
+                          // Format like "Sen, 04 Agu 2025" (Monday, 4 August 2025)
+                          return dateObj.toLocaleDateString('id-ID', {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          });
+                        } catch (error) {
+                          console.warn('Date parsing error for item:', item.id, error);
+                          return item.tanggal; // Fallback to display as-is
+                        }
+                      })()}
                     </div>
                   </td>
                   <td className="px-4 py-3">

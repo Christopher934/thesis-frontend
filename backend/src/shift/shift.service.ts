@@ -572,4 +572,25 @@ export class ShiftService {
       throw error;
     }
   }
+
+  async removeAll() {
+    try {
+      // Count total shifts before deletion for response
+      const countResult = await this.prisma.shift.count();
+      
+      // Delete all shifts
+      const result = await this.prisma.shift.deleteMany({});
+      
+      return {
+        success: true,
+        message: 'All shifts have been successfully deleted',
+        deletedCount: result.count,
+        totalBefore: countResult
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Failed to delete all shifts: ${error.message}`
+      );
+    }
+  }
 }

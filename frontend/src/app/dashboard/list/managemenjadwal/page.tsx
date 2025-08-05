@@ -6,22 +6,21 @@ export const dynamic = 'force-dynamic';
 
 import FormModal from '@/components/common/FormModal';
 import { useState, useEffect } from 'react';
-import Table from '@/components/common/Table';
 import TableSearch from '@/components/common/TableSearch';
-import Pagination from '@/components/common/Pagination';
 import Image from 'next/image';
 import FilterButton from '@/components/common/FilterButton';
 import SortButton from '@/components/common/SortButton';
-import { Brain, Calendar, Clock, MapPin, Users, AlertTriangle, CheckCircle, Loader2, Grid, List, Zap, Plus, RefreshCw, Eye, Edit, Trash2, Download, BarChart3, Shield } from 'lucide-react';
+import { Brain, Calendar, Clock, MapPin, Users, AlertTriangle, CheckCircle, Loader2, Grid, List, Zap, Plus, RefreshCw, Eye, Edit, Trash2, Download, BarChart3, Shield, X } from 'lucide-react';
 import WorkloadCounterWidget from '@/components/WorkloadCounterWidget';
 import MonthlyScheduleView from '@/components/MonthlyScheduleView';
 import AutoScheduleModal from '@/components/modals/AutoScheduleModal';
-import EnhancedManualAddModal from '@/components/modals/EnhancedManualAddModal';
 import BulkScheduleModal from '@/components/modals/BulkScheduleModal';
 import SwapRequestModal from '@/components/modals/SwapRequestModal';
 import NotificationModal, { NotificationData } from '@/components/NotificationModal';
 import EnhancedShiftTable from '@/components/enhanced/EnhancedShiftTable';
 import InteractiveCalendar from '@/components/enhanced/InteractiveCalendar';
+import EnhancedManualShiftModal from '@/components/enhanced/EnhancedManualShiftModal';
+import EnhancedJadwalForm from '@/components/forms/EnhancedJadwalForm';
 import RealTimeWorkloadValidator from '@/components/RealTimeWorkloadValidator';
 
 // Enhanced utility functions
@@ -34,89 +33,117 @@ const isCriticalUnit = (location: string) => {
   return criticalUnits.some(unit => location.toUpperCase().includes(unit));
 };
 
-// Enhanced date formatting with better error handling
+// Enhanced date formatting with better error handling and format consistency
 const formatDateForDisplay = (dateStr: string): { formatted: string, original: string } => {
-    if (!dateStr) return { formatted: '', original: '' };
-    
-    let formattedDate = dateStr;
-    let originalDate = dateStr;
-    
-    try {
-        // First, try to create a Date object to check if it's valid
-        let dateObj: Date;
-        
-        // Handle ISO format dates (YYYY-MM-DD)
-        if (dateStr.includes('-') && !dateStr.includes('T')) {
-            dateObj = new Date(dateStr + 'T00:00:00.000Z'); // Add time to ensure proper parsing
-            if (!isNaN(dateObj.getTime())) {
-                const day = dateObj.getUTCDate().toString().padStart(2, '0');
-                const month = (dateObj.getUTCMonth() + 1).toString().padStart(2, '0');
-                const year = dateObj.getUTCFullYear();
-                formattedDate = `${day}/${month}/${year}`;
-                originalDate = `${year}-${month}-${day}`;
-            } else {
-                throw new Error('Invalid date format');
-            }
-        }
-        // Handle ISO string format with T
-        else if (dateStr.includes('T')) {
-            dateObj = new Date(dateStr);
-            if (!isNaN(dateObj.getTime())) {
-                const day = dateObj.getDate().toString().padStart(2, '0');
-                const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-                const year = dateObj.getFullYear();
-                formattedDate = `${day}/${month}/${year}`;
-                originalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            } else {
-                throw new Error('Invalid date format');
-            }
-        }
-        // Handle problematic format like "10T00:00:00.000Z/06/2025"
-        else if (dateStr.includes('/')) {
-            const parts = dateStr.split('/');
-            if (parts.length >= 3) {
-                let day = parts[0];
-                if (day.includes('T')) {
-                    day = day.split('T')[0];
-                }
-                const month = parts[1];
-                const year = parts[2];
-                
-                // Validate the extracted date parts
-                const dayNum = parseInt(day);
-                const monthNum = parseInt(month);
-                const yearNum = parseInt(year);
-                
-                if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum > 1900) {
-                    formattedDate = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
-                    originalDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                } else {
-                    throw new Error('Invalid date parts');
-                }
-            } else {
-                throw new Error('Invalid date format');
-            }
-        }
-        // Try standard Date parsing as fallback
-        else {
-            dateObj = new Date(dateStr);
-            if (!isNaN(dateObj.getTime())) {
-                const day = dateObj.getDate().toString().padStart(2, '0');
-                const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-                const year = dateObj.getFullYear();
-                formattedDate = `${day}/${month}/${year}`;
-                originalDate = `${year}-${month}-${day}`;
-            } else {
-                throw new Error('Invalid date format');
-            }
-        }
-    } catch (e) {
-        console.error('Error formatting date:', dateStr, e);
-        // Instead of returning the invalid date string, return a placeholder
-        return { formatted: 'Invalid Date', original: '' };
+    if (!dateStr || dateStr.trim() === '') {
+        return { formatted: '', original: '' };
     }
     
-    return { formatted: formattedDate, original: originalDate };
+    console.log('🔍 Debug formatDateForDisplay - Input:', dateStr);
+    
+    try {
+        // Clean the date string first
+        let cleanDateStr = dateStr.trim();
+        
+        // Handle various date formats
+        let dateObj: Date;
+        
+        // If it's already in YYYY-MM-DD format
+        if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDateStr)) {
+            dateObj = new Date(cleanDateStr + 'T00:00:00');
+        }
+        // If it's in DD/MM/YYYY format
+        else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cleanDateStr)) {
+            const [day, month, year] = cleanDateStr.split('/');
+            dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        }
+        // If it's in MM/DD/YYYY format (US format)
+        else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cleanDateStr)) {
+            // Try to determine if it's DD/MM or MM/DD based on values
+            const parts = cleanDateStr.split('/');
+            const first = parseInt(parts[0]);
+            const second = parseInt(parts[1]);
+            const year = parseInt(parts[2]);
+            
+            // If first part > 12, it's definitely DD/MM/YYYY
+            if (first > 12) {
+                dateObj = new Date(year, second - 1, first);
+            }
+            // If second part > 12, it's definitely MM/DD/YYYY
+            else if (second > 12) {
+                dateObj = new Date(year, first - 1, second);
+            }
+            // Ambiguous case - assume DD/MM/YYYY for Indonesian format
+            else {
+                dateObj = new Date(year, second - 1, first);
+            }
+        }
+        // If it's an ISO string or contains T/Z
+        else if (cleanDateStr.includes('T') || cleanDateStr.includes('Z')) {
+            dateObj = new Date(cleanDateStr);
+        }
+        // If it's in YYYY/MM/DD format
+        else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(cleanDateStr)) {
+            const [year, month, day] = cleanDateStr.split('/');
+            dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        }
+        // Try to parse as is (fallback)
+        else {
+            dateObj = new Date(cleanDateStr);
+        }
+        
+        // Validate the date
+        if (isNaN(dateObj.getTime())) {
+            throw new Error('Invalid date');
+        }
+        
+        // Always format to DD/MM/YYYY for consistent display
+        const day = dateObj.getDate().toString().padStart(2, '0');
+        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const year = dateObj.getFullYear();
+        
+        const formatted = `${day}/${month}/${year}`;
+        const original = `${year}-${month}-${day}`;
+        
+        console.log('✅ Debug formatDateForDisplay - Output:', { formatted, original });
+        return { formatted, original };
+        
+    } catch (error) {
+        console.error('❌ Error formatting date:', dateStr, error);
+        
+        // Enhanced fallback parsing
+        const dateMatch = dateStr.match(/(\d{1,2}).*?(\d{1,2}).*?(\d{4})/);
+        if (dateMatch) {
+            const [, first, second, year] = dateMatch;
+            
+            // Determine if it's day/month or month/day
+            const firstNum = parseInt(first);
+            const secondNum = parseInt(second);
+            
+            let day, month;
+            if (firstNum > 12) {
+                // First is day
+                day = first.padStart(2, '0');
+                month = second.padStart(2, '0');
+            } else if (secondNum > 12) {
+                // Second is day
+                day = second.padStart(2, '0');
+                month = first.padStart(2, '0');
+            } else {
+                // Ambiguous - assume DD/MM format for Indonesian
+                day = first.padStart(2, '0');
+                month = second.padStart(2, '0');
+            }
+            
+            const formatted = `${day}/${month}/${year}`;
+            const original = `${year}-${month}-${day}`;
+            return { formatted, original };
+        }
+        
+        // Final fallback: return the input as is with a warning
+        console.warn('⚠️ Returning date as-is due to parsing failure:', dateStr);
+        return { formatted: dateStr, original: dateStr };
+    }
 };
 
 // Enhanced shift priority calculation
@@ -206,45 +233,6 @@ const sortOptions = [
     { label: "Tipe Shift", value: "tipeshift" },
 ];
 
-const columns = [
-    { 
-        headers: "Info Pegawai", 
-        accessor: "nama",
-        className: "",
-        tooltip: "Informasi pegawai dan waktu kerja"
-    },
-    { 
-        headers: "Tanggal", 
-        accessor: "tanggal", 
-        className: "hidden md:table-cell",
-        tooltip: "Tanggal pelaksanaan shift"
-    },
-    { 
-        headers: "Jam Mulai", 
-        accessor: "jammulai", 
-        className: "hidden md:table-cell",
-        tooltip: "Waktu mulai shift"
-    },
-    { 
-        headers: "Jam Selesai", 
-        accessor: "jamselesai", 
-        className: "hidden md:table-cell",
-        tooltip: "Waktu selesai shift"
-    },
-    { 
-        headers: "Tipe Shift", 
-        accessor: "tipeshift", 
-        className: "hidden md:table-cell",
-        tooltip: "Kategori shift kerja"
-    },
-    { 
-        headers: "Aksi", 
-        accessor: "action",
-        className: "",
-        tooltip: "Tindakan yang tersedia"
-    },
-];
-
 // Type for Auto Scheduler Request
 interface AutoScheduleRequest {
   date: string;
@@ -269,7 +257,13 @@ interface AutoScheduleResult {
 interface WeeklyScheduleRequest {
     startDate: string;
     locations: string[];
-    shiftPattern: { [location: string]: { PAGI?: number; SIANG?: number; MALAM?: number; } };
+    staffPattern: { 
+        [location: string]: { 
+            DOKTER: { PAGI: number; SIANG: number; MALAM: number; };
+            PERAWAT: { PAGI: number; SIANG: number; MALAM: number; };
+            STAFF: { PAGI: number; SIANG: number; MALAM: number; };
+        } 
+    };
     priority: string;
 }
 
@@ -277,7 +271,13 @@ interface MonthlyScheduleRequest {
     year: number;
     month: number;
     locations: string[];
-    averageStaffPerShift: { [location: string]: number };
+    staffPattern: { 
+        [location: string]: { 
+            DOKTER: { PAGI: number; SIANG: number; MALAM: number; };
+            PERAWAT: { PAGI: number; SIANG: number; MALAM: number; };
+            STAFF: { PAGI: number; SIANG: number; MALAM: number; };
+        } 
+    };
     workloadLimits: {
         maxShiftsPerPerson: number;
         maxConsecutiveDays: number;
@@ -433,20 +433,20 @@ const ManagemenJadwalPage = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
     const [userRole, setUserRole] = useState('pegawai');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterValue, setFilterValue] = useState("");
     const [sortValue, setSortValue] = useState("");
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [showAllSchedules, setShowAllSchedules] = useState(false); // Toggle untuk melihat semua jadwal
     const [viewMode, setViewMode] = useState<'table' | 'monthly'>('table'); // Toggle untuk view mode
     const [showWorkloadCounters, setShowWorkloadCounters] = useState(true); // Toggle untuk workload counters
     
     // Additional state variables for missing functionality
     const [isCreateShiftModalOpen, setIsCreateShiftModalOpen] = useState(false);
+    const [isEditShiftModalOpen, setIsEditShiftModalOpen] = useState(false);
+    const [isViewShiftModalOpen, setIsViewShiftModalOpen] = useState(false);
+    const [selectedShift, setSelectedShift] = useState<Jadwal | null>(null);
     const [swapShiftEmployeeId, setSwapShiftEmployeeId] = useState<string | null>(null);
     const [showSwapRequests, setShowSwapRequests] = useState(false);
     
@@ -454,8 +454,18 @@ const ManagemenJadwalPage = () => {
     const [showNotification, setShowNotification] = useState(false);
     const [notificationData, setNotificationData] = useState<NotificationData | null>(null);
     
-    // Enhanced table and calendar view modes
-    const [useEnhancedTable, setUseEnhancedTable] = useState(true);
+    // Confirmation modal system
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [confirmationData, setConfirmationData] = useState<{
+        title: string;
+        message: string;
+        confirmText: string;
+        cancelText: string;
+        type: 'danger' | 'warning' | 'info';
+        resolve: (value: boolean) => void;
+    } | null>(null);
+    
+    // Enhanced table and calendar view modes (always use enhanced table)
     const [useInteractiveCalendar, setUseInteractiveCalendar] = useState(false);
     
     // Workload validation state
@@ -466,10 +476,8 @@ const ManagemenJadwalPage = () => {
     // State untuk menunda refresh sampai notification ditutup
     const [pendingRefresh, setPendingRefresh] = useState(false);
     
-    // Pagination data
-    const totalPages = Math.ceil(filteredJadwal.length / itemsPerPage);
+    // Data untuk Enhanced Table
     const filteredShifts = filteredJadwal;
-    const paginatedShifts = filteredJadwal.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     
     // Handle create shift function
     const handleCreateShift = (shiftData: any) => {
@@ -481,6 +489,39 @@ const ManagemenJadwalPage = () => {
     const showNotificationModal = (notification: NotificationData) => {
         setNotificationData(notification);
         setShowNotification(true);
+    };
+
+    // Confirmation modal helper function
+    const showConfirmationModal = (options: {
+        title: string;
+        message: string;
+        confirmText: string;
+        cancelText: string;
+        type: 'danger' | 'warning' | 'info';
+    }): Promise<boolean> => {
+        return new Promise((resolve) => {
+            setConfirmationData({
+                ...options,
+                resolve
+            });
+            setShowConfirmation(true);
+        });
+    };
+
+    const handleConfirm = () => {
+        if (confirmationData) {
+            confirmationData.resolve(true);
+            setShowConfirmation(false);
+            setConfirmationData(null);
+        }
+    };
+
+    const handleCancel = () => {
+        if (confirmationData) {
+            confirmationData.resolve(false);
+            setShowConfirmation(false);
+            setConfirmationData(null);
+        }
     };
 
     const closeNotification = () => {
@@ -498,21 +539,182 @@ const ManagemenJadwalPage = () => {
 
     // Enhanced table handlers
     const handleShiftEdit = (shift: Jadwal) => {
-        // Open edit modal or form
-        console.log('Edit shift:', shift);
-        // Implementation: Open enhanced form with pre-filled data
+        setSelectedShift(shift);
+        setIsEditShiftModalOpen(true);
     };
 
-    const handleShiftDelete = (shiftId: number) => {
-        // Show confirmation and delete
-        console.log('Delete shift:', shiftId);
-        // Implementation: Add confirmation modal and delete logic
+    const handleShiftDelete = async (shiftId: number) => {
+        // Show confirmation modal instead of browser alert
+        const confirmDelete = await showConfirmationModal({
+            title: 'Konfirmasi Hapus Shift',
+            message: 'Apakah Anda yakin ingin menghapus shift ini?',
+            confirmText: 'Ya, Hapus',
+            cancelText: 'Batal',
+            type: 'danger'
+        });
+
+        if (!confirmDelete) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Token tidak ditemukan');
+            }
+
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            // Use the correct endpoint - same as fetch endpoint but for delete
+            const response = await fetch(`${apiUrl}/shifts/${shiftId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                handleJadwalDeleted(shiftId.toString());
+                showNotificationModal({
+                    type: 'success',
+                    title: 'Shift Berhasil Dihapus',
+                    message: 'Shift telah berhasil dihapus dari sistem',
+                });
+            } else {
+                const errorData = await response.json();
+                let errorMessage = 'Gagal menghapus shift';
+                let recommendations = [
+                    'Periksa koneksi internet',
+                    'Pastikan shift belum dimulai',
+                    'Hubungi administrator jika masalah berlanjut'
+                ];
+
+                if (response.status === 404) {
+                    errorMessage = 'Shift tidak ditemukan atau sudah dihapus sebelumnya';
+                    recommendations = [
+                        'Refresh halaman untuk melihat data terbaru',
+                        'Shift mungkin sudah dihapus oleh user lain',
+                        'Periksa log sistem untuk aktivitas terkait'
+                    ];
+                } else if (response.status === 409) {
+                    errorMessage = 'Shift tidak dapat dihapus karena sedang berlangsung atau sudah selesai';
+                    recommendations = [
+                        'Shift yang sedang berlangsung tidak dapat dihapus',
+                        'Gunakan fitur edit untuk mengubah status shift',
+                        'Hubungi supervisor untuk menangani shift aktif'
+                    ];
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
+                    if (errorData.conflicts && errorData.conflicts.length > 0) {
+                        errorMessage += `\n\nKonflik yang terdeteksi:`;
+                        errorData.conflicts.forEach((conflict: any, index: number) => {
+                            errorMessage += `\n${index + 1}. ${conflict.description || conflict}`;
+                        });
+                        recommendations = [
+                            'Selesaikan konflik yang ada terlebih dahulu',
+                            'Koordinasi dengan pegawai terkait',
+                            'Gunakan fitur swap shift jika diperlukan'
+                        ];
+                    }
+                }
+
+                throw new Error(errorMessage);
+            }
+        } catch (error: any) {
+            showNotificationModal({
+                type: 'error',
+                title: 'Gagal Menghapus Shift',
+                message: error.message || 'Terjadi kesalahan saat menghapus shift',
+                details: {
+                    timestamp: new Date().toLocaleString('id-ID'),
+                    shiftId: shiftId,
+                    recommendations: error.message?.includes('404') ? [
+                        'Refresh halaman untuk melihat data terbaru',
+                        'Shift mungkin sudah dihapus oleh user lain',
+                        'Periksa log sistem untuk aktivitas terkait'
+                    ] : [
+                        'Periksa koneksi internet',
+                        'Pastikan shift belum dimulai',
+                        'Hubungi administrator jika masalah berlanjut'
+                    ]
+                }
+            });
+        }
+    };
+
+    // Delete All Shifts Function
+    const handleDeleteAllShifts = async () => {
+        setIsDeleting(true);
+        setDeleteError(null);
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Token tidak ditemukan');
+            }
+
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            const response = await fetch(`${apiUrl}/shifts/delete-all`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Clear local data
+                setJadwalData([]);
+                
+                setIsDeleteAllModalOpen(false);
+                
+                showNotificationModal({
+                    type: 'success',
+                    title: 'Semua Shift Berhasil Dihapus',
+                    message: `${result.deletedCount || 'Semua'} shift telah berhasil dihapus dari sistem`,
+                    details: {
+                        timestamp: new Date().toLocaleString('id-ID'),
+                        deletedCount: result.deletedCount,
+                        recommendations: [
+                            'Data shift telah dibersihkan',
+                            'Anda dapat mulai membuat jadwal baru',
+                            'Pastikan untuk backup data jika diperlukan'
+                        ]
+                    }
+                });
+                
+                // Refresh data to ensure consistency
+                await fetchAllData();
+                
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Gagal menghapus semua shift');
+            }
+        } catch (error: any) {
+            setDeleteError(error.message);
+            showNotificationModal({
+                type: 'error',
+                title: 'Gagal Menghapus Semua Shift',
+                message: error.message || 'Terjadi kesalahan saat menghapus semua shift',
+                details: {
+                    timestamp: new Date().toLocaleString('id-ID'),
+                    recommendations: [
+                        'Periksa koneksi internet',
+                        'Pastikan Anda memiliki akses yang cukup',
+                        'Coba lagi dalam beberapa saat',
+                        'Hubungi administrator jika masalah berlanjut'
+                    ]
+                }
+            });
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const handleShiftView = (shift: Jadwal) => {
-        // Show shift details
-        console.log('View shift:', shift);
-        // Implementation: Open detail modal
+        setSelectedShift(shift);
+        setIsViewShiftModalOpen(true);
     };
 
     // Interactive calendar handlers
@@ -524,7 +726,7 @@ const ManagemenJadwalPage = () => {
             }
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-            const response = await fetch(`${apiUrl}/admin/shifts/${shiftId}`, {
+            const response = await fetch(`${apiUrl}/shifts/${shiftId}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -540,7 +742,13 @@ const ManagemenJadwalPage = () => {
                 showNotificationModal({
                     type: 'success',
                     title: 'Shift Berhasil Dipindah',
-                    message: `Shift berhasil dipindahkan ke tanggal ${new Date(newDate).toLocaleDateString('id-ID')}`,
+                    message: `Shift berhasil dipindahkan ke tanggal ${(() => {
+                        const dateObj = new Date(newDate);
+                        const day = String(dateObj.getDate()).padStart(2, '0');
+                        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const year = dateObj.getFullYear();
+                        return `${day}/${month}/${year}`;
+                    })()}`,
                     details: {
                         recommendations: ['Data akan diperbarui setelah Anda menutup notifikasi ini']
                     }
@@ -598,6 +806,11 @@ const ManagemenJadwalPage = () => {
     const [bulkScheduleError, setBulkScheduleError] = useState<string | null>(null);
     const [bulkScheduleResult, setBulkScheduleResult] = useState<BulkScheduleResult | null>(null);
     
+    // Delete All Shifts States
+    const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    
     // Debug: Monitor modal state changes
     useEffect(() => {
         console.log('Modal states changed:', {
@@ -626,11 +839,9 @@ const ManagemenJadwalPage = () => {
     // Weekly schedule state
     const [weeklyRequest, setWeeklyRequest] = useState<WeeklyScheduleRequest>({
         startDate: new Date().toISOString().split('T')[0],
-        locations: ['ICU', 'RAWAT_INAP', 'GAWAT_DARURAT'],
-        shiftPattern: {
-            ICU: { PAGI: 4, SIANG: 4, MALAM: 3 },
-            RAWAT_INAP: { PAGI: 3, SIANG: 3, MALAM: 2 },
-            GAWAT_DARURAT: { PAGI: 5, SIANG: 5, MALAM: 3 }
+        locations: [], // Default: no locations selected
+        staffPattern: {
+            // Empty initially - will be populated when locations are selected
         },
         priority: 'HIGH'
     });
@@ -639,18 +850,56 @@ const ManagemenJadwalPage = () => {
     const [monthlyRequest, setMonthlyRequest] = useState<MonthlyScheduleRequest>({
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
-        locations: ['ICU', 'RAWAT_INAP', 'GAWAT_DARURAT', 'RAWAT_JALAN'],
-        averageStaffPerShift: {
-            ICU: 4,
-            RAWAT_INAP: 3,
-            GAWAT_DARURAT: 5,
-            RAWAT_JALAN: 2
+        locations: [], // Default: no locations selected
+        staffPattern: {
+            // Empty initially - will be populated when locations are selected
         },
         workloadLimits: {
             maxShiftsPerPerson: 18,
             maxConsecutiveDays: 4
         }
     });
+
+    // Helper function to create default staff pattern for a location
+    const createDefaultStaffPattern = () => ({
+        PAGI: { DOKTER: 0, PERAWAT: 0, STAFF: 0 },
+        SIANG: { DOKTER: 0, PERAWAT: 0, STAFF: 0 },
+        MALAM: { DOKTER: 0, PERAWAT: 0, STAFF: 0 }
+    });
+
+    // Function to update weekly staff pattern for a specific location, role, and shift
+    const updateWeeklyStaffPattern = (location: string, role: 'DOKTER' | 'PERAWAT' | 'STAFF', shift: 'PAGI' | 'SIANG' | 'MALAM', value: number) => {
+        setWeeklyRequest(prev => ({
+            ...prev,
+            staffPattern: {
+                ...prev.staffPattern,
+                [location]: {
+                    ...prev.staffPattern[location] || createDefaultStaffPattern(),
+                    [shift]: {
+                        ...prev.staffPattern[location]?.[shift] || { DOKTER: 0, PERAWAT: 0, STAFF: 0 },
+                        [role]: value
+                    }
+                }
+            }
+        }));
+    };
+
+    // Function to update monthly staff pattern for a specific location, role, and shift
+    const updateMonthlyStaffPattern = (location: string, role: 'DOKTER' | 'PERAWAT' | 'STAFF', shift: 'PAGI' | 'SIANG' | 'MALAM', value: number) => {
+        setMonthlyRequest(prev => ({
+            ...prev,
+            staffPattern: {
+                ...prev.staffPattern,
+                [location]: {
+                    ...prev.staffPattern[location] || createDefaultStaffPattern(),
+                    [shift]: {
+                        ...prev.staffPattern[location]?.[shift] || { DOKTER: 0, PERAWAT: 0, STAFF: 0 },
+                        [role]: value
+                    }
+                }
+            }
+        }));
+    };
 
     // Auto Scheduler Functions
     const locations = [
@@ -710,7 +959,75 @@ const ManagemenJadwalPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Gagal membuat jadwal optimal');
+                
+                // Parse specific error details from backend
+                let detailedError = {
+                    message: errorData.message || 'Gagal membuat jadwal optimal',
+                    conflicts: errorData.conflicts || [],
+                    workloadIssues: errorData.workloadIssues || [],
+                    capacityIssues: errorData.capacityIssues || [],
+                    unavailableEmployees: errorData.unavailableEmployees || [],
+                    schedulingConstraints: errorData.schedulingConstraints || [],
+                    recommendations: errorData.recommendations || []
+                };
+
+                // Create comprehensive error message
+                let errorMessage = detailedError.message;
+                let recommendations = [...detailedError.recommendations];
+                
+                if (detailedError.conflicts.length > 0) {
+                    errorMessage += `\n\n🔴 Konflik Jadwal Ditemukan (${detailedError.conflicts.length}):`;
+                    detailedError.conflicts.forEach((conflict: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${conflict.employeeName || conflict.employee} sudah memiliki shift pada ${conflict.date} ${conflict.time || conflict.shift}`;
+                    });
+                    recommendations.push('Periksa jadwal yang sudah ada untuk pegawai tersebut');
+                    recommendations.push('Pilih tanggal atau waktu yang berbeda');
+                }
+
+                if (detailedError.unavailableEmployees.length > 0) {
+                    errorMessage += `\n\n⚠️ Pegawai Tidak Tersedia (${detailedError.unavailableEmployees.length}):`;
+                    detailedError.unavailableEmployees.forEach((emp: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${emp.name || emp.employee}: ${emp.reason || 'Tidak tersedia'}`;
+                    });
+                    recommendations.push('Pastikan pegawai tidak sedang cuti atau memiliki shift lain');
+                }
+
+                if (detailedError.workloadIssues.length > 0) {
+                    errorMessage += `\n\n📊 Masalah Beban Kerja (${detailedError.workloadIssues.length}):`;
+                    detailedError.workloadIssues.forEach((issue: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${issue.employeeName || issue.employee}: ${issue.issue || 'Beban kerja berlebihan'}`;
+                    });
+                    recommendations.push('Distribusikan shift lebih merata');
+                    recommendations.push('Pertimbangkan menambah pegawai untuk periode ini');
+                }
+
+                if (detailedError.capacityIssues.length > 0) {
+                    errorMessage += `\n\n🏥 Masalah Kapasitas Lokasi (${detailedError.capacityIssues.length}):`;
+                    detailedError.capacityIssues.forEach((issue: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${issue.location}: ${issue.issue || 'Kapasitas penuh'}`;
+                    });
+                    recommendations.push('Pilih lokasi dengan kapasitas tersedia');
+                    recommendations.push('Kurangi jumlah shift untuk lokasi yang penuh');
+                }
+
+                if (detailedError.schedulingConstraints.length > 0) {
+                    errorMessage += `\n\n🚫 Batasan Penjadwalan:`;
+                    detailedError.schedulingConstraints.forEach((constraint: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${constraint.constraint || constraint}`;
+                    });
+                }
+
+                // If no specific errors, add general recommendations
+                if (recommendations.length === 0) {
+                    recommendations = [
+                        'Periksa ketersediaan pegawai pada tanggal yang dipilih',
+                        'Pastikan tidak ada konflik dengan shift yang sudah ada',
+                        'Verifikasi kapasitas lokasi masih tersedia',
+                        'Coba dengan parameter yang berbeda'
+                    ];
+                }
+
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
@@ -773,17 +1090,66 @@ const ManagemenJadwalPage = () => {
             setPendingRefresh(true);
         } catch (err) {
             setAutoScheduleError(err instanceof Error ? err.message : 'Terjadi kesalahan');
+            
+            const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan yang tidak diketahui';
+            
+            // Parse detailed error message for better notification
+            const hasConflictInfo = errorMessage.includes('Konflik Jadwal');
+            const hasWorkloadInfo = errorMessage.includes('Beban Kerja');
+            const hasCapacityInfo = errorMessage.includes('Kapasitas Lokasi');
+            const hasUnavailableInfo = errorMessage.includes('Tidak Tersedia');
+            
+            let notificationTitle = 'Error Jadwal Otomatis';
+            let recommendations = [
+                'Periksa koneksi internet Anda',
+                'Pastikan backend server berjalan dengan baik',
+                'Coba lagi dalam beberapa saat'
+            ];
+            
+            if (hasConflictInfo) {
+                notificationTitle = 'Konflik Jadwal Terdeteksi';
+                recommendations = [
+                    'Periksa jadwal yang sudah ada untuk pegawai tersebut',
+                    'Pilih tanggal atau waktu shift yang berbeda',
+                    'Gunakan fitur manual untuk shift dengan konflik',
+                    'Hubungi pegawai terkait untuk konfirmasi ketersediaan'
+                ];
+            } else if (hasWorkloadInfo) {
+                notificationTitle = 'Masalah Beban Kerja';
+                recommendations = [
+                    'Distribusikan shift lebih merata antar pegawai',
+                    'Kurangi jumlah shift yang diminta',
+                    'Pertimbangkan menambah pegawai untuk periode ini',
+                    'Gunakan penjadwalan manual untuk fleksibilitas lebih'
+                ];
+            } else if (hasCapacityInfo) {
+                notificationTitle = 'Kapasitas Lokasi Penuh';
+                recommendations = [
+                    'Pilih lokasi dengan kapasitas yang masih tersedia',
+                    'Kurangi jumlah shift untuk lokasi yang penuh',
+                    'Pertimbangkan mendistribusikan shift ke lokasi lain',
+                    'Periksa jadwal existing untuk memastikan akurasi kapasitas'
+                ];
+            } else if (hasUnavailableInfo) {
+                notificationTitle = 'Pegawai Tidak Tersedia';
+                recommendations = [
+                    'Pastikan pegawai tidak sedang cuti atau sakit',
+                    'Periksa apakah pegawai sudah memiliki shift di waktu yang sama',
+                    'Gunakan pegawai alternatif yang tersedia',
+                    'Koordinasi dengan manajemen SDM untuk ketersediaan pegawai'
+                ];
+            }
+            
             showNotificationModal({
                 type: 'error',
-                title: 'Error Jadwal Otomatis',
-                message: err instanceof Error ? err.message : 'Terjadi kesalahan yang tidak diketahui. Data akan diperbarui setelah Anda menutup notifikasi ini.',
+                title: notificationTitle,
+                message: errorMessage,
                 details: {
-                    recommendations: [
-                        'Periksa koneksi internet Anda',
-                        'Pastikan backend server berjalan dengan baik',
-                        'Coba lagi dalam beberapa saat',
-                        'Hubungi administrator sistem jika masalah berlanjut'
-                    ]
+                    timestamp: new Date().toLocaleString('id-ID'),
+                    recommendations: recommendations.concat([
+                        'Hubungi administrator sistem jika masalah berlanjut',
+                        'Gunakan fitur "Tambah Shift Manual" sebagai alternatif'
+                    ])
                 }
             });
             
@@ -800,6 +1166,8 @@ const ManagemenJadwalPage = () => {
         setBulkScheduleError(null);
         
         try {
+            console.log('🚀 Sending weekly request:', JSON.stringify(weeklyRequest, null, 2));
+            
             const token = localStorage.getItem('token');
             if (!token) {
                 throw new Error('Token tidak ditemukan');
@@ -817,7 +1185,56 @@ const ManagemenJadwalPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Gagal membuat jadwal mingguan');
+                
+                // Parse specific error details from backend for weekly scheduling
+                let detailedError = {
+                    message: errorData.message || 'Gagal membuat jadwal mingguan',
+                    conflicts: errorData.conflicts || [],
+                    workloadIssues: errorData.workloadIssues || [],
+                    capacityIssues: errorData.capacityIssues || [],
+                    unavailableEmployees: errorData.unavailableEmployees || [],
+                    weeklyConstraints: errorData.weeklyConstraints || [],
+                    recommendations: errorData.recommendations || []
+                };
+
+                // Create comprehensive error message
+                let errorMessage = detailedError.message;
+                let recommendations = [...detailedError.recommendations];
+                
+                if (detailedError.conflicts.length > 0) {
+                    errorMessage += `\n\n🔴 Konflik Jadwal Mingguan (${detailedError.conflicts.length}):`;
+                    detailedError.conflicts.forEach((conflict: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${conflict.employeeName || conflict.employee} - ${conflict.date} ${conflict.time || conflict.shift}`;
+                    });
+                    recommendations.push('Sesuaikan pola shift mingguan');
+                    recommendations.push('Pastikan tidak ada tumpang tindih dengan jadwal existing');
+                }
+
+                if (detailedError.unavailableEmployees.length > 0) {
+                    errorMessage += `\n\n⚠️ Pegawai Tidak Tersedia untuk Periode Mingguan:`;
+                    detailedError.unavailableEmployees.forEach((emp: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${emp.name || emp.employee}: ${emp.reason || 'Tidak tersedia untuk periode ini'}`;
+                    });
+                    recommendations.push('Periksa ketersediaan pegawai untuk seluruh minggu');
+                }
+
+                if (detailedError.weeklyConstraints.length > 0) {
+                    errorMessage += `\n\n🚫 Batasan Penjadwalan Mingguan:`;
+                    detailedError.weeklyConstraints.forEach((constraint: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${constraint.constraint || constraint}`;
+                    });
+                }
+
+                if (recommendations.length === 0) {
+                    recommendations = [
+                        'Periksa ketersediaan pegawai untuk periode mingguan',
+                        'Pastikan pola shift tidak bertentangan dengan aturan existing',
+                        'Verifikasi kapasitas lokasi untuk seluruh minggu',
+                        'Pertimbangkan menggunakan penjadwalan harian sebagai alternatif'
+                    ];
+                }
+
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
@@ -869,17 +1286,58 @@ const ManagemenJadwalPage = () => {
             setPendingRefresh(true);
         } catch (error: any) {
             setBulkScheduleError(error.message);
+            
+            const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat membuat jadwal mingguan';
+            
+            // Parse detailed error message for better notification
+            const hasConflictInfo = errorMessage.includes('Konflik Jadwal');
+            const hasWorkloadInfo = errorMessage.includes('Beban Kerja');
+            const hasCapacityInfo = errorMessage.includes('Kapasitas Lokasi');
+            const hasUnavailableInfo = errorMessage.includes('Tidak Tersedia');
+            
+            let notificationTitle = 'Error Jadwal Mingguan';
+            let recommendations = [
+                'Periksa konfigurasi pola shift mingguan',
+                'Pastikan tanggal mulai dan pola shift valid',
+                'Coba dengan parameter yang berbeda'
+            ];
+            
+            if (hasConflictInfo) {
+                notificationTitle = 'Konflik Jadwal Mingguan Terdeteksi';
+                recommendations = [
+                    'Sesuaikan pola shift mingguan untuk menghindari konflik',
+                    'Periksa jadwal existing di periode tersebut',
+                    'Gunakan fitur manual untuk minggu dengan konflik tinggi',
+                    'Koordinasi dengan supervisor untuk resolusi konflik'
+                ];
+            } else if (hasWorkloadInfo) {
+                notificationTitle = 'Masalah Distribusi Beban Kerja Mingguan';
+                recommendations = [
+                    'Sesuaikan jumlah shift per pegawai dalam seminggu',
+                    'Distribusikan beban kerja lebih merata',
+                    'Pertimbangkan menambah pegawai untuk periode ini',
+                    'Gunakan pola shift yang lebih fleksibel'
+                ];
+            } else if (hasUnavailableInfo) {
+                notificationTitle = 'Pegawai Tidak Tersedia untuk Periode Mingguan';
+                recommendations = [
+                    'Periksa ketersediaan pegawai untuk seluruh minggu',
+                    'Koordinasi dengan HR untuk jadwal cuti mingguan',
+                    'Gunakan pegawai backup yang tersedia',
+                    'Sesuaikan pola shift dengan ketersediaan pegawai'
+                ];
+            }
+            
             showNotificationModal({
                 type: 'error',
-                title: 'Error Jadwal Mingguan',
-                message: error.message || 'Terjadi kesalahan saat membuat jadwal mingguan. Data akan diperbarui setelah Anda menutup notifikasi ini.',
+                title: notificationTitle,
+                message: errorMessage,
                 details: {
-                    recommendations: [
-                        'Periksa konfigurasi pola shift',
-                        'Pastikan tanggal mulai valid',
-                        'Coba dengan jumlah staff yang lebih sedikit',
-                        'Hubungi administrator jika masalah berlanjut'
-                    ]
+                    timestamp: new Date().toLocaleString('id-ID'),
+                    recommendations: recommendations.concat([
+                        'Hubungi administrator sistem jika masalah berlanjut',
+                        'Gunakan penjadwalan harian sebagai alternatif'
+                    ])
                 }
             });
         } finally {
@@ -909,16 +1367,96 @@ const ManagemenJadwalPage = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Gagal membuat jadwal bulanan');
+                
+                // Parse specific error details from backend for monthly scheduling
+                let detailedError = {
+                    message: errorData.message || 'Gagal membuat jadwal bulanan',
+                    conflicts: errorData.conflicts || [],
+                    workloadIssues: errorData.workloadIssues || [],
+                    capacityIssues: errorData.capacityIssues || [],
+                    unavailableEmployees: errorData.unavailableEmployees || [],
+                    monthlyConstraints: errorData.monthlyConstraints || [],
+                    recommendations: errorData.recommendations || []
+                };
+
+                // Create comprehensive error message
+                let errorMessage = detailedError.message;
+                let recommendations = [...detailedError.recommendations];
+                
+                if (detailedError.conflicts.length > 0) {
+                    errorMessage += `\n\n🔴 Konflik Jadwal Bulanan (${detailedError.conflicts.length}):`;
+                    detailedError.conflicts.forEach((conflict: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${conflict.employeeName || conflict.employee} - ${conflict.date} ${conflict.time || conflict.shift}`;
+                    });
+                    recommendations.push('Sesuaikan distribusi shift bulanan');
+                    recommendations.push('Periksa konflik dengan jadwal existing di seluruh bulan');
+                }
+
+                if (detailedError.unavailableEmployees.length > 0) {
+                    errorMessage += `\n\n⚠️ Pegawai Tidak Tersedia untuk Periode Bulanan:`;
+                    detailedError.unavailableEmployees.forEach((emp: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${emp.name || emp.employee}: ${emp.reason || 'Tidak tersedia untuk periode ini'}`;
+                    });
+                    recommendations.push('Koordinasi dengan HR untuk jadwal cuti bulanan');
+                    recommendations.push('Periksa ketersediaan pegawai di seluruh bulan');
+                }
+
+                if (detailedError.monthlyConstraints.length > 0) {
+                    errorMessage += `\n\n🚫 Batasan Penjadwalan Bulanan:`;
+                    detailedError.monthlyConstraints.forEach((constraint: any, index: number) => {
+                        errorMessage += `\n${index + 1}. ${constraint.constraint || constraint}`;
+                    });
+                }
+
+                if (recommendations.length === 0) {
+                    recommendations = [
+                        'Periksa ketersediaan pegawai untuk periode bulanan penuh',
+                        'Pastikan distribusi beban kerja merata sepanjang bulan',
+                        'Verifikasi tidak ada hari libur atau cuti yang bertabrakan',
+                        'Pertimbangkan menggunakan penjadwalan mingguan sebagai alternatif'
+                    ];
+                }
+
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
+            
+            // Check backend success flag first
+            if (result.success === false) {
+                const backendError = result.error || 'Gagal membuat jadwal bulanan';
+                console.log('❌ Backend returned success: false with error:', backendError);
+                
+                // Show detailed error modal for workload/capacity issues
+                showNotificationModal({
+                    type: 'error',
+                    title: 'Gagal Membuat Jadwal Bulanan',
+                    message: backendError,
+                    details: {
+                        createdShifts: result.createdShifts || 0,
+                        conflicts: result.conflicts || [],
+                        workloadAlerts: result.workloadAlerts || [],
+                        recommendations: result.recommendations || [
+                            'Kurangi beban kerja maksimum per pegawai',
+                            'Tambah lebih banyak pegawai yang tersedia',
+                            'Gunakan penjadwalan mingguan untuk kontrol lebih baik',
+                            'Periksa ketersediaan pegawai untuk bulan tersebut'
+                        ]
+                    }
+                });
+                
+                setIsBulkScheduleModalOpen(false);
+                return; // Stop processing
+            }
+            
             setBulkScheduleResult(result);
             
             // Show notification instead of auto-refresh
             const createdCount = result.monthlySchedule?.createdShifts || result.createdShifts || 0;
             const hasConflicts = result.monthlySchedule?.conflicts?.length > 0 || result.conflicts?.length > 0;
             const fulfillmentRate = result.monthlySchedule?.fulfillmentRate || result.fulfillmentRate || 0;
+            
+            console.log(`✅ Monthly schedule successful: ${createdCount} shifts created`);
             
             if (createdCount > 0) {
                 showNotificationModal({
@@ -962,17 +1500,58 @@ const ManagemenJadwalPage = () => {
             setPendingRefresh(true);
         } catch (error: any) {
             setBulkScheduleError(error.message);
+            
+            const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat membuat jadwal bulanan';
+            
+            // Parse detailed error message for better notification
+            const hasConflictInfo = errorMessage.includes('Konflik Jadwal');
+            const hasWorkloadInfo = errorMessage.includes('Beban Kerja');
+            const hasCapacityInfo = errorMessage.includes('Kapasitas Lokasi');
+            const hasUnavailableInfo = errorMessage.includes('Tidak Tersedia');
+            
+            let notificationTitle = 'Error Jadwal Bulanan';
+            let recommendations = [
+                'Periksa konfigurasi pola shift bulanan',
+                'Pastikan bulan dan tahun yang dipilih valid',
+                'Coba dengan parameter yang lebih konservatif'
+            ];
+            
+            if (hasConflictInfo) {
+                notificationTitle = 'Konflik Jadwal Bulanan Terdeteksi';
+                recommendations = [
+                    'Periksa jadwal existing di bulan tersebut',
+                    'Sesuaikan distribusi shift untuk menghindari konflik',
+                    'Pertimbangkan membagi menjadi beberapa periode mingguan',
+                    'Koordinasi dengan manajemen untuk resolusi konflik besar'
+                ];
+            } else if (hasWorkloadInfo) {
+                notificationTitle = 'Masalah Distribusi Beban Kerja Bulanan';
+                recommendations = [
+                    'Sesuaikan rata-rata shift per pegawai dalam sebulan',
+                    'Pastikan distribusi beban kerja merata sepanjang bulan',
+                    'Pertimbangkan menambah personel untuk bulan tersebut',
+                    'Gunakan workload limits yang lebih realistis'
+                ];
+            } else if (hasUnavailableInfo) {
+                notificationTitle = 'Pegawai Tidak Tersedia untuk Periode Bulanan';
+                recommendations = [
+                    'Koordinasi dengan HR untuk jadwal cuti bulanan',
+                    'Periksa ketersediaan pegawai di seluruh bulan',
+                    'Pertimbangkan penggunaan pegawai kontrak tambahan',
+                    'Sesuaikan target coverage dengan ketersediaan pegawai'
+                ];
+            }
+            
             showNotificationModal({
                 type: 'error',
-                title: 'Error Jadwal Bulanan',
-                message: error.message || 'Terjadi kesalahan saat membuat jadwal bulanan. Data akan diperbarui setelah Anda menutup notifikasi ini.',
+                title: notificationTitle,
+                message: errorMessage,
                 details: {
-                    recommendations: [
-                        'Periksa konfigurasi pola shift',
-                        'Pastikan tanggal mulai valid',
-                        'Coba dengan jumlah staff yang lebih sedikit',
-                        'Hubungi administrator jika masalah berlanjut'
-                    ]
+                    timestamp: new Date().toLocaleString('id-ID'),
+                    recommendations: recommendations.concat([
+                        'Hubungi administrator sistem jika masalah berlanjut',
+                        'Gunakan penjadwalan mingguan atau harian sebagai alternatif'
+                    ])
                 }
             });
         } finally {
@@ -1079,20 +1658,23 @@ const ManagemenJadwalPage = () => {
 
     // Fetch jadwal and users data
     useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            setError(null);
-            
-            try {
-                // Get user role from localStorage (if available)
-                const role = localStorage.getItem('role');
-                if (role) {
-                    setUserRole(role.toLowerCase());
-                }
+        fetchAllData();
+    }, []);
 
-                
-                // Get token from localStorage
-                const token = localStorage.getItem('token');
+    const fetchAllData = async () => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            // Get user role from localStorage (if available)
+            const role = localStorage.getItem('role');
+            if (role) {
+                setUserRole(role.toLowerCase());
+            }
+
+            
+            // Get token from localStorage
+            const token = localStorage.getItem('token');
                 
                 let shiftsData, usersResponse, usersData;
                 
@@ -1113,6 +1695,11 @@ const ManagemenJadwalPage = () => {
                         })
                     ]);
                     
+                    console.log('🔍 Debug - Raw API responses:', {
+                        shiftsStatus: jadwalRes.status,
+                        usersStatus: usersRes.status
+                    }); // Debug log
+                    
                     if (!jadwalRes.ok || !usersRes.ok) {
                         throw new Error("API server returned an error");
                     }
@@ -1121,6 +1708,9 @@ const ManagemenJadwalPage = () => {
                         jadwalRes.json(),
                         usersRes.json()
                     ]);
+                    
+                    console.log('🔍 Debug - Raw shifts data sample:', shiftsData?.slice(0, 3)); // Debug log
+                    console.log('🔍 Debug - Shifts data count:', shiftsData?.length); // Debug log
                     
                     // Extract users array from response object
                     usersData = usersResponse.data || usersResponse;
@@ -1162,6 +1752,13 @@ const ManagemenJadwalPage = () => {
                 
                 // Format dates and map user names to jadwal data
                 const enhancedJadwalData = filteredShiftsData.map((jadwal: Jadwal) => {
+                    // Debug: Log raw data before processing
+                    console.log('🔍 Processing jadwal:', {
+                        id: jadwal.id,
+                        rawTanggal: jadwal.tanggal,
+                        typeof: typeof jadwal.tanggal
+                    });
+                    
                     // Find the user by either userId or idpegawai
                     // Ensure usersData is an array before using find
                     const user = Array.isArray(usersData) ? usersData.find((u: User) => 
@@ -1169,16 +1766,35 @@ const ManagemenJadwalPage = () => {
                         u.username === jadwal.idpegawai
                     ) : null;
                     
-                    // Format date for better display
-                    const { formatted, original } = formatDateForDisplay(jadwal.tanggal);
+                    // Format date for better display - but keep original for backend compatibility
+                    let formattedTanggal = jadwal.tanggal;
+                    let originalTanggal = jadwal.tanggal;
                     
-                    return {
+                    try {
+                        const { formatted, original } = formatDateForDisplay(jadwal.tanggal);
+                        formattedTanggal = formatted;
+                        originalTanggal = original;
+                    } catch (error) {
+                        console.error('❌ Error formatting date for jadwal ID:', jadwal.id, error);
+                        // Keep original values if formatting fails
+                    }
+                    
+                    const processedJadwal = {
                         ...jadwal,
-                        tanggal: formatted,
-                        originalDate: original, // Keep original date for form editing
+                        tanggal: formattedTanggal,
+                        originalDate: originalTanggal, // Keep original date for form editing
                         nama: user ? user.namaDepan + " " + user.namaBelakang : jadwal.nama || 'Nama tidak tersedia',
                         user: user || jadwal.user
                     };
+                    
+                    console.log('✅ Processed jadwal:', {
+                        id: jadwal.id,
+                        originalTanggal: jadwal.tanggal,
+                        formattedTanggal: processedJadwal.tanggal,
+                        originalDate: processedJadwal.originalDate
+                    });
+                    
+                    return processedJadwal;
                 });
                 
                 setJadwalData(enhancedJadwalData);
@@ -1200,11 +1816,8 @@ const ManagemenJadwalPage = () => {
             } finally {
                 setIsLoading(false);
             }
-        };
-        
-        fetchData();
-    }, []);
-    
+    };
+
     // Handle successful creation of a new jadwal entry
     const handleJadwalCreated = (newJadwal: Jadwal) => {
         // Find user data to supplement the jadwal entry
@@ -1542,19 +2155,14 @@ const ManagemenJadwalPage = () => {
         // Update filter counts
         updateFilterCounts(jadwalData);
         
-        // Reset to first page when filtering changes
-        setCurrentPage(1);
+        // Reset to first page when filtering changes (for consistency with UI)
+        // Note: Enhanced Table handles its own pagination
     }, [jadwalData, searchTerm, filterValue, sortValue, sortDirection, showAllSchedules]);
 
     // Update filter counts when jadwal data changes
     useEffect(() => {
         updateFilterCounts(jadwalData);
     }, [jadwalData]);
-    
-    // Calculate pagination
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredJadwal.slice(indexOfFirstItem, indexOfLastItem);
     
     // Format location name for display (convert enum format to readable text)
     const formatLokasiShift = (lokasi: string) => {
@@ -1646,111 +2254,6 @@ const ManagemenJadwalPage = () => {
         } catch (error) {
             return timeStr;
         }
-    };
-    
-    const renderRow = (item: Jadwal) => {
-        // Get full name for display, capitalize
-        const fullName = (item.nama || 'Nama tidak tersedia').replace(/\b\w/g, c => c.toUpperCase());
-        const formattedLocation = formatLokasiShift(item.lokasishift);
-        const formattedShiftType = formatTipeShift(item.tipeshift || '');
-        const timeRange = `${formatTime(item.jammulai)} - ${formatTime(item.jamselesai)}`;
-        
-        // Check if this schedule is in the past
-        const isPastSchedule = (() => {
-            if (!showAllSchedules) return false; // Only check when showing all schedules
-            
-            try {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                let itemDate;
-                if (item.originalDate) {
-                    const [year, month, day] = item.originalDate.split('-');
-                    itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                } else if (item.tanggal && item.tanggal.includes('/')) {
-                    const [day, month, year] = item.tanggal.split('/');
-                    itemDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                } else {
-                    itemDate = new Date(item.tanggal);
-                    itemDate.setHours(0, 0, 0, 0);
-                }
-                
-                return itemDate.getTime() < today.getTime();
-            } catch (error) {
-                return false;
-            }
-        })();
-        
-        return (
-            <tr key={item.id} className={`border-b border-gray-500 even:bg-slate-50 text-md hover:bg-gray-50 transition-colors ${
-                isPastSchedule ? 'opacity-60 bg-gray-50' : ''
-            }`}>
-                {/* Info Pegawai - Sesuai kolom pertama */}
-                <td className="px-4 lg:px-6 py-3">
-                    <div className="flex flex-col">
-                        <h3 className={`font-semibold capitalize ${isPastSchedule ? 'text-gray-500' : ''}`}>
-                            {fullName}
-                            {isPastSchedule && <span className="text-xs text-red-500 ml-2">(Selesai)</span>}
-                        </h3>
-                        <p className={`text-xs ${isPastSchedule ? 'text-gray-400' : 'text-gray-500'}`}>{timeRange}</p>
-                        <p className={`text-xs ${isPastSchedule ? 'text-gray-400' : 'text-blue-600'}`}>{formattedLocation}</p>
-                    </div>
-                </td>
-                
-                {/* Tanggal - Sesuai kolom kedua */}
-                <td className={`hidden md:table-cell px-4 lg:px-6 py-3 ${isPastSchedule ? 'text-gray-500' : ''}`}>
-                    {item.tanggal}
-                </td>
-                
-                {/* Jam Mulai - Sesuai kolom ketiga */}
-                <td className={`hidden md:table-cell px-4 lg:px-6 py-3 ${isPastSchedule ? 'text-gray-500' : ''}`}>
-                    {formatTime(item.jammulai)}
-                </td>
-                
-                {/* Jam Selesai - Sesuai kolom keempat */}
-                <td className={`hidden md:table-cell px-4 lg:px-6 py-3 ${isPastSchedule ? 'text-gray-500' : ''}`}>
-                    {formatTime(item.jamselesai)}
-                </td>
-                
-                {/* Tipe Shift - Sesuai kolom kelima */}
-                <td className="hidden md:table-cell px-4 lg:px-6 py-3">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        isPastSchedule 
-                            ? 'bg-gray-100 text-gray-600' 
-                            : 'bg-blue-100 text-blue-800'
-                    }`}>
-                        {formattedShiftType}
-                    </span>
-                </td>
-                
-                {/* Aksi - Sesuai kolom keenam */}
-                <td className="px-4 lg:px-6 py-3">
-                    <div className="flex items-center gap-2">
-                        {(userRole === "admin" || userRole === "supervisor") && (
-                            <>
-                                <FormModal 
-                                    table="jadwal" 
-                                    type="update" 
-                                    data={item} 
-                                    onUpdated={handleJadwalUpdated} 
-                                    onCreated={() => {}} 
-                                    onDeleted={() => {}}
-                                />
-                                <FormModal 
-                                    table="jadwal" 
-                                    type="delete" 
-                                    id={item.id.toString()} 
-                                    nameLabel={fullName}
-                                    onDeleted={handleJadwalDeleted}
-                                    onCreated={() => {}}
-                                    onUpdated={() => {}}
-                                />
-                            </>
-                        )}
-                    </div>
-                </td>
-            </tr>
-        );
     };
     
     // Display loading or error state
@@ -1876,7 +2379,13 @@ const ManagemenJadwalPage = () => {
                 <body>
                     <div class="header">
                         <h1>Jadwal Shift Pegawai</h1>
-                        <p>RSUD Anugerah - ${new Date().toLocaleDateString('id-ID')}</p>
+                        <p>RSUD Anugerah - ${(() => {
+                            const today = new Date();
+                            const day = String(today.getDate()).padStart(2, '0');
+                            const month = String(today.getMonth() + 1).padStart(2, '0');
+                            const year = today.getFullYear();
+                            return `${day}/${month}/${year}`;
+                        })()}</p>
                     </div>
                     
                     <div class="stats">
@@ -1981,7 +2490,7 @@ const ManagemenJadwalPage = () => {
                         }`}
                     >
                         <List className="w-4 h-4" />
-                        <span>Tabel {useEnhancedTable ? 'Enhanced' : 'Standard'}</span>
+                        <span>Tabel</span>
                     </button>
                     <button
                         onClick={() => {
@@ -2014,24 +2523,6 @@ const ManagemenJadwalPage = () => {
                         <span>Monthly View</span>
                     </button>
                 </div>
-
-                {/* Enhanced Table Toggle */}
-                {viewMode === 'table' && !useInteractiveCalendar && (
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setUseEnhancedTable(!useEnhancedTable)}
-                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                                useEnhancedTable 
-                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' 
-                                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
-                            }`}
-                            title={useEnhancedTable ? 'Gunakan tabel standard' : 'Gunakan tabel enhanced dengan fitur spreadsheet'}
-                        >
-                            <BarChart3 className="w-4 h-4 inline mr-2" />
-                            {useEnhancedTable ? 'Enhanced ON' : 'Enhanced OFF'}
-                        </button>
-                    </div>
-                )}
 
                 {/* Info about calendar functionality */}
                 {viewMode === 'monthly' && jadwalData.length === 0 && (
@@ -2133,6 +2624,15 @@ const ManagemenJadwalPage = () => {
                         <RefreshCw className="w-4 h-4" />
                         Kelola Swap Request
                     </button>
+                    
+                    <button 
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transition-all shadow-md text-sm font-medium"
+                        onClick={() => setIsDeleteAllModalOpen(true)}
+                        title="Hapus semua data shift - Gunakan dengan hati-hati!"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                        Hapus Semua Shift
+                    </button>
                 </div>
             )}
 
@@ -2207,12 +2707,12 @@ const ManagemenJadwalPage = () => {
                     <RealTimeWorkloadValidator 
                         onValidationResult={(result) => {
                             setWorkloadValidationData(result);
-                            // Trigger refresh when needed
-                            if (result.disabledUsers > 0) {
-                                setWorkloadRefreshTrigger(prev => prev + 1);
-                            }
+                            // Remove the automatic trigger to prevent infinite loops
+                            // Only trigger refresh manually when needed
                         }}
                         refreshTrigger={workloadRefreshTrigger}
+                        autoRefresh={false} // Temporarily disable auto-refresh to stop the loop
+                        refreshInterval={60000} // Refresh every 60 seconds instead of 30
                     />
                 </div>
             )}
@@ -2245,101 +2745,25 @@ const ManagemenJadwalPage = () => {
                         readonly={userRole !== 'admin' && userRole !== 'supervisor'}
                     />
                 ) : viewMode === 'table' ? (
-                    useEnhancedTable ? (
-                        /* Enhanced Table View */
-                        <EnhancedShiftTable
-                            data={filteredShifts.map(shift => ({
-                                id: shift.id,
-                                nama: shift.nama,
-                                idpegawai: shift.idpegawai,
-                                tanggal: shift.tanggal,
-                                jammulai: shift.jammulai,
-                                jamselesai: shift.jamselesai,
-                                lokasishift: shift.lokasishift,
-                                tipeshift: shift.tipeshift,
-                                status: 'ACTIVE', // Default status
-                                priority: 'NORMAL' // Default priority
-                            }))}
-                            onEdit={handleShiftEdit}
-                            onDelete={handleShiftDelete}
-                            onView={handleShiftView}
-                            loading={isLoading}
-                        />
-                    ) : (
-                        /* Standard Table View */
-                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                            {filteredShifts.length === 0 && searchTerm.trim() !== '' ? (
-                                <div className="flex flex-col items-center justify-center py-16 px-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                                    <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                    <h3 className="text-lg font-semibold text-gray-500 mb-2">Tidak ada hasil</h3>
-                                    <p className="text-gray-400 mb-4">Tidak ada jadwal yang cocok dengan pencarian "{searchTerm}"</p>
-                                    <button 
-                                        onClick={() => setSearchTerm('')}
-                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                                    >
-                                        Hapus Filter
-                                    </button>
-                                </div>
-                            ) : filteredShifts.length === 0 && jadwalData.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-16 px-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                                    <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <h3 className="text-xl font-semibold text-gray-500 mb-2">Data Jadwal Kosong</h3>
-                                    <p className="text-gray-400 mb-4">Belum Ada Jadwal Shift Yang Tersedia</p>
-                                    {(userRole === "admin" || userRole === "supervisor") && (
-                                        <div className="flex flex-col items-center gap-3">
-                                            <p className="text-sm text-blue-600 font-medium">
-                                                💡 Mulai buat jadwal shift pertama dengan:
-                                            </p>
-                                            <div className="flex flex-col gap-2">
-                                                <button 
-                                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all shadow-md text-sm font-medium"
-                                                    onClick={() => setIsAutoScheduleModalOpen(true)}
-                                                >
-                                                    <Brain className="w-4 h-4" />
-                                                    Auto Schedule AI
-                                                </button>
-                                                <button 
-                                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                                                    onClick={() => setIsCreateShiftModalOpen(true)}
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                    Tambah Manual
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <>
-                                    <Table
-                                        columns={columns}
-                                        data={paginatedShifts}
-                                        renderRow={renderRow}
-                                    />
-                                    {/* PAGINATION */}
-                                    {totalPages > 1 && (
-                                        <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
-                                            <p className="text-sm text-gray-700">
-                                                Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredShifts.length)} 
-                                                - {Math.min(currentPage * itemsPerPage, filteredShifts.length)} 
-                                                dari {filteredShifts.length} shift
-                                            </p>
-                                            <Pagination
-                                                currentPage={currentPage}
-                                                totalItems={filteredShifts.length}
-                                                itemsPerPage={itemsPerPage}
-                                                onPageChange={setCurrentPage}
-                                            />
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    )
+                    /* Enhanced Table View */
+                    <EnhancedShiftTable
+                        data={filteredShifts.map(shift => ({
+                            id: shift.id,
+                            nama: shift.nama,
+                            idpegawai: shift.idpegawai,
+                            tanggal: shift.tanggal,
+                            jammulai: shift.jammulai,
+                            jamselesai: shift.jamselesai,
+                            lokasishift: shift.lokasishift,
+                            tipeshift: shift.tipeshift,
+                            status: 'ACTIVE', // Default status
+                            priority: 'NORMAL' // Default priority
+                        }))}
+                        onEdit={handleShiftEdit}
+                        onDelete={handleShiftDelete}
+                        onView={handleShiftView}
+                        loading={isLoading}
+                    />
                 ) : (
                     <div className="bg-white rounded-lg border border-gray-200 p-6">
                         {filteredJadwal.length === 0 ? (
@@ -2485,14 +2909,23 @@ const ManagemenJadwalPage = () => {
                                                         checked={weeklyRequest.locations.includes(location)}
                                                         onChange={(e) => {
                                                             if (e.target.checked) {
+                                                                // Add location and initialize staff pattern
                                                                 setWeeklyRequest({
                                                                     ...weeklyRequest,
-                                                                    locations: [...weeklyRequest.locations, location]
+                                                                    locations: [...weeklyRequest.locations, location],
+                                                                    staffPattern: {
+                                                                        ...weeklyRequest.staffPattern,
+                                                                        [location]: createDefaultStaffPattern()
+                                                                    }
                                                                 });
                                                             } else {
+                                                                // Remove location and its staff pattern
+                                                                const newStaffPattern = { ...weeklyRequest.staffPattern };
+                                                                delete newStaffPattern[location];
                                                                 setWeeklyRequest({
                                                                     ...weeklyRequest,
-                                                                    locations: weeklyRequest.locations.filter(l => l !== location)
+                                                                    locations: weeklyRequest.locations.filter(l => l !== location),
+                                                                    staffPattern: newStaffPattern
                                                                 });
                                                             }
                                                         }}
@@ -2519,75 +2952,61 @@ const ManagemenJadwalPage = () => {
                                         </select>
                                     </div>
 
-                                    {/* Shift Pattern Configuration */}
+                                    {/* Staff Pattern Configuration */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-3">
-                                            Konfigurasi Pola Shift per Lokasi
+                                            Konfigurasi Kebutuhan Staff per Lokasi
                                         </label>
                                         {weeklyRequest.locations.map((location) => (
-                                            <div key={location} className="mb-4 p-4 border border-gray-200 rounded-lg">
-                                                <h4 className="font-medium text-gray-800 mb-3">{location}</h4>
-                                                <div className="grid grid-cols-3 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs text-gray-600 mb-1">PAGI</label>
-                                                        <input
-                                                            type="number"
-                                                            value={weeklyRequest.shiftPattern[location]?.PAGI || 0}
-                                                            onChange={(e) => setWeeklyRequest({
-                                                                ...weeklyRequest,
-                                                                shiftPattern: {
-                                                                    ...weeklyRequest.shiftPattern,
-                                                                    [location]: {
-                                                                        ...weeklyRequest.shiftPattern[location],
-                                                                        PAGI: parseInt(e.target.value) || 0
-                                                                    }
-                                                                }
-                                                            })}
-                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                            min="0"
-                                                            max="10"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs text-gray-600 mb-1">SIANG</label>
-                                                        <input
-                                                            type="number"
-                                                            value={weeklyRequest.shiftPattern[location]?.SIANG || 0}
-                                                            onChange={(e) => setWeeklyRequest({
-                                                                ...weeklyRequest,
-                                                                shiftPattern: {
-                                                                    ...weeklyRequest.shiftPattern,
-                                                                    [location]: {
-                                                                        ...weeklyRequest.shiftPattern[location],
-                                                                        SIANG: parseInt(e.target.value) || 0
-                                                                    }
-                                                                }
-                                                            })}
-                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                            min="0"
-                                                            max="10"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs text-gray-600 mb-1">MALAM</label>
-                                                        <input
-                                                            type="number"
-                                                            value={weeklyRequest.shiftPattern[location]?.MALAM || 0}
-                                                            onChange={(e) => setWeeklyRequest({
-                                                                ...weeklyRequest,
-                                                                shiftPattern: {
-                                                                    ...weeklyRequest.shiftPattern,
-                                                                    [location]: {
-                                                                        ...weeklyRequest.shiftPattern[location],
-                                                                        MALAM: parseInt(e.target.value) || 0
-                                                                    }
-                                                                }
-                                                            })}
-                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                            min="0"
-                                                            max="10"
-                                                        />
-                                                    </div>
+                                            <div key={location} className="mb-6 p-4 border border-gray-200 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-4">{location}</h4>
+                                                
+                                                {/* Table Header */}
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full border-collapse border border-gray-300">
+                                                        <thead>
+                                                            <tr className="bg-gray-50">
+                                                                <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">
+                                                                    Role
+                                                                </th>
+                                                                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+                                                                    PAGI
+                                                                </th>
+                                                                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+                                                                    SIANG
+                                                                </th>
+                                                                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+                                                                    MALAM
+                                                                </th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {(['DOKTER', 'PERAWAT', 'STAFF'] as const).map((role) => (
+                                                                <tr key={role} className="hover:bg-gray-50">
+                                                                    <td className="border border-gray-300 px-3 py-2 font-medium text-gray-700">
+                                                                        {role}
+                                                                    </td>
+                                                                    {(['PAGI', 'SIANG', 'MALAM'] as const).map((shift) => (
+                                                                        <td key={shift} className="border border-gray-300 px-2 py-2">
+                                                                            <input
+                                                                                type="number"
+                                                                                value={weeklyRequest.staffPattern[location]?.[shift]?.[role] || 0}
+                                                                                onChange={(e) => updateWeeklyStaffPattern(
+                                                                                    location, 
+                                                                                    role, 
+                                                                                    shift, 
+                                                                                    parseInt(e.target.value) || 0
+                                                                                )}
+                                                                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-center focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                                                min="0"
+                                                                                max="20"
+                                                                            />
+                                                                        </td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
                                         ))}
@@ -2642,14 +3061,23 @@ const ManagemenJadwalPage = () => {
                                                         checked={monthlyRequest.locations.includes(location)}
                                                         onChange={(e) => {
                                                             if (e.target.checked) {
+                                                                // Add location and initialize staff pattern
                                                                 setMonthlyRequest({
                                                                     ...monthlyRequest,
-                                                                    locations: [...monthlyRequest.locations, location]
+                                                                    locations: [...monthlyRequest.locations, location],
+                                                                    staffPattern: {
+                                                                        ...monthlyRequest.staffPattern,
+                                                                        [location]: createDefaultStaffPattern()
+                                                                    }
                                                                 });
                                                             } else {
+                                                                // Remove location and its staff pattern
+                                                                const newStaffPattern = { ...monthlyRequest.staffPattern };
+                                                                delete newStaffPattern[location];
                                                                 setMonthlyRequest({
                                                                     ...monthlyRequest,
-                                                                    locations: monthlyRequest.locations.filter(l => l !== location)
+                                                                    locations: monthlyRequest.locations.filter(l => l !== location),
+                                                                    staffPattern: newStaffPattern
                                                                 });
                                                             }
                                                         }}
@@ -2703,30 +3131,61 @@ const ManagemenJadwalPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Average Staff Configuration */}
+                                    {/* Staff Pattern Configuration for Monthly */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-3">
-                                            Rata-rata Staff per Shift per Lokasi
+                                            Konfigurasi Kebutuhan Staff per Lokasi
                                         </label>
                                         {monthlyRequest.locations.map((location) => (
-                                            <div key={location} className="mb-3 flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                                                <span className="font-medium text-gray-800">{location}</span>
-                                                <div className="flex items-center space-x-2">
-                                                    <input
-                                                        type="number"
-                                                        value={monthlyRequest.averageStaffPerShift[location] || 0}
-                                                        onChange={(e) => setMonthlyRequest({
-                                                            ...monthlyRequest,
-                                                            averageStaffPerShift: {
-                                                                ...monthlyRequest.averageStaffPerShift,
-                                                                [location]: parseInt(e.target.value) || 0
-                                                            }
-                                                        })}
-                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                        min="0"
-                                                        max="20"
-                                                    />
-                                                    <span className="text-xs text-gray-600">orang/shift</span>
+                                            <div key={location} className="mb-6 p-4 border border-gray-200 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-4">{location}</h4>
+                                                
+                                                {/* Table Header */}
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full border-collapse border border-gray-300">
+                                                        <thead>
+                                                            <tr className="bg-gray-50">
+                                                                <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">
+                                                                    Role
+                                                                </th>
+                                                                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+                                                                    PAGI
+                                                                </th>
+                                                                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+                                                                    SIANG
+                                                                </th>
+                                                                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+                                                                    MALAM
+                                                                </th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {(['DOKTER', 'PERAWAT', 'STAFF'] as const).map((role) => (
+                                                                <tr key={role} className="hover:bg-gray-50">
+                                                                    <td className="border border-gray-300 px-3 py-2 font-medium text-gray-700">
+                                                                        {role}
+                                                                    </td>
+                                                                    {(['PAGI', 'SIANG', 'MALAM'] as const).map((shift) => (
+                                                                        <td key={shift} className="border border-gray-300 px-2 py-2">
+                                                                            <input
+                                                                                type="number"
+                                                                                value={monthlyRequest.staffPattern[location]?.[shift]?.[role] || 0}
+                                                                                onChange={(e) => updateMonthlyStaffPattern(
+                                                                                    location, 
+                                                                                    role, 
+                                                                                    shift, 
+                                                                                    parseInt(e.target.value) || 0
+                                                                                )}
+                                                                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-center focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                                                min="0"
+                                                                                max="20"
+                                                                            />
+                                                                        </td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
                                         ))}
@@ -2819,35 +3278,290 @@ const ManagemenJadwalPage = () => {
                 </div>
             )}
 
+            {/* Delete All Shifts Modal */}
+            {isDeleteAllModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-md w-full">
+                        <div className="p-6">
+                            {/* Header */}
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                    <Trash2 className="w-5 h-5 text-red-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900">Hapus Semua Shift</h3>
+                                    <p className="text-sm text-gray-500">Tindakan ini tidak dapat dibatalkan</p>
+                                </div>
+                            </div>
+
+                            {/* Warning Message */}
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-medium text-red-800">Peringatan!</p>
+                                        <p className="text-sm text-red-700 mt-1">
+                                            Anda akan menghapus <strong>SEMUA data shift</strong> dari sistem. 
+                                            Tindakan ini akan menghapus:
+                                        </p>
+                                        <ul className="text-sm text-red-700 mt-2 list-disc list-inside space-y-1">
+                                            <li>Semua jadwal shift yang ada</li>
+                                            <li>Riwayat penugasan pegawai</li>
+                                            <li>Data statistik terkait</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Current Stats */}
+                            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                <p className="text-sm text-gray-600 mb-2">Data yang akan dihapus:</p>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-700">Total Shift:</span>
+                                    <span className="font-medium text-gray-900">{jadwalData.length}</span>
+                                </div>
+                            </div>
+
+                            {deleteError && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                                    <p className="text-sm text-red-700">{deleteError}</p>
+                                </div>
+                            )}
+
+                            {/* Actions */}
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={() => {
+                                        setIsDeleteAllModalOpen(false);
+                                        setDeleteError(null);
+                                    }}
+                                    disabled={isDeleting}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={handleDeleteAllShifts}
+                                    disabled={isDeleting}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    {isDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* MODALS SECTION */}
             
-            {/* Modal Tambah/Create Shift */}
-            {(isModalOpen || isCreateShiftModalOpen) && (
-                <FormModal 
-                    table="jadwal" 
-                    type="create"
-                    onCreated={handleJadwalCreated}
-                    onUpdated={() => {}}
-                    onDeleted={() => {}}
-                    renderTrigger={false}
-                    initialOpen={true}
-                    onAfterClose={() => {
-                        setIsModalOpen(false);
-                        setIsCreateShiftModalOpen(false);
+            {/* Enhanced Manual Shift Creation Modal */}
+            {isCreateShiftModalOpen && (
+                <EnhancedManualShiftModal
+                    isOpen={isCreateShiftModalOpen}
+                    onClose={() => setIsCreateShiftModalOpen(false)}
+                    onSuccess={handleJadwalCreated}
+                    onError={(error) => {
+                        showNotificationModal({
+                            type: 'error',
+                            title: error.title,
+                            message: error.message,
+                            details: error.details
+                        });
                     }}
                 />
             )}
 
-            {/* Enhanced Manual Add Modal */}
-            <EnhancedManualAddModal
-                isOpen={isCreateShiftModalOpen}
-                onClose={() => setIsCreateShiftModalOpen(false)}
-                users={users}
-                onShiftCreated={() => {
-                    handleJadwalCreated();
-                    setWorkloadRefreshTrigger(prev => prev + 1); // Refresh workload validator
-                }}
-            />
+            {/* Modal Edit Shift - Enhanced */}
+            {isEditShiftModalOpen && selectedShift && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-indigo-600">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                                    <Edit className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-semibold text-white">Edit Shift</h2>
+                                    <p className="text-blue-100 text-sm">Perbarui jadwal shift dengan validasi lengkap</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setIsEditShiftModalOpen(false);
+                                    setSelectedShift(null);
+                                }}
+                                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                            >
+                                <X className="w-6 h-6 text-white" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            <EnhancedJadwalForm
+                                type="update"
+                                data={selectedShift}
+                                onClose={() => {
+                                    setIsEditShiftModalOpen(false);
+                                    setSelectedShift(null);
+                                }}
+                                onCreate={() => {}}
+                                onUpdate={(updatedShift) => {
+                                    handleJadwalUpdated(updatedShift);
+                                    setIsEditShiftModalOpen(false);
+                                    setSelectedShift(null);
+                                }}
+                                onError={(error) => {
+                                    showNotificationModal({
+                                        type: 'error',
+                                        title: 'Gagal Memperbarui Shift',
+                                        message: error.message || 'Terjadi kesalahan saat memperbarui jadwal shift',
+                                        details: {
+                                            timestamp: new Date().toLocaleString('id-ID'),
+                                            recommendations: [
+                                                'Periksa koneksi internet',
+                                                'Pastikan semua field diisi dengan benar',
+                                                'Coba lagi dalam beberapa saat',
+                                                'Hubungi administrator jika masalah berlanjut'
+                                            ]
+                                        }
+                                    });
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal View Shift Details */}
+            {isViewShiftModalOpen && selectedShift && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <Eye className="w-6 h-6 text-blue-600" />
+                                    <h2 className="text-xl font-semibold">Detail Shift</h2>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setIsViewShiftModalOpen(false);
+                                        setSelectedShift(null);
+                                    }}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            {/* Shift Details */}
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Nama Pegawai
+                                        </label>
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            <div className="font-medium">{selectedShift.nama}</div>
+                                            <div className="text-sm text-gray-500">ID: {selectedShift.idpegawai}</div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Tanggal
+                                        </label>
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            {(() => {
+                                                const dateObj = new Date(selectedShift.tanggal);
+                                                const day = String(dateObj.getDate()).padStart(2, '0');
+                                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                                const year = dateObj.getFullYear();
+                                                return `${day}/${month}/${year}`;
+                                            })()}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Jam Kerja
+                                        </label>
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            {selectedShift.jammulai} - {selectedShift.jamselesai}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Lokasi Shift
+                                        </label>
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            {selectedShift.lokasishift.replace(/_/g, ' ').toLowerCase()
+                                                .split(' ')
+                                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                                .join(' ')}
+                                        </div>
+                                    </div>
+
+                                    {selectedShift.tipeshift && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Tipe Shift
+                                            </label>
+                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                                                    selectedShift.tipeshift === 'PAGI' ? 'bg-yellow-100 text-yellow-800' :
+                                                    selectedShift.tipeshift === 'SIANG' ? 'bg-orange-100 text-orange-800' :
+                                                    selectedShift.tipeshift === 'MALAM' ? 'bg-blue-100 text-blue-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {selectedShift.tipeshift}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3 pt-4 border-t">
+                                    <button
+                                        onClick={() => {
+                                            setIsViewShiftModalOpen(false);
+                                            setIsEditShiftModalOpen(true);
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                        Edit Shift
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setIsViewShiftModalOpen(false);
+                                            setSelectedShift(null);
+                                            handleShiftDelete(selectedShift.id);
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Hapus Shift
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setIsViewShiftModalOpen(false);
+                                            setSelectedShift(null);
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                    >
+                                        Tutup
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal Auto Schedule AI */}
             {isAutoScheduleModalOpen && (
@@ -3129,6 +3843,64 @@ const ManagemenJadwalPage = () => {
                 onClose={() => setShowNotification(false)}
                 notification={notificationData}
             />
+
+            {/* Confirmation Modal */}
+            {showConfirmation && confirmationData && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-md w-full">
+                        <div className="p-6">
+                            {/* Header */}
+                            <div className="flex items-center gap-3 mb-4">
+                                {confirmationData.type === 'danger' && (
+                                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                        <AlertTriangle className="w-6 h-6 text-red-600" />
+                                    </div>
+                                )}
+                                {confirmationData.type === 'warning' && (
+                                    <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                        <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                                    </div>
+                                )}
+                                {confirmationData.type === 'info' && (
+                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <AlertTriangle className="w-6 h-6 text-blue-600" />
+                                    </div>
+                                )}
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    {confirmationData.title}
+                                </h3>
+                            </div>
+
+                            {/* Message */}
+                            <p className="text-gray-600 mb-6">
+                                {confirmationData.message}
+                            </p>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={handleCancel}
+                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                    {confirmationData.cancelText}
+                                </button>
+                                <button
+                                    onClick={handleConfirm}
+                                    className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                                        confirmationData.type === 'danger' 
+                                            ? 'bg-red-600 hover:bg-red-700' 
+                                            : confirmationData.type === 'warning'
+                                            ? 'bg-yellow-600 hover:bg-yellow-700'
+                                            : 'bg-blue-600 hover:bg-blue-700'
+                                    }`}
+                                >
+                                    {confirmationData.confirmText}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             </div>
         </div>
     );

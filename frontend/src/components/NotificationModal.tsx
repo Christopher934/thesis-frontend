@@ -26,7 +26,7 @@ export interface NotificationData {
       shiftType?: string;
       reason?: string;
       error?: string;
-    }>;
+    } | string>;
     capacityIssues?: Array<{
       location: string;
       currentCount: number;
@@ -41,10 +41,15 @@ export interface NotificationData {
       status: string;
       recommendation: string;
     }>;
+    workloadIssues?: Array<string>;
     fulfillmentRate?: number;
     recommendations?: string[];
     totalRequested?: number;
     successfulAssignments?: number;
+    timestamp?: string;
+    employee?: string;
+    weeklyHours?: string;
+    monthlyHours?: string;
   };
 }
 
@@ -180,34 +185,57 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose, 
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {notification.details.conflicts.map((conflict, index) => (
                       <div key={index} className="bg-white border border-orange-200 rounded p-3 text-sm">
-                        <div className="grid grid-cols-2 gap-2">
-                          {conflict.date && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-gray-500" />
-                              <span className="text-gray-600">Tanggal:</span>
-                              <span className="font-medium">{conflict.date}</span>
+                        {typeof conflict === 'string' ? (
+                          <div className="text-orange-700 font-medium">{conflict}</div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              {conflict.date && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3 text-gray-500" />
+                                  <span className="text-gray-600">Tanggal:</span>
+                                  <span className="font-medium">{conflict.date}</span>
+                                </div>
+                              )}
+                              {conflict.location && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-gray-500" />
+                                  <span className="text-gray-600">Lokasi:</span>
+                                  <span className="font-medium">{conflict.location}</span>
+                                </div>
+                              )}
+                              {conflict.shiftType && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-gray-500" />
+                                  <span className="text-gray-600">Shift:</span>
+                                  <span className="font-medium">{conflict.shiftType}</span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          {conflict.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-gray-500" />
-                              <span className="text-gray-600">Lokasi:</span>
-                              <span className="font-medium">{conflict.location}</span>
-                            </div>
-                          )}
-                          {conflict.shiftType && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-gray-500" />
-                              <span className="text-gray-600">Shift:</span>
-                              <span className="font-medium">{conflict.shiftType}</span>
-                            </div>
-                          )}
-                        </div>
-                        {(conflict.reason || conflict.error) && (
-                          <div className="mt-2 text-orange-700 font-medium">
-                            {conflict.reason || conflict.error}
-                          </div>
+                            {(conflict.reason || conflict.error) && (
+                              <div className="mt-2 text-orange-700 font-medium">
+                                {conflict.reason || conflict.error}
+                              </div>
+                            )}
+                          </>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Workload Issues */}
+              {notification.details.workloadIssues && notification.details.workloadIssues.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h3 className="font-medium text-red-800 mb-3 flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Masalah Beban Kerja ({notification.details.workloadIssues.length})
+                  </h3>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {notification.details.workloadIssues.map((issue, index) => (
+                      <div key={index} className="bg-white border border-red-200 rounded p-3 text-sm">
+                        <div className="text-red-700 font-medium">{issue}</div>
                       </div>
                     ))}
                   </div>
@@ -308,10 +336,15 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose, 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t flex justify-end">
+        <div className="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+          {notification.details?.timestamp && (
+            <div className="text-sm text-gray-500">
+              {notification.details.timestamp}
+            </div>
+          )}
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors ml-auto"
           >
             Tutup
           </button>

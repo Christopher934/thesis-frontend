@@ -18,7 +18,15 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "prisma/seed.ts"
+  ],
   "exclude": [
-    "prisma/seeders.disabled/**/*"
+    "prisma/seeders.disabled/**/*",
+    "populate-employee-ids.ts",
+    "dist/**/*",
+    "node_modules/**/*"
   ]
 }

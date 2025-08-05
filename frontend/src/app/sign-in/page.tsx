@@ -7,7 +7,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
 // Lazy load heavy components for performance
-const RedirectIfLoggedIn = dynamic(() => import('@/components/auth/RedirectIfLoggedIn'), {
+const SimpleRedirectIfLoggedIn = dynamic(() => import('@/components/auth/SimpleRedirectIfLoggedIn'), {
   ssr: false
 });
 
@@ -99,7 +99,7 @@ export default function LoginPage() {
   };
 
   return (
-    <RedirectIfLoggedIn>
+    <SimpleRedirectIfLoggedIn>
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 px-4 sm:px-6 lg:px-8">
         <div 
           className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden"
@@ -219,11 +219,11 @@ export default function LoginPage() {
                   </label>
                 </div>
 
-                <div className="text-sm">
+                {/* <div className="text-sm">
                   <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
                     Lupa password?
                   </a>
-                </div>
+                </div> */}
               </div>
 
               {error && (
@@ -267,18 +267,18 @@ export default function LoginPage() {
                 </button>
               </div>
             </form>
-            <LoginFooter />
+            {/* <LoginFooter /> */}
           </div>
         </div>
         
         {/* System Notifications */}
-        <SystemNotifications />
+        {/* <SystemNotifications /> */}
         
         {/* Hidden AuthDebug for development */}
         <div className="mt-4 opacity-50 hover:opacity-100 transition-opacity">
           <AuthDebug />
         </div>
       </div>
-    </RedirectIfLoggedIn>
+    </SimpleRedirectIfLoggedIn>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Users, Clock, AlertTriangle, CheckCircle, XCircle, Eye, Edit, Filter, Download } from 'lucide-react';
+import Pagination from '@/components/common/Pagination';
 
 interface User {
   namaDepan: string;
@@ -52,6 +53,17 @@ const capitalizeWords = (str: string) => {
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
     return date.toLocaleTimeString('id-ID', { 
@@ -263,8 +275,8 @@ export default function ManajemenAbsensi() {
             <AlertTriangle className="h-8 w-8 text-red-600" />
           </div>
           <div className="mt-4">
-            {stats.usersNotCheckedIn.slice(0, 3).map((user) => (
-              <div key={user.id} className="text-sm text-gray-700 py-1">
+            {stats.usersNotCheckedIn.slice(0, 3).map((user, index) => (
+              <div key={`${user.id}-${index}`} className="text-sm text-gray-700 py-1">
                 {capitalizeWords(`${user.namaDepan} ${user.namaBelakang}`)}
               </div>
             ))}
@@ -276,21 +288,6 @@ export default function ManajemenAbsensi() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
-          <div className="space-y-2">
-            <button className="w-full text-left px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100">
-              Laporan Harian
-            </button>
-            <button className="w-full text-left px-3 py-2 text-sm bg-green-50 text-green-700 rounded hover:bg-green-100">
-              Laporan Bulanan
-            </button>
-            <button className="w-full text-left px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded hover:bg-purple-100">
-              Statistik
-            </button>
-          </div>
-        </div>
 
         {/* Summary */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -490,27 +487,12 @@ export default function ManajemenAbsensi() {
 
       {/* Pagination */}
       {absensiData.length > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Halaman {currentPage}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Sebelumnya
-            </button>
-            <button
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              disabled={absensiData.length < itemsPerPage}
-              className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Selanjutnya
-            </button>
-          </div>
-        </div>
+        <Pagination
+          totalItems={absensiData.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       )}
     </div>
   );

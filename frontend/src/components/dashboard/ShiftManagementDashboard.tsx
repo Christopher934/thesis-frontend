@@ -2,11 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar, Users, Clock, AlertCircle, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatLokasiShift } from '../../lib/textFormatter';
 
-// Helper function to format time from DateTime string to HH:mm format
+// Helper function to format time
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
     return date.toLocaleTimeString('id-ID', { 
@@ -96,7 +108,8 @@ const ShiftManagementDashboard: React.FC = () => {
       });
 
       if (usersResponse.ok && shiftsResponse.ok && swapResponse.ok && attendanceResponse.ok) {
-        const users = await usersResponse.json();
+        const usersResult = await usersResponse.json();
+        const users = usersResult.data || []; // API returns { data: users[], meta: {...} }
         const shifts = await shiftsResponse.json();
         const swapRequests = await swapResponse.json();
         const attendanceStats = await attendanceResponse.json();
@@ -224,13 +237,12 @@ const ShiftManagementDashboard: React.FC = () => {
                   <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px] text-center">Shift</th>
                   <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[110px] text-center">Jam Kerja</th>
                   <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">Status</th>
-                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {scheduleData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-6 text-gray-500">
+                    <td colSpan={6} className="text-center py-6 text-gray-500">
                       Tidak ada jadwal shift hari ini.
                     </td>
                   </tr>
@@ -262,7 +274,7 @@ const ShiftManagementDashboard: React.FC = () => {
                           <div className="text-sm text-gray-900 min-w-[100px] text-center">{jabatan}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap align-middle">
-                          <div className="text-sm text-gray-900 min-w-[100px] text-center">{shift.lokasishift}</div>
+                          <div className="text-sm text-gray-900 min-w-[100px] text-center">{formatLokasiShift(shift.lokasishift)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap align-middle">
                           <div className="text-sm text-gray-900 min-w-[80px] text-center">{shiftType}</div>
@@ -272,10 +284,6 @@ const ShiftManagementDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap align-middle">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}>{statusLabel}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap align-middle text-right text-sm font-medium">
-                          <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                          <button className="text-blue-600 hover:text-blue-900">Detail</button>
                         </td>
                       </tr>
                     );

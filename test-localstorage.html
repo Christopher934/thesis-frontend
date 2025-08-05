@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test LocalStorage Token</title>
+</head>
+<body>
+    <h1>Token Check</h1>
+    <button onclick="checkToken()">Check Token</button>
+    <button onclick="loginAdmin()">Auto Login Admin</button>
+    <div id="result"></div>
+
+    <script>
+        function checkToken() {
+            const token = localStorage.getItem('token');
+            const result = document.getElementById('result');
+            
+            if (token) {
+                result.innerHTML = `<p style="color: green;">Token found: ${token.substring(0, 50)}...</p>`;
+            } else {
+                result.innerHTML = `<p style="color: red;">No token found in localStorage</p>`;
+            }
+        }
+
+        async function loginAdmin() {
+            try {
+                const response = await fetch('http://localhost:3001/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.access_token);
+                    document.getElementById('result').innerHTML = `<p style="color: green;">Login successful! Token saved.</p>`;
+                } else {
+                    const error = await response.json();
+                    document.getElementById('result').innerHTML = `<p style="color: red;">Login failed: ${error.message}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p style="color: red;">Login error: ${error.message}</p>`;
+            }
+        }
+
+        // Auto check token on page load
+        window.onload = checkToken;
+    </script>
+</body>
+</html>

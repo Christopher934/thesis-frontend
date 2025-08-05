@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <h1 class="text-2xl font-bold mb-6">Test Modal Debugging</h1>
+    
+    <!-- Debug Info -->
+    <div class="fixed top-4 right-4 z-[99999] bg-yellow-100 border border-yellow-300 rounded p-3 text-xs shadow-lg">
+        <strong>🐛 MODAL DEBUG:</strong><br/>
+        - AutoSchedule: <span id="modal-state">CLOSED</span><br/>
+        <button 
+            id="test-btn"
+            class="mt-2 px-2 py-1 bg-purple-500 text-white rounded text-xs"
+        >
+            Test Modal
+        </button>
+    </div>
+
+    <!-- Button to test -->
+    <button 
+        id="main-btn"
+        class="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 transition-all shadow-md text-sm font-medium"
+    >
+        <span>⚡</span>
+        Jadwal Otomatis AI
+    </button>
+    
+    <!-- Simple Modal -->
+    <div 
+        id="test-modal"
+        class="fixed inset-0 z-[99998] hidden flex items-center justify-center"
+        style="background-color: rgba(0, 0, 0, 0.8);"
+    >
+        <div 
+            class="bg-white rounded-lg p-8 max-w-md mx-4 shadow-2xl"
+            style="position: relative; z-index: 99999;"
+        >
+            <h2 class="text-2xl font-bold text-green-600 mb-4">
+                ✅ MODAL BERHASIL MUNCUL!
+            </h2>
+            <p class="mb-4 text-gray-700">
+                Jika Anda melihat modal ini, berarti sistem modal sudah berfungsi dengan baik!
+            </p>
+            <div class="flex gap-2">
+                <button 
+                    id="close-btn"
+                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                    Tutup Modal
+                </button>
+                <button 
+                    id="log-btn"
+                    class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                    Test Console
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('test-modal');
+        const modalState = document.getElementById('modal-state');
+        const mainBtn = document.getElementById('main-btn');
+        const testBtn = document.getElementById('test-btn');
+        const closeBtn = document.getElementById('close-btn');
+        const logBtn = document.getElementById('log-btn');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modalState.textContent = 'OPEN';
+            console.log('Modal opened!');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modalState.textContent = 'CLOSED';
+            console.log('Modal closed!');
+        }
+
+        mainBtn.addEventListener('click', openModal);
+        testBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        logBtn.addEventListener('click', () => {
+            console.log('Test button clicked!');
+            alert('Console test berhasil!');
+        });
+
+        // Close modal when clicking backdrop
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        console.log('Modal test script loaded!');
+    </script>
+</body>
+</html>

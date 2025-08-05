@@ -1,4 +1,38 @@
 // Utility functions for text formatting consistency
+
+// Format RSUD location names to proper title case
+export const formatLokasiShift = (lokasi: string): string => {
+  if (!lokasi) return '-';
+  
+  // Mapping for specific RSUD department names - updated to match Prisma schema
+  const lokasiMapping: { [key: string]: string } = {
+    'GEDUNG_ADMINISTRASI': 'Gedung Administrasi',
+    'RAWAT_JALAN': 'Rawat Jalan',
+    'RAWAT_INAP': 'Rawat Inap',
+    'GAWAT_DARURAT': 'Gawat Darurat',
+    'LABORATORIUM': 'Laboratorium',
+    'FARMASI': 'Farmasi',
+    'RADIOLOGI': 'Radiologi',
+    'GIZI': 'Gizi',
+    'KEAMANAN': 'Keamanan',
+    'LAUNDRY': 'Laundry',
+    'CLEANING_SERVICE': 'Cleaning Service',
+    'SUPIR': 'Supir',
+    'ICU': 'ICU',
+    'NICU': 'NICU',
+    'HEMODIALISA': 'Hemodialisa',
+    'FISIOTERAPI': 'Fisioterapi',
+    'KAMAR_OPERASI': 'Kamar Operasi',
+    'RECOVERY_ROOM': 'Recovery Room',
+    'EMERGENCY_ROOM': 'Emergency Room',
+  };
+  
+  return lokasiMapping[lokasi] || lokasi
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export const textFormatter = {
   // Capitalize first letter of each word (Title Case)
   capitalizeWords: (str: string): string => {
@@ -17,32 +51,7 @@ export const textFormatter = {
   },
 
   // Format RSUD location names to proper title case
-  formatLokasiShift: (lokasi: string): string => {
-    if (!lokasi) return '-';
-    
-    // Mapping for specific RSUD department names
-    const lokasiMapping: { [key: string]: string } = {
-      'GEDUNG_ADMINISTRASI': 'Gedung Administrasi',
-      'RAWAT_JALAN': 'Rawat Jalan',
-      'RAWAT_INAP': 'Rawat Inap',
-      'GAWAT_DARURAT': 'Gawat Darurat',
-      'LABORATORIUM': 'Laboratorium',
-      'FARMASI': 'Farmasi',
-      'RADIOLOGI': 'Radiologi',
-      'GIZI': 'Gizi',
-      'KEAMANAN': 'Keamanan',
-      'LAUNDRY': 'Laundry',
-      'CLEANING_SERVICE': 'Cleaning Service',
-      'SUPIR': 'Supir',
-      'ICU': 'ICU',
-      'NICU': 'NICU',
-    };
-    
-    return lokasiMapping[lokasi] || lokasi
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-  },
+  formatLokasiShift: formatLokasiShift,
 
   // Format shift types to UPPERCASE
   formatTipeShift: (tipe: string): string => {

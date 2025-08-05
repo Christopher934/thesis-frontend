@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationIntegrationService } from '../notifikasi/notification-integration.service';
+import { ShiftValidationService } from '../services/shift-validation.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { 
@@ -17,6 +18,7 @@ export class ShiftService {
   constructor(
     private prisma: PrismaService,
     private notificationService?: NotificationIntegrationService,
+    private validationService?: ShiftValidationService,
   ) {}
 
   async create(createShiftDto: CreateShiftDto) {
@@ -74,6 +76,41 @@ export class ShiftService {
         jamselesaiDate.setDate(jamselesaiDate.getDate() + 1);
       }
 
+      // Validate shift assignment before creating
+      if (this.validationService) {
+        const validation = await this.validationService.validateShiftAssignment(
+          userId,
+          tanggalDate,
+          (createShiftDto.tipeEnum || createShiftDto.tipeshift) as any,
+          createShiftDto.lokasishift,
+        );
+
+        // Check for high severity conflicts (workload exceeded)
+        const highSeverityConflicts = validation.conflicts.filter(
+          (c) => c.severity === 'HIGH',
+        );
+        if (highSeverityConflicts.length > 0) {
+          const workloadConflicts = highSeverityConflicts.filter(
+            (c) => c.type === 'WORKLOAD_EXCEEDED',
+          );
+          if (workloadConflicts.length > 0) {
+            throw new BadRequestException({
+              message: 'Tidak dapat membuat jadwal - beban kerja berlebihan',
+              details: workloadConflicts[0].message,
+              type: 'WORKLOAD_EXCEEDED',
+              requiresOverworkRequest: true,
+            });
+          }
+          
+          // Other high severity conflicts
+          throw new BadRequestException({
+            message: 'Tidak dapat membuat jadwal - terdapat konflik',
+            details: highSeverityConflicts.map((c) => c.message).join('; '),
+            conflicts: highSeverityConflicts,
+          });
+        }
+      }
+
       // Create a new shift in the database
       const shift = await this.prisma.shift.create({
         data: {
@@ -100,6 +137,30 @@ export class ShiftService {
           },
         },
       });
+
+      // Kirim notifikasi shift baru
+      if (this.notificationService && shift.user) {
+        try {
+          // Gunakan method yang sudah ada di notifikasi service
+          await this.notificationService.sendNotification(
+            shift.userId,
+            'SHIFT_BARU_DITAMBAHKAN',
+            '📅 Shift Baru Ditambahkan',
+            `Shift baru telah ditambahkan untuk Anda pada ${shift.tanggal.toLocaleDateString('id-ID')} dari ${shift.jammulai.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})} - ${shift.jamselesai.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})} di ${shift.lokasishift}`,
+            {
+              shiftId: shift.id,
+              tanggal: shift.tanggal,
+              jammulai: shift.jammulai,
+              jamselesai: shift.jamselesai,
+              lokasishift: shift.lokasishift,
+              tipeshift: shift.tipeshift,
+            }
+          );
+        } catch (notificationError) {
+          console.error('[ShiftService][create] Notification error:', notificationError);
+          // Don't throw error if notification fails, just log it
+        }
+      }
 
       // Format the response
       return {
@@ -135,13 +196,30 @@ export class ShiftService {
 
       // Jika ada data shift dari database, return itu
       if (shifts && shifts.length > 0) {
-        // Map the shifts to include the user's full name
-        return shifts.map((shift) => ({
-          ...shift,
-          nama: shift.user
-            ? `${shift.user.namaDepan} ${shift.user.namaBelakang}`
-            : undefined,
-        }));
+        // Map the shifts to include the user's full name and idpegawai for frontend compatibility
+        return shifts.map((shift) => {
+          // Format time fields from DateTime to HH:MM string
+          const formatTime = (timeValue: Date): string => {
+            if (!timeValue) return '';
+            const hours = timeValue.getHours().toString().padStart(2, '0');
+            const minutes = timeValue.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+          };
+
+          return {
+            ...shift,
+            nama: shift.user
+              ? `${shift.user.namaDepan} ${shift.user.namaBelakang}`
+              : undefined,
+            // Add idpegawai at top level for frontend compatibility
+            idpegawai: shift.user?.username || shift.user?.employeeId || undefined,
+            // Format tanggal as YYYY-MM-DD
+            tanggal: shift.tanggal.toISOString().split('T')[0],
+            // Format time fields properly
+            jammulai: formatTime(shift.jammulai),
+            jamselesai: formatTime(shift.jamselesai),
+          };
+        });
       }
 
       // Return empty array if no data found
@@ -492,6 +570,27 @@ export class ShiftService {
       return shifts;
     } catch (error) {
       throw error;
+    }
+  }
+
+  async removeAll() {
+    try {
+      // Count total shifts before deletion for response
+      const countResult = await this.prisma.shift.count();
+      
+      // Delete all shifts
+      const result = await this.prisma.shift.deleteMany({});
+      
+      return {
+        success: true,
+        message: 'All shifts have been successfully deleted',
+        deletedCount: result.count,
+        totalBefore: countResult
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Failed to delete all shifts: ${error.message}`
+      );
     }
   }
 }

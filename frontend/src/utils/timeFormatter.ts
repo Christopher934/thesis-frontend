@@ -4,18 +4,37 @@
 
 /**
  * Format time from DateTime string to HH:mm format
- * @param timeString - DateTime string from backend
+ * @param timeString - DateTime string from backend or time string
  * @returns Formatted time string in HH:mm format
  */
 export const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date format:', timeString);
+      return timeString;
+    }
+    
     return date.toLocaleTimeString('id-ID', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: false 
+      hour12: false,
+      timeZone: 'Asia/Jakarta'
     });
   } catch (error) {
     console.error('Error formatting time:', error);

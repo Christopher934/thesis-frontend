@@ -2,14 +2,33 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, MapPin, User } from 'lucide-react';
+import { formatLokasiShift } from '../../lib/textFormatter';
 
-// Helper function to format time from DateTime string to HH:mm format
+// Helper function to format time
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma or ISO string
   try {
     const date = new Date(timeString);
-    return date.toLocaleTimeString('id-ID', { 
+    if (isNaN(date.getTime())) {
+      // If can't parse as date, might be just time string
+      return timeString;
+    }
+    
+    // Convert to Indonesian timezone and get time
+    const indonesianTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+    return indonesianTime.toLocaleTimeString('id-ID', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: false 
@@ -74,8 +93,21 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
 
       const allShifts: ShiftData[] = await response.json();
       
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
+      // Debug: Log the structure of received data
+      console.log('TodaySchedule: Received shifts:', allShifts);
+      if (allShifts.length > 0) {
+        console.log('TodaySchedule: First shift sample:', allShifts[0]);
+        console.log('TodaySchedule: First shift time data:', {
+          jammulai: allShifts[0].jammulai,
+          jamselesai: allShifts[0].jamselesai,
+          tanggal: allShifts[0].tanggal
+        });
+      }
+      
+      // Get today's date in YYYY-MM-DD format - adjusted for Indonesian timezone
+      const today = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).toISOString().split('T')[0];
+      
+      console.log('TodaySchedule: Today date:', today);
       
       // Get current user's ID from localStorage if not provided
       const currentUserId = userId || localStorage.getItem('userId');
@@ -97,9 +129,24 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
 
       // Convert to TodayScheduleItem format
       const formattedSchedule: TodayScheduleItem[] = todayShifts.map(shift => {
-        const startTime = new Date(`${today}T${shift.jammulai}`);
-        const endTime = new Date(`${today}T${shift.jamselesai}`);
-        const now = new Date();
+        // Parse time properly from backend format
+        const parseShiftTime = (timeString: string, baseDate: string): Date => {
+          if (/^\d{2}:\d{2}(:\d{2})?$/.test(timeString)) {
+            // If it's a simple time format like "08:00" or "08:00:00"
+            return new Date(`${baseDate}T${timeString.split(':').slice(0, 2).join(':')}`);
+          } else {
+            // If it's a full DateTime, extract just the time part
+            const time = new Date(timeString);
+            const hours = time.getUTCHours().toString().padStart(2, '0');
+            const minutes = time.getUTCMinutes().toString().padStart(2, '0');
+            return new Date(`${baseDate}T${hours}:${minutes}`);
+          }
+        };
+        
+        const startTime = parseShiftTime(shift.jammulai, today);
+        const endTime = parseShiftTime(shift.jamselesai, today);
+        // Use Indonesian timezone (GMT+7)
+        const now = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
         
         // Determine status based on current time
         let status: 'upcoming' | 'current' | 'completed';
@@ -115,17 +162,10 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
         const durationMs = endTime.getTime() - startTime.getTime();
         const durationHours = Math.round(durationMs / (1000 * 60 * 60));
 
-        // Format location
-        const formatLocation = (location: string) => {
-          return location.split('_').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-          ).join(' ');
-        };
-
         return {
           id: shift.id.toString(),
           time: formatTime(shift.jammulai),
-          location: formatLocation(shift.lokasishift),
+          location: formatLokasiShift(shift.lokasishift),
           type: `Shift ${shift.tipeshift}`,
           status,
           duration: `${durationHours} jam`
@@ -213,7 +253,9 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
   };
 
   const getCurrentTime = () => {
-    return new Date().toLocaleTimeString('id-ID', { 
+    // Use Indonesian timezone (GMT+7)
+    const now = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
+    return now.toLocaleTimeString('id-ID', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: false 
@@ -221,7 +263,9 @@ const TodaySchedule: React.FC<TodayScheduleProps> = ({ userRole, userId }) => {
   };
 
   const getCurrentDate = () => {
-    return new Date().toLocaleDateString('id-ID', {
+    // Use Indonesian timezone (GMT+7)
+    const now = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
+    return now.toLocaleDateString('id-ID', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

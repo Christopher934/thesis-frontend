@@ -4,10 +4,21 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Calendar, Download, Filter, TrendingUp, Users, Clock, AlertTriangle } from 'lucide-react';
 
-// Helper function to format time from DateTime string to HH:mm format
+// Helper function to format time
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
     return date.toLocaleTimeString('id-ID', { 
@@ -185,13 +196,13 @@ export default function LaporanStatistik() {
     }));
   };
 
-  const exportToExcel = () => {
-    alert('Fitur export Excel akan segera tersedia');
-  };
+  // const exportToExcel = () => {
+  //   alert('Fitur export Excel akan segera tersedia');
+  // };
 
-  const exportToPDF = () => {
-    alert('Fitur export PDF akan segera tersedia');
-  };
+  // const exportToPDF = () => {
+  //   alert('Fitur export PDF akan segera tersedia');
+  // };
 
   return (
     <div className="p-6 space-y-6">
@@ -199,7 +210,7 @@ export default function LaporanStatistik() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Laporan & Statistik Absensi</h1>
         <div className="flex items-center gap-2">
-          <button
+          {/* <button
             onClick={exportToExcel}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
@@ -212,7 +223,7 @@ export default function LaporanStatistik() {
           >
             <Download className="h-4 w-4" />
             PDF
-          </button>
+          </button> */}
         </div>
       </div>
 

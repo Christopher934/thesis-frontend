@@ -17,10 +17,13 @@ import {
   ClipboardList,
   RefreshCw,
   CalendarDays,
+  Clock,
+  CalendarX2,
   MessageSquare,
   FileBarChart,
   User,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 // Interface untuk menu item dropdown
@@ -49,8 +52,9 @@ const menuItems = [
       { icon: Calendar, label: "Manajemen Jadwal", href: "/dashboard/list/managemenjadwal", visible: ["admin"] },
       { icon: ClipboardList, label: "Jadwal Saya", href: "/dashboard/list/jadwalsaya", visible: ["perawat","staf","dokter","supervisor"] },
       { icon: RefreshCw, label: "Ajukan Tukar Shift", href: "/dashboard/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter","supervisor"] },
+      { icon: Shield, label: "Overwork Request", href: "/dashboard/list/overwork-request", visible: ["perawat","staf","dokter","supervisor"] },
       { 
-        icon: CalendarDays, 
+        icon: Clock, 
         label: "Absensi", 
         visible: ["admin", "perawat","staf","dokter","supervisor"],
         dropdown: [
@@ -60,8 +64,8 @@ const menuItems = [
           { label: "Laporan Absensi", href: "/dashboard/list/laporan-absensi", visible: ["admin"], icon: FileText },
         ]
       },
-      { icon: CalendarDays, label: "Events", href: "/dashboard/list/events", visible: ["admin", "perawat","staf","dokter","supervisor"] },
-      { icon: MessageSquare, label: "Pesan", href: "/dashboard/list/notifications", visible: ["admin", "perawat","staf","dokter","supervisor"] },
+      { icon: CalendarX2, label: "Events", href: "/dashboard/list/events", visible: ["admin", "perawat","staf","dokter","supervisor"] },
+      // { icon: MessageSquare, label: "Pesan", href: "/dashboard/list/notifications", visible: ["admin", "perawat","staf","dokter","supervisor"] },
       { icon: FileBarChart, label: "Laporan", href: "/dashboard/list/laporan", visible: ["admin","supervisor"] },
     ],
   },
@@ -225,14 +229,12 @@ const Menu = memo(() => {
                                 handleNavigation(dropdownItem.href);
                                 setOpenDropdown(null);
                               }}
-                              className="block py-2 lg:py-2 px-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm lg:text-sm touch-manipulation font-medium w-full text-left"
+                              className="flex items-center gap-3 w-full py-2 lg:py-2 px-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm lg:text-sm touch-manipulation font-medium text-left"
                             >
-                              {/* Desktop view - full label */}
-                              <span className="hidden lg:block">{dropdownItem.label}</span>
-                              {/* Mobile view - icon only */}
-                              <div className="lg:hidden flex items-center justify-center">
-                                {IconComponent && <IconComponent className="w-6 h-6" />}
-                              </div>
+                              {/* Show icon in mobile sidebar */}
+                              {IconComponent && <IconComponent className="w-4 h-4" />}
+                              {/* Show full label in mobile sidebar */}
+                              <span className="block">{dropdownItem.label}</span>
                             </button>
                           );
                         })}

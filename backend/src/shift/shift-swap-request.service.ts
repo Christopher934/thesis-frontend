@@ -260,6 +260,7 @@ export class ShiftSwapRequestService {
     const isUnitHead =
       user.role === Role.SUPERVISOR && shiftSwap.requiresUnitHead;
     const isSupervisor = user.role === Role.SUPERVISOR;
+    const isAdmin = user.role === Role.ADMIN;
 
     let newStatus: SwapStatus;
     const updateData: {
@@ -306,10 +307,10 @@ export class ShiftSwapRequestService {
         throw new BadRequestException('Invalid action for unit head');
       }
     } else if (
-      isSupervisor &&
+      (isSupervisor || isAdmin) &&
       shiftSwap.status === SwapStatus.WAITING_SUPERVISOR
     ) {
-      // Supervisor final approval
+      // Supervisor or Admin final approval
       if (responseDto.action === ResponseAction.APPROVE) {
         newStatus = SwapStatus.APPROVED;
         updateData.supervisorApprovedAt = new Date();
@@ -321,7 +322,7 @@ export class ShiftSwapRequestService {
         newStatus = SwapStatus.REJECTED_BY_SUPERVISOR;
         updateData.rejectionReason = responseDto.rejectionReason;
       } else {
-        throw new BadRequestException('Invalid action for supervisor');
+        throw new BadRequestException('Invalid action for supervisor/admin');
       }
     } else {
       throw new ForbiddenException(
@@ -513,11 +514,14 @@ export class ShiftSwapRequestService {
       } = {};
 
       if (user.role === Role.SUPERVISOR) {
-        // Supervisors see requests waiting for their approval or unit head approval
+        // Supervisors see only requests waiting for their approval
         where.OR = [
           { status: SwapStatus.WAITING_SUPERVISOR },
           { status: SwapStatus.WAITING_UNIT_HEAD, requiresUnitHead: true },
         ];
+      } else if (user.role === Role.ADMIN) {
+        // Admins see all requests for monitoring (pending + approved + rejected)
+        // No where clause - get all requests for monitoring
       } else {
         // Regular users see requests directed to them
         where.toUserId = userId;
@@ -631,4 +635,204 @@ export class ShiftSwapRequestService {
       );
     }
   }
+
+  /**
+   * Get comprehensive monitoring data for admin
+   * Includes all requests with statistics and trends
+   */
+  async getAdminMonitoringData(userId: number) {
+    if (!userId) {
+      throw new BadRequestException('userId is required');
+    }
+
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (user.role !== Role.ADMIN) {
+        throw new ForbiddenException('Only admins can access monitoring data');
+      }
+
+      // Get all shift swap requests
+      const allRequests = await this.prisma.shiftSwap.findMany({
+        include: {
+          fromUser: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
+          },
+          toUser: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
+          },
+          shift: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  namaDepan: true,
+                  namaBelakang: true,
+                },
+              },
+            },
+          },
+          supervisorApprover: {
+            select: {
+              id: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      // Group requests by status
+      const groupedRequests = {
+        pending: allRequests.filter(req => 
+          req.status === SwapStatus.PENDING || 
+          req.status === SwapStatus.APPROVED_BY_TARGET ||
+          req.status === SwapStatus.WAITING_SUPERVISOR ||
+          req.status === SwapStatus.WAITING_UNIT_HEAD
+        ),
+        approved: allRequests.filter(req => req.status === SwapStatus.APPROVED),
+        rejected: allRequests.filter(req => 
+          req.status === SwapStatus.REJECTED_BY_TARGET ||
+          req.status === SwapStatus.REJECTED_BY_SUPERVISOR ||
+          req.status === SwapStatus.REJECTED_BY_UNIT_HEAD
+        ),
+      };
+
+      // Calculate statistics
+      const stats = {
+        total: allRequests.length,
+        approved: groupedRequests.approved.length,
+        rejected: groupedRequests.rejected.length,
+        pending: groupedRequests.pending.length,
+        approvalRate: allRequests.length > 0 ? 
+          (groupedRequests.approved.length / allRequests.length * 100) : 0,
+      };
+
+      // Monthly trends
+      const monthlyData = {};
+      allRequests.forEach(req => {
+        const date = new Date(req.createdAt);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = {
+            month: date.toLocaleDateString('id-ID', { 
+              year: 'numeric', 
+              month: 'long' 
+            }),
+            total: 0,
+            approved: 0,
+            rejected: 0,
+            pending: 0,
+            avgProcessingTime: 0,
+            totalProcessingTime: 0,
+            processedCount: 0,
+          };
+        }
+        
+        monthlyData[monthKey].total++;
+        
+        if (req.status === SwapStatus.APPROVED) {
+          monthlyData[monthKey].approved++;
+          
+          // Calculate processing time
+          if (req.createdAt && req.supervisorApprovedAt) {
+            const created = new Date(req.createdAt);
+            const approved = new Date(req.supervisorApprovedAt);
+            const processingHours = (approved.getTime() - created.getTime()) / (1000 * 60 * 60);
+            monthlyData[monthKey].totalProcessingTime += processingHours;
+            monthlyData[monthKey].processedCount++;
+          }
+        } else if (req.status.toString().includes('REJECTED')) {
+          monthlyData[monthKey].rejected++;
+        } else {
+          monthlyData[monthKey].pending++;
+        }
+      });
+
+      // Calculate monthly averages
+      Object.keys(monthlyData).forEach(monthKey => {
+        const month = monthlyData[monthKey];
+        month.avgProcessingTime = month.processedCount > 0 ? 
+          month.totalProcessingTime / month.processedCount : 0;
+        month.approvalRate = month.total > 0 ? 
+          (month.approved / month.total * 100) : 0;
+      });
+
+      // Approver performance
+      const approverStats = {};
+      allRequests.forEach(req => {
+        if (req.supervisorApprovedBy) {
+          if (!approverStats[req.supervisorApprovedBy]) {
+            approverStats[req.supervisorApprovedBy] = {
+              approverId: req.supervisorApprovedBy,
+              approverName: req.supervisorApprover ? 
+                `${req.supervisorApprover.namaDepan} ${req.supervisorApprover.namaBelakang}` : 
+                'Unknown',
+              approverRole: req.supervisorApprover?.role || 'Unknown',
+              count: 0,
+              avgProcessingTime: 0,
+              totalProcessingTime: 0,
+            };
+          }
+          
+          approverStats[req.supervisorApprovedBy].count++;
+          
+          if (req.createdAt && req.supervisorApprovedAt) {
+            const created = new Date(req.createdAt);
+            const approved = new Date(req.supervisorApprovedAt);
+            const processingHours = (approved.getTime() - created.getTime()) / (1000 * 60 * 60);
+            approverStats[req.supervisorApprovedBy].totalProcessingTime += processingHours;
+          }
+        }
+      });
+
+      // Calculate approver averages
+      Object.keys(approverStats).forEach(approverId => {
+        const stats = approverStats[approverId];
+        stats.avgProcessingTime = stats.count > 0 ? 
+          stats.totalProcessingTime / stats.count : 0;
+        stats.share = groupedRequests.approved.length > 0 ? 
+          (stats.count / groupedRequests.approved.length * 100) : 0;
+      });
+
+      return {
+        requests: groupedRequests,
+        stats,
+        monthlyTrends: Object.values(monthlyData).sort((a: any, b: any) => 
+          new Date(a.month).getTime() - new Date(b.month).getTime()
+        ),
+        approverPerformance: Object.values(approverStats).sort((a: any, b: any) => 
+          b.count - a.count
+        ),
+      };
+    } catch (error) {
+      console.error(
+        '[ShiftSwapRequestService][getAdminMonitoringData] Error:',
+        error,
+      );
+      throw new InternalServerErrorException(
+        (error as Error).message || 'Failed to get admin monitoring data',
+      );
+    }
+  }
+
 }

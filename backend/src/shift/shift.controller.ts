@@ -127,6 +127,12 @@ export class ShiftController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Delete('delete-all')
+  removeAll() {
+    return this.shiftService.removeAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.shiftService.remove(+id);

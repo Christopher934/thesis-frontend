@@ -2,11 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Filter, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import Pagination from '@/components/common/Pagination';
 
-// Helper function to format time from DateTime string to HH:mm format
+// Helper function to format time
 const formatTime = (timeString: string): string => {
   if (!timeString) return '';
   
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // Handle DateTime format from Prisma
   try {
     const date = new Date(timeString);
     return date.toLocaleTimeString('id-ID', { 
@@ -126,10 +138,10 @@ export default function RiwayatAbsensi() {
     setCurrentPage(1);
   };
 
-  const exportToPDF = () => {
-    // Placeholder for PDF export functionality
-    alert('Fitur export PDF akan segera tersedia');
-  };
+  // const exportToPDF = () => {
+  //   // Placeholder for PDF export functionality
+  //   alert('Fitur export PDF akan segera tersedia');
+  // };
 
   // Mobile Card Component
   const MobileCard = ({ item }: { item: Absensi }) => (
@@ -174,7 +186,7 @@ export default function RiwayatAbsensi() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Riwayat Absensi</h1>
         <div className="flex items-center gap-2">
-          <button
+          {/* <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
@@ -187,7 +199,7 @@ export default function RiwayatAbsensi() {
           >
             <Download className="h-4 w-4" />
             Export PDF
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -339,29 +351,12 @@ export default function RiwayatAbsensi() {
 
       {/* Pagination */}
       {absensiData.length > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Halaman {currentPage}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Sebelumnya
-            </button>
-            <button
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              disabled={absensiData.length < itemsPerPage}
-              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Selanjutnya
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          totalItems={absensiData.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       )}
     </div>
   );

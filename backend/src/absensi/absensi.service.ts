@@ -145,8 +145,8 @@ export class AbsensiService {
       orderBy: {
         createdAt: 'desc'
       },
-      take: query.limit || 50,
-      skip: query.offset || 0
+      take: typeof query.limit === 'string' ? parseInt(query.limit) : (query.limit || 50),
+      skip: typeof query.offset === 'string' ? parseInt(query.offset) : (query.offset || 0)
     });
   }
 
@@ -224,8 +224,8 @@ export class AbsensiService {
       orderBy: {
         createdAt: 'desc'
       },
-      take: query.limit || 100,
-      skip: query.offset || 0
+      take: typeof query.limit === 'string' ? parseInt(query.limit) : (query.limit || 100),
+      skip: typeof query.offset === 'string' ? parseInt(query.offset) : (query.offset || 0)
     });
   }
 
@@ -271,12 +271,17 @@ export class AbsensiService {
     });
 
     const usersNotCheckedIn = allUsersWithShiftToday
-      .filter(shift => !shift.absensi)
-      .map(shift => shift.user);
+      .filter((shift) => !shift.absensi)
+      .map((shift) => shift.user);
+
+    // Deduplicate users by ID
+    const uniqueUsersNotCheckedIn = usersNotCheckedIn.filter((user, index, self) => 
+      index === self.findIndex((u) => u.id === user.id)
+    );
 
     return {
       todayStats,
-      usersNotCheckedIn,
+      usersNotCheckedIn: uniqueUsersNotCheckedIn,
       totalShiftsToday: allUsersWithShiftToday.length
     };
   }

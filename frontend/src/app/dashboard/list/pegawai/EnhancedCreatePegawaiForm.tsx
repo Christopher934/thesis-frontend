@@ -91,6 +91,7 @@ export default function EnhancedCreatePegawaiForm({
       };
     }
     return {
+      username: '', // Auto-generated, tidak perlu validasi strict
       jenisKelamin: 'L',
       role: 'STAF',
       status: 'ACTIVE',
@@ -124,7 +125,8 @@ export default function EnhancedCreatePegawaiForm({
         });
         
         if (response.ok) {
-          const users = await response.json();
+          const result = await response.json();
+          const users = result.data || []; // API returns { data: users[], meta: {...} }
           const employeeIds = users
             .map((user: any) => user.employeeId || user.username)
             .filter((id: string) => id && id.length > 0);
@@ -133,6 +135,8 @@ export default function EnhancedCreatePegawaiForm({
           if (type === 'create' && selectedRole) {
             const newId = generateEmployeeId(selectedRole, employeeIds);
             setGeneratedEmployeeId(newId);
+            // Update form value for username to prevent validation error
+            setValue('username', newId);
           }
         }
       } catch (error) {
@@ -158,6 +162,9 @@ export default function EnhancedCreatePegawaiForm({
   }
 
   const onSubmit = handleSubmit(async (values) => {
+    console.log('🚀 Form submission started with values:', values);
+    console.log('🔑 Generated Employee ID:', generatedEmployeeId);
+    
     setIsSubmitting(true);
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -168,7 +175,7 @@ export default function EnhancedCreatePegawaiForm({
 
       // Enhanced payload with Employee ID integration
       const rawPayload: any = {
-        username: generatedEmployeeId || values.username, // Use generated Employee ID as username
+        username: generatedEmployeeId || `user_${Date.now()}`, // Use generated Employee ID as username or fallback
         email: values.email,
         ...(values.password ? { password: values.password } : {}),
         namaDepan: values.namaDepan,
@@ -183,11 +190,13 @@ export default function EnhancedCreatePegawaiForm({
       };
 
       const payload = filterEmptyFields(rawPayload);
+      console.log('📦 Final payload to send:', payload);
 
       let res: Response;
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       
       if (type === 'create') {
+        console.log(`🌐 Making POST request to: ${apiUrl}/users`);
         res = await fetch(`${apiUrl}/users`, {
           method: 'POST',
           headers: {
@@ -210,10 +219,12 @@ export default function EnhancedCreatePegawaiForm({
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
+        console.error('❌ API Error Response:', errJson);
         throw new Error((errJson as any).message || 'Permintaan gagal');
       }
 
       const result = await res.json();
+      console.log('✅ API Success Response:', result);
       setSuccessMessage(
         type === 'create' 
           ? `Pegawai berhasil dibuat dengan Employee ID: ${generatedEmployeeId}`
@@ -263,7 +274,10 @@ export default function EnhancedCreatePegawaiForm({
           </div>
         </div>
 
-        <form onSubmit={onSubmit} className="p-6 space-y-6">
+        <form onSubmit={(e) => {
+          console.log('📝 Form onSubmit event triggered');
+          onSubmit(e);
+        }} className="p-6 space-y-6">
           {/* Error & Success Messages */}
           {errorMessage && (
             <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
@@ -540,6 +554,16 @@ export default function EnhancedCreatePegawaiForm({
             <button
               type="submit"
               disabled={isSubmitting}
+              onClick={() => {
+                console.log('🖱️ Submit button clicked');
+                console.log('📋 Form errors:', errors);
+                console.log('🔍 Error details:', JSON.stringify(errors, null, 2));
+                console.log('⏳ Is submitting:', isSubmitting);
+                
+                // Also try to validate manually
+                const currentValues = watch();
+                console.log('📊 Current form values:', currentValues);
+              }}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2"
             >
               {isSubmitting ? (

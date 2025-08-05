@@ -1,5 +1,9 @@
+'use client';
+
 import Menu from "@/components/common/Menu";
 import Navbar from "@/components/common/Navbar";
+import MobileSidebar from "@/components/common/MobileSidebar";
+import { useMobileSidebar } from "@/hooks/useMobileSidebar";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -8,21 +12,33 @@ export default function AdminLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const { isOpen, toggle, close } = useMobileSidebar();
+
     return (
         <div className="h-screen flex">
-            {/* LEFT */}
-            <div className="w-[14%] md:w-[8%] lg:w-[16%] xl:w-[14%] p-4">
-                <Link href="/" className="flex items-center justify-center lg:justify-start gap-2">
+            {/* Mobile Sidebar */}
+            <MobileSidebar 
+                isOpen={isOpen}
+                onToggle={toggle}
+                onClose={close}
+            />
+
+            {/* Desktop Sidebar - LEFT */}
+            <div className="hidden lg:block w-[16%] xl:w-[14%] p-4 bg-white border-r border-gray-200">
+                <Link href="/" className="flex items-center justify-start gap-2">
                     <Image src="/logo.png" alt="logo" width={32} height={32} />
-                    <span className="hidden lg:block font-bold">RSUD Anugerah</span>
+                    <span className="font-bold">RSUD Anugerah</span>
                 </Link>
                 <Menu />
             </div>
             
-            {/* RIGHT */}
-            <div className="w-[86%] md:w-[92%] lg:w-[84%] xl:w-[86%] bg-[#F7F8FA] overflow-scroll flex flex-col">
-                <Navbar />
-                {children}
+            {/* Main Content - RIGHT */}
+            <div className="w-full lg:w-[84%] xl:w-[86%] bg-[#F7F8FA] overflow-hidden flex flex-col">
+                {/* Navbar with mobile menu toggle */}
+                <Navbar onMenuToggle={toggle} />
+                <div className="flex-1 overflow-auto">
+                    {children}
+                </div>
             </div>
         </div>
     );

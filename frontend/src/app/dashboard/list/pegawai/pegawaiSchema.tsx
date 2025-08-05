@@ -10,16 +10,14 @@ import { z } from 'zod';
  */
 
 export const pegawaiSchema = z.object({
-  username: z
-    .string()
-    .min(3, { message: 'Username minimal 3 karakter' })
-    .max(20, { message: 'Username maksimal 20 karakter' }),
+  username: z.string().optional(), // Username akan di-generate otomatis sebagai employeeId
 
   email: z.string().email({ message: 'Email tidak valid' }),
   
   password: z
     .string()
-    .min(8, { message: 'Password membutuhkan minimal 8 karakter' }),
+    .min(8, { message: 'Password membutuhkan minimal 8 karakter' })
+    .or(z.literal('')), // Allow empty password
 
   namaDepan: z.string().min(1, { message: 'Nama depan dibutuhkan!' }),
   namaBelakang: z.string().min(1, { message: 'Nama belakang dibutuhkan!' }),

@@ -49,29 +49,66 @@ export class UserService {
   }
 
   /**
-   * 1️⃣ Ambil semua user (tanpa field password)
+   * 1️⃣ Ambil semua user (tanpa field password) dengan pagination
    */
-  async findAll() {
-    return this.prisma.user.findMany({
-      select: {
-        id: true,
-        employeeId: true,
-        username: true,
-        email: true,
-        namaDepan: true,
-        namaBelakang: true,
-        alamat: true,
-        noHp: true,
-        jenisKelamin: true,
-        tanggalLahir: true,
-        role: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        telegramChatId: true,
-      },
-      orderBy: { id: 'asc' },
-    });
+  async findAll(query?: { page?: number; limit?: number; search?: string; role?: string }) {
+    const page = query?.page || 1;
+    const limit = Math.min(query?.limit || 10, 100); // Max 100 per page
+    const skip = (page - 1) * limit;
+    
+    const where: any = {};
+    
+    // Search by name or email
+    if (query?.search) {
+      where.OR = [
+        { namaDepan: { contains: query.search, mode: 'insensitive' } },
+        { namaBelakang: { contains: query.search, mode: 'insensitive' } },
+        { email: { contains: query.search, mode: 'insensitive' } },
+        { username: { contains: query.search, mode: 'insensitive' } }
+      ];
+    }
+    
+    // Filter by role
+    if (query?.role) {
+      where.role = query.role;
+    }
+    
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          employeeId: true,
+          username: true,
+          email: true,
+          namaDepan: true,
+          namaBelakang: true,
+          alamat: true,
+          noHp: true,
+          jenisKelamin: true,
+          tanggalLahir: true,
+          role: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          telegramChatId: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      this.prisma.user.count({ where })
+    ]);
+    
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   /**

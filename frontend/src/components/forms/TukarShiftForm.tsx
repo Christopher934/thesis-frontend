@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calendar, Clock, User, FileText, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, User, FileText, AlertCircle, Users, Sparkles } from 'lucide-react';
+import SmartPartnerSelector from './SmartPartnerSelector';
+import { formatLokasiShift } from '../../lib/textFormatter';
 
 // Helper function to format time from DateTime string to HH:mm format
 const formatTime = (timeString: string): string => {
@@ -12,6 +14,7 @@ const formatTime = (timeString: string): string => {
   
   try {
     const date = new Date(timeString);
+    if (isNaN(date.getTime())) return timeString;
     return date.toLocaleTimeString('id-ID', { 
       hour: '2-digit', 
       minute: '2-digit',
@@ -20,6 +23,24 @@ const formatTime = (timeString: string): string => {
   } catch (error) {
     console.error('Error formatting time:', error);
     return timeString;
+  }
+};
+
+// Helper function to format date from DateTime string to DD/MM/YYYY format
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
   }
 };
 
@@ -63,33 +84,6 @@ const schema = z.object({
 
 type FormInputs = z.infer<typeof schema>;
 
-// Helper function to format RSUD location names
-const formatLokasiShift = (lokasi: string): string => {
-  if (!lokasi) return '-';
-  
-  // Define mapping for RSUD department names
-  const lokasiMapping: { [key: string]: string } = {
-    'GEDUNG_ADMINISTRASI': 'Gedung Administrasi',
-    'RAWAT_JALAN': 'Rawat Jalan',
-    'RAWAT_INAP': 'Rawat Inap',
-    'GAWAT_DARURAT': 'Gawat Darurat',
-    'LABORATORIUM': 'Laboratorium',
-    'FARMASI': 'Farmasi',
-    'RADIOLOGI': 'Radiologi',
-    'GIZI': 'Gizi',
-    'KEAMANAN': 'Keamanan',
-    'LAUNDRY': 'Laundry',
-    'CLEANING_SERVICE': 'Cleaning Service',
-    'SUPIR': 'Supir',
-    'ICU': 'ICU',
-    'NICU': 'NICU',
-  };
-  
-  return lokasiMapping[lokasi] || lokasi.split('_').map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-  ).join(' ');
-};
-
 function TukarShiftForm({
   type,
   data,
@@ -104,6 +98,8 @@ function TukarShiftForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showSmartSelector, setShowSmartSelector] = useState(false);
+  const [smartSelectedPartner, setSmartSelectedPartner] = useState<{ partnerId: number; name: string } | null>(null);
 
   const {
     register,
@@ -122,6 +118,26 @@ function TukarShiftForm({
   });
 
   const watchedToUserId = watch('toUserId');
+  const watchedShiftId = watch('shiftId');
+
+  // Handle smart partner selection
+  const handleSmartPartnerSelect = (partnerId: number, suggestedSwapId?: number) => {
+    const selectedUser = users.find(u => u.id === partnerId);
+    if (selectedUser) {
+      setValue('toUserId', partnerId);
+      setSmartSelectedPartner({
+        partnerId,
+        name: `${selectedUser.namaDepan} ${selectedUser.namaBelakang}`,
+      });
+      
+      // If there's a suggested swap, we could pre-fill additional information
+      if (suggestedSwapId) {
+        // This could be used to highlight the mutual benefit
+        console.log('Suggested mutual swap selected:', suggestedSwapId);
+      }
+    }
+    setShowSmartSelector(false);
+  };
 
   // Load users and current user data on component mount
   useEffect(() => {
@@ -151,7 +167,8 @@ function TukarShiftForm({
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (usersResponse.ok) {
-            const usersData = await usersResponse.json();
+            const usersResult = await usersResponse.json();
+            const usersData = usersResult.data || []; // API returns { data: users[], meta: {...} }
             // Filter users with same role as current user
             // FIX: Gunakan id dari localStorage user dan pastikan tipe data number
             const filteredUsers = usersData.filter((user: User) => 
@@ -200,10 +217,22 @@ function TukarShiftForm({
         });
         if (response.ok) {
           const shifts = await response.json();
+          console.log('Received shifts data:', shifts);
+          
           const futureShifts = shifts.filter((shift: Shift) => {
-            const shiftDate = new Date(shift.tanggal);
-            const today = new Date();
-            return shiftDate >= today;
+            try {
+              const shiftDate = new Date(shift.tanggal);
+              const today = new Date();
+              // Check if date is valid
+              if (isNaN(shiftDate.getTime())) {
+                console.warn('Invalid date format for shift:', shift.tanggal);
+                return false;
+              }
+              return shiftDate >= today;
+            } catch (error) {
+              console.error('Error parsing shift date:', shift.tanggal, error);
+              return false;
+            }
           });
           // Only show shifts owned by current user
           const userToUse = userObj || currentUser;
@@ -338,51 +367,104 @@ function TukarShiftForm({
             </div>
           )}
 
-          {/* Partner Selection */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          {/* Smart Partner Selection */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <div className="p-2 bg-blue-50 rounded-lg mr-3">
-                <User className="h-4 w-4 text-blue-600" />
+              <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                <Users className="h-5 w-5 text-blue-600" />
               </div>
-              Partner Tukar Shift
+              Smart Partner Selection
             </h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Pilih Partner Tukar Shift *
-              </label>
-              <div className="relative">
-                <select
-                  {...register('toUserId', { valueAsNumber: true })}
-                  className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 md:py-3 border rounded-lg bg-white text-gray-900 text-xs sm:text-sm md:text-base font-medium shadow-sm transition-all duration-200 appearance-none cursor-pointer
-                    ${errors.toUserId 
-                      ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100' 
-                      : 'border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
-                    }
-                    focus:outline-none`}
-                >
-                  <option value={0} className="text-gray-500">Pilih partner tukar shift...</option>
-                  {users.map(user => (
-                    <option key={user.id} value={user.id} className="text-gray-900">
-                      {user.employeeId} - {user.namaDepan} {user.namaBelakang} ({user.role})
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+            
+            {smartSelectedPartner ? (
+              <div className="bg-white p-4 rounded-lg border border-green-200 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <User className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-green-800">Selected Partner</p>
+                      <p className="text-green-600">{smartSelectedPartner.name}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmartSelectedPartner(null);
+                      setValue('toUserId', 0);
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
-              {errors.toUserId && (
-                <p className="mt-2 text-xs sm:text-sm text-red-600 flex items-start bg-red-50 p-2 rounded">
-                  <AlertCircle className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
-                  <span>{errors.toUserId.message}</span>
-                </p>
-              )}
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-center">
+                    <Sparkles className="mx-auto h-12 w-12 text-blue-500 mb-3" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">Find Your Perfect Swap Partner</h4>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Our smart system will analyze compatibility, availability, and suggest mutual benefits
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (watchedShiftId > 0) {
+                          setShowSmartSelector(true);
+                        } else {
+                          alert('Please select your shift first');
+                        }
+                      }}
+                      disabled={!watchedShiftId || watchedShiftId === 0}
+                      className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                        watchedShiftId > 0
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      <Users className="inline h-5 w-5 mr-2" />
+                      Find Available Partners
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fallback: Manual Selection */}
+                <details className="bg-white rounded-lg border border-gray-200">
+                  <summary className="p-4 cursor-pointer text-sm text-gray-600 hover:text-gray-800">
+                    Or select manually (traditional method)
+                  </summary>
+                  <div className="px-4 pb-4">
+                    <select
+                      {...register('toUserId', { valueAsNumber: true })}
+                      className={`w-full px-3 py-2.5 border rounded-lg bg-white text-gray-900 text-sm font-medium shadow-sm transition-all duration-200 appearance-none cursor-pointer
+                        ${errors.toUserId 
+                          ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100' 
+                          : 'border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                        }
+                        focus:outline-none`}
+                    >
+                      <option value={0} className="text-gray-500">Pilih partner tukar shift...</option>
+                      {users.map(user => (
+                        <option key={user.id} value={user.id} className="text-gray-900">
+                          {user.employeeId} - {user.namaDepan} {user.namaBelakang} ({user.role})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </details>
+              </div>
+            )}
+            
+            {errors.toUserId && (
+              <p className="mt-2 text-sm text-red-600 flex items-start bg-red-50 p-2 rounded">
+                <AlertCircle className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
+                <span>{errors.toUserId.message}</span>
+              </p>
+            )}
           </div>
-        </div>
 
         {/* Shift Selection */}
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -411,7 +493,7 @@ function TukarShiftForm({
                   <option value={0} className="text-gray-500">Pilih shift Anda...</option>
                   {currentUserShifts.map(shift => (
                     <option key={shift.id} value={shift.id} className="text-gray-900">
-                      {shift.tanggal} | {formatTime(shift.jammulai)}-{formatTime(shift.jamselesai)} | {formatLokasiShift(shift.lokasishift)}
+                      {formatDate(shift.tanggal)} | {formatTime(shift.jammulai)}-{formatTime(shift.jamselesai)} | {formatLokasiShift(shift.lokasishift)}
                     </option>
                   ))}
                 </select>
@@ -496,6 +578,15 @@ function TukarShiftForm({
             </p>
           </div>
         </form>
+
+        {/* Smart Partner Selector Modal */}
+        {showSmartSelector && watchedShiftId > 0 && (
+          <SmartPartnerSelector
+            selectedShiftId={watchedShiftId}
+            onPartnerSelect={handleSmartPartnerSelect}
+            onClose={() => setShowSmartSelector(false)}
+          />
+        )}
       </div>
     </div>
   );

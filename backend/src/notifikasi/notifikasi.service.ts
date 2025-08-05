@@ -445,6 +445,7 @@ Silakan cek jadwal Anda untuk detail lengkap.`;
       pesan,
       jenis: 'SHIFT_BARU_DITAMBAHKAN',
       data: shiftData,
+      sentVia: 'BOTH', // Web dan Telegram
     });
   }
 
@@ -465,6 +466,7 @@ ${swapData.status === 'APPROVED' ? 'Shift berhasil ditukar!' : 'Silakan ajukan k
       pesan,
       jenis: 'KONFIRMASI_TUKAR_SHIFT',
       data: swapData,
+      sentVia: 'BOTH', // Web dan Telegram
     });
   }
 
@@ -486,6 +488,7 @@ Harap lebih tepat waktu di masa mendatang.`;
       pesan,
       jenis: 'ABSENSI_TERLAMBAT',
       data: attendanceData,
+      sentVia: 'BOTH', // Web dan Telegram
     });
   }
 
@@ -534,8 +537,14 @@ Harap lebih tepat waktu di masa mendatang.`;
     },
   ): Promise<any> {
     try {
-      const judul = 'Personal Attendance Reminder';
-      const pesan = `Reminder: Your shift starts at ${reminderData.shiftTime} at ${reminderData.location}. Please ensure you arrive on time.`;
+      const judul = '📍 Reminder Absensi';
+      const pesan = `Halo! Jangan lupa untuk melakukan absensi:
+
+🕒 Shift: ${reminderData.shiftTime}
+📍 Lokasi: ${reminderData.location}
+⏰ Waktu reminder: ${reminderData.reminderMinutes || 30} menit sebelum shift
+
+Harap lakukan absensi tepat waktu.`;
 
       return await this.createNotification({
         userId,
@@ -543,7 +552,7 @@ Harap lebih tepat waktu di masa mendatang.`;
         pesan,
         jenis: JenisNotifikasi.PERSONAL_REMINDER_ABSENSI,
         data: reminderData,
-        sentVia: 'WEB',
+        sentVia: 'BOTH', // Web dan Telegram
       });
     } catch (error) {
       console.error('Error sending personal attendance reminder:', error);

@@ -1,10 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, MessageSquare, User } from 'lucide-react';
+import { Search, MessageSquare, User, Menu as MenuIcon } from 'lucide-react';
 import { NotificationCenter } from '@/components/notifications';
 
-const Navbar = () => {
+interface NavbarProps {
+  onMenuToggle?: () => void;
+}
+
+const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const [user, setUser] = useState<{
     nameDepan: string;
     nameBelakang: string;
@@ -20,15 +24,28 @@ const Navbar = () => {
 
   return (
     <div className='flex items-center justify-between p-4'>
+      {/* Mobile Hamburger Menu - Left side */}
+      <div className="lg:hidden">
+        <button
+          onClick={onMenuToggle}
+          className="p-2 bg-blue-600 rounded-xl shadow-lg border-2 border-blue-700 hover:bg-blue-700 transition-all duration-200 active:scale-95"
+          aria-label="Toggle menu"
+        >
+          <MenuIcon className="w-6 h-6 text-white" />
+        </button>
+      </div>
 
-      {/* Icon and User */}
-      <div className='flex items-center gap-6 justify-end w-full'>
-        <div className='bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer'>
+      {/* Desktop spacer or mobile empty space */}
+      <div className="hidden lg:block flex-1"></div>
+
+      {/* Icon and User - Right side */}
+      <div className='flex items-center gap-6'>
+        {/* <div className='bg-white rounded-full w-7 h-7 flex items-center justify-center cursor-pointer'>
           <MessageSquare size={20} className="text-gray-600" />
-        </div>
+        </div> */}
         
         {/* Notification Center */}
-        <NotificationCenter bellSize={20} />
+        {/* <NotificationCenter bellSize={20} /> */}
 
         <div className="flex flex-col text-right">
           <span className='text-xs leading-3 font-medium'>

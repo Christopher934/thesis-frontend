@@ -7,7 +7,8 @@ export async function PUT(
   { params }: { params: { requestId: string } }
 ) {
   try {
-    const requestId = params.requestId;
+    const resolvedParams = await params;
+    const requestId = resolvedParams.requestId;
     const body = await request.json();
     
     // Call backend API to approve overwork request
@@ -53,7 +54,8 @@ export async function DELETE(
   { params }: { params: { requestId: string } }
 ) {
   try {
-    const requestId = params.requestId;
+    const resolvedParams = await params;
+    const requestId = resolvedParams.requestId;
     const body = await request.json();
     
     // Call backend API to reject overwork request

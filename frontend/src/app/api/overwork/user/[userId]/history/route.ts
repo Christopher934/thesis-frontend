@@ -10,8 +10,8 @@ export async function GET(
     const resolvedParams = await params;
     const userId = resolvedParams.userId;
     
-    // Call backend API to check user eligibility
-    const response = await fetch(`${BACKEND_URL}/overwork/eligibility/${userId}`, {
+    // Call backend API to get user's overwork request history
+    const response = await fetch(`${BACKEND_URL}/overwork/user/${userId}/history`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -22,7 +22,7 @@ export async function GET(
     if (!response.ok) {
       return NextResponse.json({
         success: false,
-        message: 'Failed to check user eligibility'
+        message: 'Failed to fetch overwork request history'
       }, { status: response.status });
     }
 
@@ -30,11 +30,12 @@ export async function GET(
     
     return NextResponse.json({
       success: true,
-      data: data
+      data: data.data || data,
+      message: 'Overwork request history retrieved successfully'
     });
 
   } catch (error) {
-    console.error('Error checking user eligibility:', error);
+    console.error('Error fetching overwork request history:', error);
     return NextResponse.json({
       success: false,
       message: 'Internal server error'

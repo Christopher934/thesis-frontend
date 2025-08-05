@@ -66,6 +66,8 @@ function PegawaiPage() {
   const [shifts, setShifts] = useState<ShiftData[]>([]);
   const [shiftsLoading, setShiftsLoading] = useState<boolean>(true);
   const [shiftsError, setShiftsError] = useState<string | null>(null);
+  const [workloadStatus, setWorkloadStatus] = useState<any>(null);
+  const [showOverworkWarning, setShowOverworkWarning] = useState<boolean>(false);
 
   // Get user info and current time
   useEffect(() => {
@@ -120,12 +122,33 @@ function PegawaiPage() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      
+      // Fetch shifts
       const response = await fetch(`${apiUrl}/shifts`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+
+      // Check workload status for overwork warning
+      const workloadResponse = await fetch(`${apiUrl}/overwork/user/${user.id}/eligibility`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (workloadResponse.ok) {
+        const workloadResult = await workloadResponse.json();
+        if (workloadResult.success) {
+          setWorkloadStatus(workloadResult.data);
+          // Show warning if user needs overwork request or approaching limit
+          const needsWarning = workloadResult.data.needsOverworkRequest || 
+                             (workloadResult.data.currentShifts / workloadResult.data.maxShifts) >= 0.8;
+          setShowOverworkWarning(needsWarning);
+        }
+      }
 
       console.log('PegawaiDashboard: 🔍 API Response received');
       console.log('PegawaiDashboard: Response status:', response.status);
@@ -288,6 +311,54 @@ function PegawaiPage() {
 
       {/* Main Content */}
       <div className="px-6 py-8">
+        {/* Overwork Warning Banner */}
+        {showOverworkWarning && workloadStatus && (
+          <div className="mb-6 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-orange-900 mb-2">
+                  {workloadStatus.needsOverworkRequest ? '🚫 Overwork Request Required' : '⚠️ Approaching Shift Limit'}
+                </h3>
+                <div className="text-orange-800 mb-4">
+                  <p className="mb-2">
+                    Current Shifts: <span className="font-bold">{workloadStatus.currentShifts}/{workloadStatus.maxShifts}</span> 
+                    {' '}({Math.round((workloadStatus.currentShifts / workloadStatus.maxShifts) * 100)}%)
+                  </p>
+                  <p className="text-sm">
+                    {workloadStatus.needsOverworkRequest 
+                      ? 'You have reached your monthly shift limit. To take additional shifts, please submit an overwork request.'
+                      : 'You are approaching your monthly shift limit. Consider submitting an overwork request if you need more shifts.'
+                    }
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <a
+                    href="/dashboard/list/overwork-request"
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Submit Overwork Request
+                  </a>
+                  <button
+                    onClick={() => setShowOverworkWarning(false)}
+                    className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

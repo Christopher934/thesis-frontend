@@ -22,7 +22,8 @@ import {
   MessageSquare,
   FileBarChart,
   User,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 // Interface untuk menu item dropdown
@@ -51,6 +52,7 @@ const menuItems = [
       { icon: Calendar, label: "Manajemen Jadwal", href: "/dashboard/list/managemenjadwal", visible: ["admin"] },
       { icon: ClipboardList, label: "Jadwal Saya", href: "/dashboard/list/jadwalsaya", visible: ["perawat","staf","dokter","supervisor"] },
       { icon: RefreshCw, label: "Ajukan Tukar Shift", href: "/dashboard/list/ajukantukarshift", visible: ["admin", "perawat","staf","dokter","supervisor"] },
+      { icon: Shield, label: "Overwork Request", href: "/dashboard/list/overwork-request", visible: ["perawat","staf","dokter","supervisor"] },
       { 
         icon: Clock, 
         label: "Absensi", 

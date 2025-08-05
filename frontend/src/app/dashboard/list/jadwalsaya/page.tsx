@@ -4,6 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useMemo, lazy, Suspense } from "react";
+import Link from "next/link";
 import Pagination from "@/components/common/Pagination";
 import TableSearch from "@/components/common/TableSearch";
 import Table from "@/components/common/Table";
@@ -148,6 +149,8 @@ const JadwalSayaPage = () => {
   const [filterValue, setFilterValue] = useState<string>("");
   const [sortValue, setSortValue] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [workloadStatus, setWorkloadStatus] = useState<any>(null);
+  const [showOverworkWarning, setShowOverworkWarning] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'past'>('today');
   const itemsPerPage = 10;
   
@@ -358,6 +361,32 @@ const JadwalSayaPage = () => {
       let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const url = joinUrl(apiUrl, '/shifts');
       console.log('JadwalSaya: API URL:', url);
+
+      // Check workload status for overwork warning
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.id) {
+        try {
+          const workloadResponse = await fetch(`${apiUrl}/overwork/user/${user.id}/eligibility`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (workloadResponse.ok) {
+            const workloadResult = await workloadResponse.json();
+            if (workloadResult.success) {
+              setWorkloadStatus(workloadResult.data);
+              // Show warning if user needs overwork request or approaching limit
+              const needsWarning = workloadResult.data.needsOverworkRequest || 
+                                 (workloadResult.data.currentShifts / workloadResult.data.maxShifts) >= 0.8;
+              setShowOverworkWarning(needsWarning);
+            }
+          }
+        } catch (workloadError) {
+          console.warn('Failed to fetch workload status:', workloadError);
+        }
+      }
       
       const response = await fetch(url, {
         headers: {
@@ -711,6 +740,42 @@ const JadwalSayaPage = () => {
             </div>
           }
         />
+
+        {/* Workload Warning Banner */}
+        {showOverworkWarning && workloadStatus && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-yellow-800">
+                  Peringatan Beban Kerja
+                </h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>
+                    {workloadStatus.needsOverworkRequest
+                      ? `Anda sudah mencapai batas maksimal shift (${workloadStatus.currentShifts}/${workloadStatus.maxShifts}). Untuk mengambil shift tambahan, silakan ajukan overwork request.`
+                      : `Anda sudah mengambil ${workloadStatus.currentShifts} dari ${workloadStatus.maxShifts} shift maksimal bulan ini. Pertimbangkan beban kerja Anda sebelum mengambil shift tambahan.`
+                    }
+                  </p>
+                </div>
+                {workloadStatus.needsOverworkRequest && (
+                  <div className="mt-3">
+                    <Link 
+                      href="/dashboard/list/overwork-request"
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    >
+                      Ajukan Overwork Request
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tab untuk filter jadwal */}
         <div className="mb-4 flex gap-2">

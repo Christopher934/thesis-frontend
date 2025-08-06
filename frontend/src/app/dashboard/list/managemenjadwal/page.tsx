@@ -2492,7 +2492,8 @@ const ManagemenJadwalPage = () => {
                         <List className="w-4 h-4" />
                         <span>Tabel</span>
                     </button>
-                    <button
+                    {/* Hidden: Kalender Interaktif button */}
+                    {/* <button
                         onClick={() => {
                             setViewMode('table');
                             setUseInteractiveCalendar(true);
@@ -2506,8 +2507,9 @@ const ManagemenJadwalPage = () => {
                     >
                         <Calendar className="w-4 h-4" />
                         <span>Kalender Interaktif</span>
-                    </button>
-                    <button
+                    </button> */}
+                    {/* Hidden: Monthly View button */}
+                    {/* <button
                         onClick={() => {
                             setViewMode('monthly');
                             setUseInteractiveCalendar(false);
@@ -2521,11 +2523,11 @@ const ManagemenJadwalPage = () => {
                     >
                         <Grid className="w-4 h-4" />
                         <span>Monthly View</span>
-                    </button>
+                    </button> */}
                 </div>
 
-                {/* Info about calendar functionality */}
-                {viewMode === 'monthly' && jadwalData.length === 0 && (
+                {/* Hidden: Info about calendar functionality */}
+                {/* {viewMode === 'monthly' && jadwalData.length === 0 && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <div className="flex items-start gap-2">
                             <Calendar className="w-4 h-4 text-blue-600 mt-0.5" />
@@ -2538,7 +2540,7 @@ const ManagemenJadwalPage = () => {
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
 
                 {/* Toggle untuk workload counters */}
                 <div className="flex items-center gap-2">

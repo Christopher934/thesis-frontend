@@ -254,19 +254,22 @@ export class AdminShiftOptimizationService {
     availableUsers: any[],
   ): Promise<ShiftAssignment[]> {
     const assignments: ShiftAssignment[] = [];
-    
+
     // Track user workload for balancing with FORCED ROTATION
-    const userWorkload = new Map<number, {
-      totalShifts: number;
-      consecutiveDays: number;
-      lastShiftDate: string;
-      nightShiftsConsecutive: number;
-      weeklyShifts: number;
-      shiftTypes: string[];
-      locations: string[];
-      recentAssignments: number; // Track recent assignments to force rotation
-      daysSinceLastShift: number;
-    }>();
+    const userWorkload = new Map<
+      number,
+      {
+        totalShifts: number;
+        consecutiveDays: number;
+        lastShiftDate: string;
+        nightShiftsConsecutive: number;
+        weeklyShifts: number;
+        shiftTypes: string[];
+        locations: string[];
+        recentAssignments: number; // Track recent assignments to force rotation
+        daysSinceLastShift: number;
+      }
+    >();
 
     // Initialize workload tracking
     for (const user of availableUsers) {
@@ -280,7 +283,7 @@ export class AdminShiftOptimizationService {
         shiftTypes: [],
         locations: [],
         recentAssignments: recentShifts,
-        daysSinceLastShift: this.getDaysSinceLastShift(user)
+        daysSinceLastShift: this.getDaysSinceLastShift(user),
       });
     }
 
@@ -290,27 +293,30 @@ export class AdminShiftOptimizationService {
 
     // Group requests by date and location for better distribution
     const requestsByDate = this.groupRequestsByDate(requests);
-    
+
     // Process each day separately to ensure rotation
     for (const [date, dayRequests] of requestsByDate.entries()) {
-      console.log(`📅 Processing date: ${date} with ${dayRequests.length} requests`);
-      
+      console.log(
+        `📅 Processing date: ${date} with ${dayRequests.length} requests`,
+      );
+
       // Sort day requests by priority and difficulty
       const sortedDayRequests = dayRequests.sort((a, b) => {
         const priorityOrder = { URGENT: 4, HIGH: 3, NORMAL: 2, LOW: 1 };
-        const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
-        
+        const priorityDiff =
+          priorityOrder[b.priority] - priorityOrder[a.priority];
+
         if (priorityDiff === 0) {
           const difficultyOrder = { MALAM: 3, SIANG: 2, PAGI: 1 };
           return difficultyOrder[b.shiftType] - difficultyOrder[a.shiftType];
         }
-        
+
         return priorityDiff;
       });
 
       // Track users assigned today to force rotation
       const usersAssignedToday = new Set<number>();
-      
+
       for (const request of sortedDayRequests) {
         console.log(
           `📋 Processing ${request.shiftType} shift for ${request.location} on ${request.date}`,
@@ -320,36 +326,50 @@ export class AdminShiftOptimizationService {
         const userScores = availableUsers.map((user) => {
           const workload = userWorkload.get(user.id)!;
           const baseScore = this.calculateUserFitnessScore(user, request);
-          
+
           // FORCED ROTATION: Heavy penalty for users assigned today
           let rotationPenalty = 0;
           if (usersAssignedToday.has(user.id)) {
             rotationPenalty = 50; // Massive penalty to force rotation
           }
-          
+
           // WORKLOAD BALANCING: Heavy favor for users with fewer shifts
-          const workloadBonus = this.calculateWorkloadBalance(workload, userWorkload);
-          
+          const workloadBonus = this.calculateWorkloadBalance(
+            workload,
+            userWorkload,
+          );
+
           // CONSECUTIVE SHIFT PENALTY: Prevent same user getting consecutive days
-          const consecutivePenalty = this.calculateConsecutivePenalty(workload, request);
-          
+          const consecutivePenalty = this.calculateConsecutivePenalty(
+            workload,
+            request,
+          );
+
           // RECENT ACTIVITY PENALTY: Favor users who haven't worked recently
-          const recentActivityPenalty = this.calculateRecentActivityPenalty(workload);
-          
+          const recentActivityPenalty =
+            this.calculateRecentActivityPenalty(workload);
+
           // VARIETY BONUS: Encourage different shift types and locations
-          const varietyBonus = this.calculateShiftVarietyBonus(workload, request);
-          
+          const varietyBonus = this.calculateShiftVarietyBonus(
+            workload,
+            request,
+          );
+
           // LOCATION ROTATION BONUS: Favor users who haven't worked this location recently
-          const locationRotationBonus = this.calculateLocationRotationBonus(workload, request);
-          
-          const finalScore = baseScore 
-            + workloadBonus 
-            - consecutivePenalty 
-            - rotationPenalty 
-            - recentActivityPenalty
-            + varietyBonus 
-            + locationRotationBonus;
-          
+          const locationRotationBonus = this.calculateLocationRotationBonus(
+            workload,
+            request,
+          );
+
+          const finalScore =
+            baseScore +
+            workloadBonus -
+            consecutivePenalty -
+            rotationPenalty -
+            recentActivityPenalty +
+            varietyBonus +
+            locationRotationBonus;
+
           return {
             user,
             score: Math.max(0, Math.min(100, finalScore)),
@@ -357,13 +377,13 @@ export class AdminShiftOptimizationService {
             penalties: {
               rotation: rotationPenalty,
               consecutive: consecutivePenalty,
-              recentActivity: recentActivityPenalty
+              recentActivity: recentActivityPenalty,
             },
             bonuses: {
               workload: workloadBonus,
               variety: varietyBonus,
-              locationRotation: locationRotationBonus
-            }
+              locationRotation: locationRotationBonus,
+            },
           };
         });
 
@@ -372,22 +392,23 @@ export class AdminShiftOptimizationService {
           // 1. If one user already assigned today, heavily favor the other
           const aAssignedToday = usersAssignedToday.has(a.user.id);
           const bAssignedToday = usersAssignedToday.has(b.user.id);
-          
+
           if (aAssignedToday && !bAssignedToday) return 1;
           if (!aAssignedToday && bAssignedToday) return -1;
-          
+
           // 2. Significant workload difference (force balancing)
           const workloadDiff = a.workload.totalShifts - b.workload.totalShifts;
           if (Math.abs(workloadDiff) >= 2) {
             return workloadDiff;
           }
-          
+
           // 3. Days since last shift (favor users who haven't worked recently)
-          const daysDiff = b.workload.daysSinceLastShift - a.workload.daysSinceLastShift;
+          const daysDiff =
+            b.workload.daysSinceLastShift - a.workload.daysSinceLastShift;
           if (Math.abs(daysDiff) >= 2) {
             return daysDiff;
           }
-          
+
           // 4. Finally, fitness score
           return b.score - a.score;
         });
@@ -397,7 +418,12 @@ export class AdminShiftOptimizationService {
           .filter((us) => {
             // Hard constraints
             if (us.score < 20) return false; // Minimum fitness
-            if (usersAssignedToday.has(us.user.id) && userScores.some(u => !usersAssignedToday.has(u.user.id) && u.score >= 20)) {
+            if (
+              usersAssignedToday.has(us.user.id) &&
+              userScores.some(
+                (u) => !usersAssignedToday.has(u.user.id) && u.score >= 20,
+              )
+            ) {
               return false; // Force rotation if alternatives exist
             }
             return true;
@@ -414,15 +440,15 @@ export class AdminShiftOptimizationService {
 
         console.log(
           `✅ Selected ${selectedUsers.length}/${request.requiredCount} users:`,
-          selectedUsers.map(u => ({
+          selectedUsers.map((u) => ({
             userId: u.user.id,
             name: `${u.user.namaDepan}`,
             score: u.score,
             totalShifts: u.workload.totalShifts,
             daysSinceLastShift: u.workload.daysSinceLastShift,
             penalties: u.penalties,
-            bonuses: u.bonuses
-          }))
+            bonuses: u.bonuses,
+          })),
         );
 
         for (const userScore of selectedUsers) {
@@ -432,7 +458,7 @@ export class AdminShiftOptimizationService {
             score: userScore.score,
             reason: `Enhanced Greedy with Rotation: score ${userScore.score}/100, total shifts: ${userScore.workload.totalShifts}, days since last: ${userScore.workload.daysSinceLastShift}`,
           };
-          
+
           assignments.push(assignment);
 
           // Mark user as assigned today for rotation enforcement
@@ -447,10 +473,10 @@ export class AdminShiftOptimizationService {
     console.log(
       `🎯 Enhanced Greedy with Rotation Complete: Generated ${assignments.length} assignments`,
     );
-    
+
     // Log distribution summary
     this.logDistributionSummary(assignments, availableUsers);
-    
+
     return assignments;
   }
 
@@ -462,94 +488,158 @@ export class AdminShiftOptimizationService {
     availableUsers: any[],
   ): Promise<ShiftAssignment[]> {
     console.log('🔄 Starting True Backtracking Algorithm...');
-    
+    console.log(`🔄 Input: ${initialAssignments.length} assignments from Greedy`);
+
+    // Group assignments by shift requirements (not by user assignments)
+    const shiftRequirements = this.extractShiftRequirements(initialAssignments);
+    console.log(`🔄 Extracted ${shiftRequirements.length} unique shift requirements`);
+
     // Initialize solution state
     const solution: ShiftAssignment[] = [];
     const constraints = await this.buildConstraints(availableUsers);
-    
-    // Sort assignments by difficulty (most constrained first)
-    const sortedRequests = this.sortByConstraints(initialAssignments);
-    
-    // Start recursive backtracking
+
+    // Sort requirements by difficulty (most constrained first)
+    const sortedRequirements = this.sortRequirementsByConstraints(shiftRequirements);
+
+    // Start recursive backtracking with clean slate
     const result = await this.backtrackRecursive(
-      sortedRequests,
+      sortedRequirements,
       solution,
       constraints,
       availableUsers,
-      0
+      0,
     );
-    
-    console.log(`🔄 Backtracking Complete: ${result.length}/${initialAssignments.length} assignments`);
+
+    console.log(
+      `🔄 Backtracking Complete: ${result.length} assignments (expected: ${shiftRequirements.reduce((sum, req) => sum + req.requiredCount, 0)})`,
+    );
     return result;
+  }
+
+  /**
+   * Extract unique shift requirements from assignments
+   */
+  private extractShiftRequirements(assignments: ShiftAssignment[]): ShiftCreationRequest[] {
+    const requirementMap = new Map<string, ShiftCreationRequest>();
+
+    for (const assignment of assignments) {
+      const key = `${assignment.shiftDetails.date}-${assignment.shiftDetails.location}-${assignment.shiftDetails.shiftType}`;
+      
+      if (!requirementMap.has(key)) {
+        // Create new requirement
+        requirementMap.set(key, {
+          date: assignment.shiftDetails.date,
+          location: assignment.shiftDetails.location,
+          shiftType: assignment.shiftDetails.shiftType,
+          requiredCount: 1,
+          priority: assignment.shiftDetails.priority || 'NORMAL',
+          preferredRoles: assignment.shiftDetails.preferredRoles
+        });
+      } else {
+        // Increment required count
+        const existing = requirementMap.get(key)!;
+        existing.requiredCount++;
+      }
+    }
+
+    return Array.from(requirementMap.values());
   }
 
   /**
    * RECURSIVE BACKTRACKING: The core recursive function
    */
   private async backtrackRecursive(
-    requests: ShiftAssignment[],
+    requirements: ShiftCreationRequest[],
     currentSolution: ShiftAssignment[],
     constraints: any,
     availableUsers: any[],
-    index: number
+    index: number,
   ): Promise<ShiftAssignment[]> {
-    // Base case: all assignments processed
-    if (index >= requests.length) {
+    // Base case: all requirements processed
+    if (index >= requirements.length) {
       return [...currentSolution];
     }
 
-    const currentRequest = requests[index];
-    
-    // Try each available user for this assignment
-    const candidateUsers = this.getCandidateUsers(
-      currentRequest,
-      availableUsers,
-      currentSolution,
-      constraints
+    const currentRequirement = requirements[index];
+    console.log(
+      `🔄 Processing requirement ${index + 1}/${requirements.length}: ${currentRequirement.requiredCount}x ${currentRequirement.shiftType} at ${currentRequirement.location} on ${currentRequirement.date}`,
     );
 
-    for (const user of candidateUsers) {
-      // Create trial assignment
-      const trialAssignment: ShiftAssignment = {
-        ...currentRequest,
-        userId: user.id,
-        reason: `Backtracking: trial assignment`
-      };
+    // Try to assign all required users for this shift requirement
+    const assignmentCombinations = this.generateAssignmentCombinations(
+      currentRequirement,
+      availableUsers,
+      currentSolution,
+      constraints,
+    );
 
-      // Check if this assignment violates constraints
-      if (this.isValidAssignment(trialAssignment, currentSolution, constraints)) {
-        // Add to current solution
-        currentSolution.push(trialAssignment);
-        
-        // Update constraints for this assignment
-        this.updateConstraints(constraints, trialAssignment);
-        
-        console.log(`🔄 Trying user ${user.id} for ${currentRequest.shiftDetails.date} - ${currentRequest.shiftDetails.location}`);
-        
-        // Recursive call for next assignment
+    for (const combination of assignmentCombinations) {
+      console.log(
+        `🔄 Trying combination: [${combination.map(c => c.userId).join(', ')}]`,
+      );
+
+      // Check if all assignments in this combination are valid
+      let allValid = true;
+      const tempSolution = [...currentSolution];
+      
+      for (const assignment of combination) {
+        if (!this.isValidAssignment(assignment, tempSolution, constraints)) {
+          allValid = false;
+          break;
+        }
+        tempSolution.push(assignment);
+        this.updateConstraints(constraints, assignment);
+      }
+
+      if (allValid) {
+        // Add all assignments from this combination to current solution
+        currentSolution.push(...combination);
+
+        console.log(
+          `✅ Valid combination found, proceeding to next requirement...`,
+        );
+
+        // Recursive call for next requirement
         const result = await this.backtrackRecursive(
-          requests,
+          requirements,
           currentSolution,
           constraints,
           availableUsers,
-          index + 1
+          index + 1,
         );
-        
+
         // If successful, return the solution
-        if (result.length > currentSolution.length - 1) {
+        if (result.length >= currentSolution.length) {
           return result;
         }
-        
-        // BACKTRACK: Remove assignment and restore constraints
-        console.log(`⬅️ Backtracking from user ${user.id} for ${currentRequest.shiftDetails.date}`);
-        currentSolution.pop();
-        this.restoreConstraints(constraints, trialAssignment);
+
+        // BACKTRACK: Remove all assignments from this combination
+        console.log(`⬅️ Backtracking from combination [${combination.map(c => c.userId).join(', ')}]`);
+        for (const assignment of combination) {
+          currentSolution.pop();
+          this.restoreConstraints(constraints, assignment);
+        }
+      } else {
+        // Restore constraints that were temporarily updated
+        for (const assignment of combination) {
+          this.restoreConstraints(constraints, assignment);
+        }
       }
     }
+
+    // No valid combination found, skip this requirement
+    console.log(
+      `❌ No valid combination found for ${currentRequirement.shiftType} at ${currentRequirement.location} on ${currentRequirement.date}`,
+    );
     
-    // No valid assignment found, return current solution
-    console.log(`❌ No valid assignment found for ${currentRequest.shiftDetails.date} - ${currentRequest.shiftDetails.location}`);
-    return [...currentSolution];
+    // Continue with next requirement (partial solution)
+    return await this.backtrackRecursive(
+      requirements,
+      currentSolution,
+      constraints,
+      availableUsers,
+      index + 1,
+    );
   }
 
   /**
@@ -562,31 +652,34 @@ export class AdminShiftOptimizationService {
     let score = 50; // Base score
 
     // HARD CONSTRAINTS (can make score 0)
-    
+
     // 1. Availability check - ABSOLUTE REQUIREMENT
     const hasConflict = this.checkDateConflict(user, request.date);
     if (hasConflict) return 0; // Unavailable - cannot assign
-    
+
     // 2. Monthly shift limit check
     const currentShiftCount = user.shifts?.length || 0;
     if (currentShiftCount >= 20) return 0; // Over monthly limit
-    
+
     // 3. Consecutive days check - STRICT ENFORCEMENT
     const consecutiveDays = this.calculateConsecutiveDays(user, request.date);
     if (consecutiveDays >= 5) return 0; // Too many consecutive days
-    
+
     // 4. Consecutive night shifts check
     if (request.shiftType === 'MALAM') {
-      const consecutiveNights = this.calculateConsecutiveNightShifts(user, request.date);
+      const consecutiveNights = this.calculateConsecutiveNightShifts(
+        user,
+        request.date,
+      );
       if (consecutiveNights >= 2) return 0; // Max 2 consecutive night shifts
     }
-    
+
     // 5. Weekly shift limit check (5 shifts in 7 days)
     const weeklyShifts = this.calculateWeeklyShifts(user, request.date);
     if (weeklyShifts >= 5) return 0; // Too many shifts this week
 
     // SOFT CONSTRAINTS (reduce score but don't eliminate)
-    
+
     // Role compatibility (25 points)
     if (request.preferredRoles?.includes(user.role)) {
       score += 25;
@@ -607,130 +700,161 @@ export class AdminShiftOptimizationService {
     else score += 5; // Small bonus for new experience
 
     // Workload balance - HEAVILY WEIGHTED (30 points)
-    if (currentShiftCount < 8) score += 30; // Very light workload
-    else if (currentShiftCount < 12) score += 20; // Light workload
-    else if (currentShiftCount < 16) score += 10; // Medium workload
-    else if (currentShiftCount < 18) score += 5; // Heavy workload
+    if (currentShiftCount < 8)
+      score += 30; // Very light workload
+    else if (currentShiftCount < 12)
+      score += 20; // Light workload
+    else if (currentShiftCount < 16)
+      score += 10; // Medium workload
+    else if (currentShiftCount < 18)
+      score += 5; // Heavy workload
     else score -= 15; // Very heavy workload
 
     // Shift type variety bonus (10 points)
-    const shiftTypeVariety = this.calculateShiftTypeVariety(user, request.shiftType);
+    const shiftTypeVariety = this.calculateShiftTypeVariety(
+      user,
+      request.shiftType,
+    );
     score += shiftTypeVariety;
 
     // Fatigue and rest considerations
     if (consecutiveDays >= 4) score -= 20;
     else if (consecutiveDays >= 3) score -= 10;
-    
+
     if (request.shiftType === 'MALAM') {
       const recentNightShifts = this.getRecentNightShifts(user, 7); // Last 7 days
-      if (recentNightShifts >= 3) score -= 25; // Too many recent night shifts
+      if (recentNightShifts >= 3)
+        score -= 25; // Too many recent night shifts
       else if (recentNightShifts >= 2) score -= 15;
     }
-    
+
     // Weekly distribution penalty
     if (weeklyShifts >= 4) score -= 15;
     else if (weeklyShifts >= 3) score -= 5;
 
     // Fair distribution bonus - prefer users with fewer recent shifts
     const recentShifts = this.getRecentShifts(user, 14); // Last 14 days
-    if (recentShifts === 0) score += 15; // No recent shifts
-    else if (recentShifts <= 2) score += 10; // Few recent shifts
+    if (recentShifts === 0)
+      score += 15; // No recent shifts
+    else if (recentShifts <= 2)
+      score += 10; // Few recent shifts
     else if (recentShifts >= 6) score -= 20; // Too many recent shifts
 
     return Math.max(0, Math.min(100, score));
   }
 
   // Enhanced helper methods for constraints
-  private checkRoleSuitability(role: string, request: ShiftCreationRequest): number {
+  private checkRoleSuitability(
+    role: string,
+    request: ShiftCreationRequest,
+  ): number {
     const suitabilityMatrix = {
-      'DOKTER': {
-        'ICU': 15, 'NICU': 15, 'GAWAT_DARURAT': 15, 'RAWAT_INAP': 10, 'RAWAT_JALAN': 10
+      DOKTER: {
+        ICU: 15,
+        NICU: 15,
+        GAWAT_DARURAT: 15,
+        RAWAT_INAP: 10,
+        RAWAT_JALAN: 10,
       },
-      'PERAWAT': {
-        'ICU': 15, 'NICU': 15, 'GAWAT_DARURAT': 12, 'RAWAT_INAP': 15, 'RAWAT_JALAN': 8
+      PERAWAT: {
+        ICU: 15,
+        NICU: 15,
+        GAWAT_DARURAT: 12,
+        RAWAT_INAP: 15,
+        RAWAT_JALAN: 8,
       },
-      'STAF': {
-        'LABORATORIUM': 15, 'FARMASI': 15, 'RADIOLOGI': 15, 'RAWAT_JALAN': 10
-      }
+      STAF: {
+        LABORATORIUM: 15,
+        FARMASI: 15,
+        RADIOLOGI: 15,
+        RAWAT_JALAN: 10,
+      },
     };
-    
+
     return suitabilityMatrix[role]?.[request.location] || 5;
   }
 
-  private calculateConsecutiveNightShifts(user: any, targetDate: string): number {
+  private calculateConsecutiveNightShifts(
+    user: any,
+    targetDate: string,
+  ): number {
     if (!user.shifts || user.shifts.length === 0) return 0;
-    
+
     const nightShifts = user.shifts
       .filter((shift: any) => shift.tipeshift === 'MALAM')
       .map((shift: any) => shift.tanggal.toISOString().split('T')[0])
       .sort();
-    
+
     const target = new Date(targetDate);
     let consecutiveCount = 0;
-    
+
     // Count backwards from target date
     for (let i = 1; i <= 7; i++) {
       const checkDate = new Date(target);
       checkDate.setDate(target.getDate() - i);
       const dateStr = checkDate.toISOString().split('T')[0];
-      
+
       if (nightShifts.includes(dateStr)) {
         consecutiveCount++;
       } else {
         break; // Non-consecutive, stop counting
       }
     }
-    
+
     return consecutiveCount;
   }
 
   private calculateWeeklyShifts(user: any, targetDate: string): number {
     if (!user.shifts || user.shifts.length === 0) return 0;
-    
+
     const target = new Date(targetDate);
     const weekStart = new Date(target);
     weekStart.setDate(target.getDate() - target.getDay()); // Start of week
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6); // End of week
-    
+
     return user.shifts.filter((shift: any) => {
       const shiftDate = new Date(shift.tanggal);
       return shiftDate >= weekStart && shiftDate <= weekEnd;
     }).length;
   }
 
-  private calculateShiftTypeVariety(user: any, targetShiftType: string): number {
+  private calculateShiftTypeVariety(
+    user: any,
+    targetShiftType: string,
+  ): number {
     if (!user.shifts || user.shifts.length === 0) return 5; // Bonus for new user
-    
+
     const shiftTypeCounts = {
-      'PAGI': 0,
-      'SIANG': 0,
-      'MALAM': 0
+      PAGI: 0,
+      SIANG: 0,
+      MALAM: 0,
     };
-    
+
     user.shifts.forEach((shift: any) => {
       if (shiftTypeCounts.hasOwnProperty(shift.tipeshift)) {
         shiftTypeCounts[shift.tipeshift]++;
       }
     });
-    
+
     const currentTypeCount = shiftTypeCounts[targetShiftType] || 0;
     const totalShifts = user.shifts.length;
     const avgPerType = totalShifts / 3;
-    
-    if (currentTypeCount < avgPerType - 2) return 10; // Encourage balance
+
+    if (currentTypeCount < avgPerType - 2)
+      return 10; // Encourage balance
     else if (currentTypeCount < avgPerType) return 5;
     else if (currentTypeCount > avgPerType + 2) return -10; // Discourage imbalance
-    
+
     return 0;
   }
 
   private getRecentNightShifts(user: any, days: number): number {
     if (!user.shifts || user.shifts.length === 0) return 0;
-    
+
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-    
+
     return user.shifts.filter((shift: any) => {
       const shiftDate = new Date(shift.tanggal);
       return shiftDate >= cutoffDate && shift.tipeshift === 'MALAM';
@@ -739,10 +863,10 @@ export class AdminShiftOptimizationService {
 
   private getRecentShifts(user: any, days: number): number {
     if (!user.shifts || user.shifts.length === 0) return 0;
-    
+
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-    
+
     return user.shifts.filter((shift: any) => {
       const shiftDate = new Date(shift.tanggal);
       return shiftDate >= cutoffDate;
@@ -931,7 +1055,7 @@ export class AdminShiftOptimizationService {
       maxConsecutiveNightShifts: 2,
       maxWeeklyShifts: 6,
       minRestBetweenShifts: 8, // hours
-      shiftTypeRotation: true
+      shiftTypeRotation: true,
     };
 
     // Initialize user tracking
@@ -946,32 +1070,152 @@ export class AdminShiftOptimizationService {
     // Sort by most constrained variables first (MRV heuristic)
     return assignments.sort((a, b) => {
       // Night shifts are more constrained
-      if (a.shiftDetails.shiftType === 'MALAM' && b.shiftDetails.shiftType !== 'MALAM') return -1;
-      if (b.shiftDetails.shiftType === 'MALAM' && a.shiftDetails.shiftType !== 'MALAM') return 1;
-      
+      if (
+        a.shiftDetails.shiftType === 'MALAM' &&
+        b.shiftDetails.shiftType !== 'MALAM'
+      )
+        return -1;
+      if (
+        b.shiftDetails.shiftType === 'MALAM' &&
+        a.shiftDetails.shiftType !== 'MALAM'
+      )
+        return 1;
+
       // Urgent priority shifts are more constrained
       const priorityOrder = { URGENT: 4, HIGH: 3, NORMAL: 2, LOW: 1 };
-      return priorityOrder[b.shiftDetails.priority] - priorityOrder[a.shiftDetails.priority];
+      return (
+        priorityOrder[b.shiftDetails.priority] -
+        priorityOrder[a.shiftDetails.priority]
+      );
+    });
+  }
+
+  /**
+   * Generate all possible assignment combinations for a requirement
+   */
+  private generateAssignmentCombinations(
+    requirement: ShiftCreationRequest,
+    availableUsers: any[],
+    currentSolution: ShiftAssignment[],
+    constraints: any,
+  ): ShiftAssignment[][] {
+    const candidateUsers = this.getCandidateUsers(
+      requirement,
+      availableUsers,
+      currentSolution,
+      constraints,
+    );
+
+    // Generate combinations of users for this requirement
+    const combinations: ShiftAssignment[][] = [];
+    const requiredCount = requirement.requiredCount;
+
+    if (candidateUsers.length < requiredCount) {
+      console.log(
+        `⚠️ Not enough candidates: ${candidateUsers.length} < ${requiredCount}`,
+      );
+      return [];
+    }
+
+    // Generate all combinations of requiredCount users from candidateUsers
+    const userCombinations = this.getCombinations(
+      candidateUsers,
+      requiredCount,
+    );
+
+    for (const userComb of userCombinations) {
+      const assignments: ShiftAssignment[] = userComb.map((user) => ({
+        userId: user.id as number,
+        shiftDetails: requirement,
+        score: this.calculateUserFitnessScore(user, requirement),
+        reason: `Backtracking combination: User ${user.id as number}`,
+      }));
+
+      combinations.push(assignments);
+    }
+
+    // Sort combinations by total fitness score (best first)
+    combinations.sort((a, b) => {
+      const totalScoreA = a.reduce(
+        (sum, assignment) => sum + assignment.score,
+        0,
+      );
+      const totalScoreB = b.reduce(
+        (sum, assignment) => sum + assignment.score,
+        0,
+      );
+      return totalScoreB - totalScoreA;
+    });
+
+    return combinations.slice(0, 10); // Limit to top 10 combinations for performance
+  }
+
+  /**
+   * Generate combinations of users
+   */
+  private getCombinations(users: any[], count: number): any[][] {
+    if (count === 0) return [[]];
+    if (users.length === 0) return [];
+    if (count > users.length) return [];
+
+    const [first, ...rest] = users as [any, ...any[]];
+    const withFirst = this.getCombinations(rest, count - 1).map((combo) => [
+      first,
+      ...combo,
+    ]);
+    const withoutFirst = this.getCombinations(rest, count);
+
+    return [...withFirst, ...withoutFirst];
+  }
+
+  /**
+   * Sort requirements by constraints (most difficult first)
+   */
+  private sortRequirementsByConstraints(
+    requirements: ShiftCreationRequest[],
+  ): ShiftCreationRequest[] {
+    return requirements.sort((a, b) => {
+      // Night shifts are more constrained
+      if (a.shiftType === 'MALAM' && b.shiftType !== 'MALAM') return -1;
+      if (b.shiftType === 'MALAM' && a.shiftType !== 'MALAM') return 1;
+
+      // Higher required count is more constrained
+      if (a.requiredCount !== b.requiredCount) {
+        return b.requiredCount - a.requiredCount;
+      }
+
+      // Urgent priority is more constrained
+      const priorityOrder = { URGENT: 4, HIGH: 3, NORMAL: 2, LOW: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
     });
   }
 
   private getCandidateUsers(
-    request: ShiftAssignment,
+    requirement: ShiftCreationRequest,
     availableUsers: any[],
     currentSolution: ShiftAssignment[],
-    constraints: any
+    _constraints: any,
   ): any[] {
     // Get users sorted by fitness and workload balance
     const candidates = availableUsers
-      .filter(user => {
-        // Basic availability check
-        return !this.hasShiftConflict(user.id, request.shiftDetails.date, currentSolution);
+      .filter((user) => {
+        // Enhanced availability check with shift conflict detection
+        return !this.hasShiftConflict(
+          user.id as number,
+          requirement.date,
+          currentSolution,
+          requirement, // Pass the new shift to check for time conflicts
+        );
       })
-      .map(user => ({
+      .map((user) => ({
         user,
-        fitness: this.calculateUserFitnessScore(user, request.shiftDetails),
-        workload: this.getUserCurrentWorkload(user.id, currentSolution)
+        fitness: this.calculateUserFitnessScore(user, requirement),
+        workload: this.getUserCurrentWorkload(
+          user.id as number,
+          currentSolution,
+        ),
       }))
+      .filter((candidate) => candidate.fitness > 0) // Only valid candidates
       .sort((a, b) => {
         // Prioritize workload balancing
         const workloadDiff = a.workload - b.workload;
@@ -981,70 +1225,150 @@ export class AdminShiftOptimizationService {
         return b.fitness - a.fitness;
       });
 
-    return candidates.map(c => c.user);
+    return candidates.map((c) => c.user as any);
   }
 
   private isValidAssignment(
     assignment: ShiftAssignment,
     currentSolution: ShiftAssignment[],
-    constraints: any
+    constraints: any,
   ): boolean {
     const userId = assignment.userId;
-    const userAssignments = currentSolution.filter(a => a.userId === userId);
-    
+    const userAssignments = currentSolution.filter((a) => a.userId === userId);
+
     // Check hard constraints
-    
-    // 1. No double booking same day
-    if (this.hasShiftConflict(userId, assignment.shiftDetails.date, currentSolution)) {
+
+    // 1. No double booking same day - Enhanced conflict detection
+    if (
+      this.hasShiftConflict(
+        userId,
+        assignment.shiftDetails.date,
+        currentSolution,
+        assignment.shiftDetails, // Pass the shift details for time conflict checking
+      )
+    ) {
+      console.log(
+        `🚫 CONFLICT: User ${userId} already has shift on ${assignment.shiftDetails.date}`,
+      );
       return false;
     }
+
+    // 1.5 Additional validation: Check daily shift count and time conflicts
+    const dailyShifts = currentSolution.filter(
+      (a) => a.userId === userId && a.shiftDetails.date === assignment.shiftDetails.date,
+    );
     
+    if (dailyShifts.length >= 2) {
+      console.log(
+        `🚫 DAILY LIMIT: User ${userId} already has ${dailyShifts.length} shifts on ${assignment.shiftDetails.date} (max 2 allowed)`,
+      );
+      return false;
+    }
+
+    // Check for time conflicts with existing shifts on same day
+    for (const existingShift of dailyShifts) {
+      const newStart = this.parseTimeToMinutes(
+        this.getShiftStartTime(assignment.shiftDetails.shiftType),
+      );
+      const newEnd = this.parseTimeToMinutes(
+        this.getShiftEndTime(assignment.shiftDetails.shiftType),
+      );
+      const existingStart = this.parseTimeToMinutes(
+        this.getShiftStartTime(existingShift.shiftDetails.shiftType),
+      );
+      const existingEnd = this.parseTimeToMinutes(
+        this.getShiftEndTime(existingShift.shiftDetails.shiftType),
+      );
+
+      if (this.hasTimeOverlap(newStart, newEnd, existingStart, existingEnd)) {
+        console.log(
+          `🚫 TIME OVERLAP: User ${userId} shift ${assignment.shiftDetails.shiftType} conflicts with existing ${existingShift.shiftDetails.shiftType}`,
+        );
+        return false;
+      }
+    }
+
     // 2. Maximum shifts per month
     if (userAssignments.length >= constraints.maxShiftsPerMonth) {
       console.log(`❌ User ${userId} exceeds monthly shift limit`);
       return false;
     }
-    
+
     // 3. Maximum consecutive days
-    if (this.checkConsecutiveDaysViolation(userId, assignment.shiftDetails.date, currentSolution, constraints.maxConsecutiveDays)) {
+    if (
+      this.checkConsecutiveDaysViolation(
+        userId,
+        assignment.shiftDetails.date,
+        currentSolution,
+        constraints.maxConsecutiveDays,
+      )
+    ) {
       console.log(`❌ User ${userId} exceeds consecutive days limit`);
       return false;
     }
-    
+
     // 4. Maximum consecutive night shifts
     if (assignment.shiftDetails.shiftType === 'MALAM') {
-      if (this.checkConsecutiveNightShiftsViolation(userId, assignment.shiftDetails.date, currentSolution, constraints.maxConsecutiveNightShifts)) {
+      if (
+        this.checkConsecutiveNightShiftsViolation(
+          userId,
+          assignment.shiftDetails.date,
+          currentSolution,
+          constraints.maxConsecutiveNightShifts,
+        )
+      ) {
         console.log(`❌ User ${userId} exceeds consecutive night shifts limit`);
         return false;
       }
     }
-    
+
     // 5. Maximum weekly shifts (5 shifts in 7 days)
-    if (this.checkWeeklyShiftsViolation(userId, assignment.shiftDetails.date, currentSolution, constraints.maxWeeklyShifts)) {
+    if (
+      this.checkWeeklyShiftsViolation(
+        userId,
+        assignment.shiftDetails.date,
+        currentSolution,
+        constraints.maxWeeklyShifts,
+      )
+    ) {
       console.log(`❌ User ${userId} exceeds weekly shifts limit`);
       return false;
     }
-    
+
     // 6. Minimum rest between shifts
-    if (this.checkMinimumRestViolation(userId, assignment.shiftDetails, currentSolution, constraints.minRestBetweenShifts)) {
+    if (
+      this.checkMinimumRestViolation(
+        userId,
+        assignment.shiftDetails,
+        currentSolution,
+        constraints.minRestBetweenShifts,
+      )
+    ) {
       console.log(`❌ User ${userId} violates minimum rest requirement`);
       return false;
     }
-    
+
     return true;
   }
 
-  private updateConstraints(constraints: any, assignment: ShiftAssignment): void {
+  private updateConstraints(
+    constraints: any,
+    assignment: ShiftAssignment,
+  ): void {
     const userShifts = constraints.userShifts.get(assignment.userId) || [];
     userShifts.push(assignment);
     constraints.userShifts.set(assignment.userId, userShifts);
   }
 
-  private restoreConstraints(constraints: any, assignment: ShiftAssignment): void {
+  private restoreConstraints(
+    constraints: any,
+    assignment: ShiftAssignment,
+  ): void {
     const userShifts = constraints.userShifts.get(assignment.userId) || [];
-    const index = userShifts.findIndex(s => 
-      s.shiftDetails.date === assignment.shiftDetails.date && 
-      s.shiftDetails.location === assignment.shiftDetails.location
+    const index = userShifts.findIndex(
+      (s) =>
+        s.shiftDetails.date === assignment.shiftDetails.date &&
+        s.shiftDetails.location === assignment.shiftDetails.location,
     );
     if (index >= 0) {
       userShifts.splice(index, 1);
@@ -1052,32 +1376,147 @@ export class AdminShiftOptimizationService {
   }
 
   // CONSTRAINT CHECKING METHODS
-  private hasShiftConflict(userId: number, date: string, currentSolution: ShiftAssignment[]): boolean {
-    return currentSolution.some(assignment => 
-      assignment.userId === userId && assignment.shiftDetails.date === date
+  private hasShiftConflict(
+    userId: number,
+    date: string,
+    currentSolution: ShiftAssignment[],
+    newShift?: ShiftCreationRequest,
+  ): boolean {
+    const userShiftsOnDate = currentSolution.filter(
+      (assignment) =>
+        assignment.userId === userId && assignment.shiftDetails.date === date,
     );
+
+    // RULE 1: Maximum 2 shifts per person per day
+    if (userShiftsOnDate.length >= 2) {
+      console.log(
+        `🚫 MAX SHIFTS EXCEEDED: User ${userId} already has ${userShiftsOnDate.length} shifts on ${date}`,
+      );
+      return true; // Conflict - too many shifts
+    }
+
+    // If no existing shifts on this date, no conflict
+    if (userShiftsOnDate.length === 0) {
+      return false;
+    }
+
+    // RULE 2: If we have a new shift to check, validate time conflicts
+    if (newShift) {
+      const newStartTime = this.parseTimeToMinutes(
+        this.getShiftStartTime(newShift.shiftType),
+      );
+      const newEndTime = this.parseTimeToMinutes(
+        this.getShiftEndTime(newShift.shiftType),
+      );
+
+      for (const existingAssignment of userShiftsOnDate) {
+        const existingStart = this.parseTimeToMinutes(
+          this.getShiftStartTime(existingAssignment.shiftDetails.shiftType),
+        );
+        const existingEnd = this.parseTimeToMinutes(
+          this.getShiftEndTime(existingAssignment.shiftDetails.shiftType),
+        );
+
+        // Check for time overlap
+        if (this.hasTimeOverlap(newStartTime, newEndTime, existingStart, existingEnd)) {
+          console.log(
+            `🚫 TIME CONFLICT: User ${userId} shift ${newShift.shiftType} (${this.getShiftStartTime(newShift.shiftType)}-${this.getShiftEndTime(newShift.shiftType)}) overlaps with existing ${existingAssignment.shiftDetails.shiftType} (${this.getShiftStartTime(existingAssignment.shiftDetails.shiftType)}-${this.getShiftEndTime(existingAssignment.shiftDetails.shiftType)})`,
+          );
+          return true; // Conflict - time overlap
+        }
+      }
+
+      // RULE 3: Check for same location conflicts (person can't be in 2 places at once)
+      for (const existingAssignment of userShiftsOnDate) {
+        if (existingAssignment.shiftDetails.location === newShift.location) {
+          console.log(
+            `🚫 LOCATION CONFLICT: User ${userId} already assigned to ${newShift.location} on ${date}`,
+          );
+          return true; // Conflict - same location
+        }
+      }
+    }
+
+    // No conflicts found
+    return false;
+  }
+
+  private parseTimeToMinutes(timeString: string): number {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private hasTimeOverlap(
+    start1: number,
+    end1: number,
+    start2: number,
+    end2: number,
+  ): boolean {
+    // Handle overnight shifts (end time is next day)
+    // For shifts like 22:00-06:00 (MALAM)
+    if (end1 < start1) {
+      // Shift 1 is overnight (crosses midnight)
+      end1 += 24 * 60; // Add 24 hours to end time
+    }
+    if (end2 < start2) {
+      // Shift 2 is overnight (crosses midnight)  
+      end2 += 24 * 60; // Add 24 hours to end time
+    }
+
+    // Standard overlap check: Two intervals overlap if start1 < end2 && start2 < end1
+    const hasOverlap = start1 < end2 && start2 < end1;
+
+    // Additional check for overnight shifts - they might overlap across midnight
+    if (!hasOverlap && (end1 > 24 * 60 || end2 > 24 * 60)) {
+      // Check overlap considering 24-hour wraparound
+      const start1_mod = start1 % (24 * 60);
+      const end1_mod = end1 % (24 * 60);
+      const start2_mod = start2 % (24 * 60);
+      const end2_mod = end2 % (24 * 60);
+      
+      // If either shift crosses midnight, check both segments
+      if (end1 > 24 * 60) {
+        // Shift 1 crosses midnight: check [start1, 24:00] and [00:00, end1_mod]
+        return (start1 < start2 + 24 * 60 && start2 < 24 * 60) || 
+               (0 < end2 && start2_mod < end1_mod);
+      }
+      if (end2 > 24 * 60) {
+        // Shift 2 crosses midnight: check [start2, 24:00] and [00:00, end2_mod]
+        return (start2 < start1 + 24 * 60 && start1 < 24 * 60) || 
+               (0 < end1 && start1_mod < end2_mod);
+      }
+    }
+
+    if (hasOverlap) {
+      console.log(
+        `⚠️ TIME OVERLAP DETECTED: ${Math.floor(start1/60)}:${(start1%60).toString().padStart(2,'0')}-${Math.floor(end1/60)}:${(end1%60).toString().padStart(2,'0')} overlaps with ${Math.floor(start2/60)}:${(start2%60).toString().padStart(2,'0')}-${Math.floor(end2/60)}:${(end2%60).toString().padStart(2,'0')}`,
+      );
+    }
+
+    return hasOverlap;
   }
 
   private checkConsecutiveDaysViolation(
-    userId: number, 
-    newDate: string, 
-    currentSolution: ShiftAssignment[], 
-    maxConsecutive: number
+    userId: number,
+    newDate: string,
+    currentSolution: ShiftAssignment[],
+    maxConsecutive: number,
   ): boolean {
     const userShifts = currentSolution
-      .filter(a => a.userId === userId)
+      .filter((a) => a.userId === userId)
       .sort((a, b) => a.shiftDetails.date.localeCompare(b.shiftDetails.date));
-    
-    const dates = userShifts.map(s => s.shiftDetails.date);
+
+    const dates = userShifts.map((s) => s.shiftDetails.date);
     dates.push(newDate);
     dates.sort();
-    
+
     let consecutiveCount = 1;
     for (let i = 1; i < dates.length; i++) {
-      const prevDate = new Date(dates[i-1]);
+      const prevDate = new Date(dates[i - 1]);
       const currentDate = new Date(dates[i]);
-      const daysDiff = (currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
-      
+      const daysDiff =
+        (currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+
       if (daysDiff === 1) {
         consecutiveCount++;
         if (consecutiveCount > maxConsecutive) {
@@ -1087,30 +1526,33 @@ export class AdminShiftOptimizationService {
         consecutiveCount = 1;
       }
     }
-    
+
     return false;
   }
 
   private checkConsecutiveNightShiftsViolation(
-    userId: number, 
-    newDate: string, 
-    currentSolution: ShiftAssignment[], 
-    maxConsecutiveNights: number
+    userId: number,
+    newDate: string,
+    currentSolution: ShiftAssignment[],
+    maxConsecutiveNights: number,
   ): boolean {
     const userNightShifts = currentSolution
-      .filter(a => a.userId === userId && a.shiftDetails.shiftType === 'MALAM')
+      .filter(
+        (a) => a.userId === userId && a.shiftDetails.shiftType === 'MALAM',
+      )
       .sort((a, b) => a.shiftDetails.date.localeCompare(b.shiftDetails.date));
-    
-    const dates = userNightShifts.map(s => s.shiftDetails.date);
+
+    const dates = userNightShifts.map((s) => s.shiftDetails.date);
     dates.push(newDate);
     dates.sort();
-    
+
     let consecutiveCount = 1;
     for (let i = 1; i < dates.length; i++) {
-      const prevDate = new Date(dates[i-1]);
+      const prevDate = new Date(dates[i - 1]);
       const currentDate = new Date(dates[i]);
-      const daysDiff = (currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
-      
+      const daysDiff =
+        (currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+
       if (daysDiff === 1) {
         consecutiveCount++;
         if (consecutiveCount > maxConsecutiveNights) {
@@ -1120,87 +1562,104 @@ export class AdminShiftOptimizationService {
         consecutiveCount = 1;
       }
     }
-    
+
     return false;
   }
 
   private checkWeeklyShiftsViolation(
-    userId: number, 
-    newDate: string, 
-    currentSolution: ShiftAssignment[], 
-    maxWeeklyShifts: number
+    userId: number,
+    newDate: string,
+    currentSolution: ShiftAssignment[],
+    maxWeeklyShifts: number,
   ): boolean {
     const newDateObj = new Date(newDate);
     const weekStart = new Date(newDateObj);
     weekStart.setDate(newDateObj.getDate() - newDateObj.getDay()); // Start of week
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6); // End of week
-    
-    const weekShifts = currentSolution.filter(a => {
+
+    const weekShifts = currentSolution.filter((a) => {
       if (a.userId !== userId) return false;
       const shiftDate = new Date(a.shiftDetails.date);
       return shiftDate >= weekStart && shiftDate <= weekEnd;
     });
-    
+
     return weekShifts.length >= maxWeeklyShifts;
   }
 
   private checkMinimumRestViolation(
-    userId: number, 
-    newShift: ShiftCreationRequest, 
-    currentSolution: ShiftAssignment[], 
-    minRestHours: number
+    userId: number,
+    newShift: ShiftCreationRequest,
+    currentSolution: ShiftAssignment[],
+    minRestHours: number,
   ): boolean {
-    const userShifts = currentSolution.filter(a => a.userId === userId);
-    const newShiftStart = new Date(`${newShift.date}T${this.getShiftStartTime(newShift.shiftType)}`);
-    const newShiftEnd = new Date(`${newShift.date}T${this.getShiftEndTime(newShift.shiftType)}`);
-    
+    const userShifts = currentSolution.filter((a) => a.userId === userId);
+    const newShiftStart = new Date(
+      `${newShift.date}T${this.getShiftStartTime(newShift.shiftType)}`,
+    );
+    const newShiftEnd = new Date(
+      `${newShift.date}T${this.getShiftEndTime(newShift.shiftType)}`,
+    );
+
     for (const shift of userShifts) {
-      const shiftStart = new Date(`${shift.shiftDetails.date}T${this.getShiftStartTime(shift.shiftDetails.shiftType)}`);
-      const shiftEnd = new Date(`${shift.shiftDetails.date}T${this.getShiftEndTime(shift.shiftDetails.shiftType)}`);
-      
+      const shiftStart = new Date(
+        `${shift.shiftDetails.date}T${this.getShiftStartTime(shift.shiftDetails.shiftType)}`,
+      );
+      const shiftEnd = new Date(
+        `${shift.shiftDetails.date}T${this.getShiftEndTime(shift.shiftDetails.shiftType)}`,
+      );
+
       // Check if there's enough rest between shifts
-      const timeBetween = Math.abs(newShiftStart.getTime() - shiftEnd.getTime()) / (1000 * 60 * 60);
-      const timeBetween2 = Math.abs(shiftStart.getTime() - newShiftEnd.getTime()) / (1000 * 60 * 60);
-      
+      const timeBetween =
+        Math.abs(newShiftStart.getTime() - shiftEnd.getTime()) /
+        (1000 * 60 * 60);
+      const timeBetween2 =
+        Math.abs(shiftStart.getTime() - newShiftEnd.getTime()) /
+        (1000 * 60 * 60);
+
       if (timeBetween < minRestHours || timeBetween2 < minRestHours) {
         return true;
       }
     }
-    
+
     return false;
   }
 
   private getShiftStartTime(shiftType: string): string {
     const times = {
-      'PAGI': '07:00',
-      'SIANG': '14:00', 
-      'MALAM': '21:00',
-      'ON_CALL': '00:00',
-      'JAGA': '00:00'
+      PAGI: '07:00',
+      SIANG: '14:00',
+      MALAM: '21:00',
+      ON_CALL: '00:00',
+      JAGA: '00:00',
     };
     return times[shiftType] || '00:00';
   }
 
   private getShiftEndTime(shiftType: string): string {
     const times = {
-      'PAGI': '14:00',
-      'SIANG': '21:00',
-      'MALAM': '07:00', // Next day
-      'ON_CALL': '23:59',
-      'JAGA': '23:59'
+      PAGI: '14:00',
+      SIANG: '21:00',
+      MALAM: '07:00', // Next day
+      ON_CALL: '23:59',
+      JAGA: '23:59',
     };
     return times[shiftType] || '23:59';
   }
 
-  private getUserCurrentWorkload(userId: number, currentSolution: ShiftAssignment[]): number {
-    return currentSolution.filter(a => a.userId === userId).length;
+  private getUserCurrentWorkload(
+    userId: number,
+    currentSolution: ShiftAssignment[],
+  ): number {
+    return currentSolution.filter((a) => a.userId === userId).length;
   }
 
   // ENHANCED DISTRIBUTION METHODS
-  private groupRequestsByDate(requests: ShiftCreationRequest[]): Map<string, ShiftCreationRequest[]> {
+  private groupRequestsByDate(
+    requests: ShiftCreationRequest[],
+  ): Map<string, ShiftCreationRequest[]> {
     const grouped = new Map<string, ShiftCreationRequest[]>();
-    
+
     for (const request of requests) {
       const date = request.date;
       if (!grouped.has(date)) {
@@ -1208,93 +1667,112 @@ export class AdminShiftOptimizationService {
       }
       grouped.get(date)!.push(request);
     }
-    
+
     return grouped;
   }
 
   private getDaysSinceLastShift(user: any): number {
     if (!user.shifts || user.shifts.length === 0) return 999; // No previous shifts
-    
+
     const lastShiftDate = user.shifts
       .map((shift: any) => new Date(shift.tanggal))
       .sort((a, b) => b.getTime() - a.getTime())[0]; // Most recent
-    
+
     const today = new Date();
-    const daysDiff = Math.floor((today.getTime() - lastShiftDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const daysDiff = Math.floor(
+      (today.getTime() - lastShiftDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
     return Math.max(0, daysDiff);
   }
 
   private calculateRecentActivityPenalty(workload: any): number {
     // Heavy penalty for users who have worked recently
-    if (workload.daysSinceLastShift === 0) return 40; // Worked today
-    else if (workload.daysSinceLastShift === 1) return 30; // Worked yesterday
-    else if (workload.daysSinceLastShift <= 3) return 20; // Worked in last 3 days
+    if (workload.daysSinceLastShift === 0)
+      return 40; // Worked today
+    else if (workload.daysSinceLastShift === 1)
+      return 30; // Worked yesterday
+    else if (workload.daysSinceLastShift <= 3)
+      return 20; // Worked in last 3 days
     else if (workload.daysSinceLastShift <= 7) return 10; // Worked in last week
-    
+
     return 0; // No recent activity penalty
   }
 
-  private calculateLocationRotationBonus(workload: any, request: ShiftCreationRequest): number {
+  private calculateLocationRotationBonus(
+    workload: any,
+    request: ShiftCreationRequest,
+  ): number {
     const recentLocations = workload.locations.slice(-5); // Last 5 locations
-    
+
     // Heavy bonus for new location
     if (!recentLocations.includes(request.location)) {
       return 15;
     }
-    
+
     // Count how many times this location appears in recent history
-    const locationCount = recentLocations.filter(loc => loc === request.location).length;
-    
-    if (locationCount >= 3) return -20; // Heavy penalty for same location too often
+    const locationCount = recentLocations.filter(
+      (loc) => loc === request.location,
+    ).length;
+
+    if (locationCount >= 3)
+      return -20; // Heavy penalty for same location too often
     else if (locationCount >= 2) return -10; // Light penalty
-    
+
     return 0;
   }
 
-  private logDistributionSummary(assignments: ShiftAssignment[], availableUsers: any[]): void {
+  private logDistributionSummary(
+    assignments: ShiftAssignment[],
+    availableUsers: any[],
+  ): void {
     console.log('\n📊 DISTRIBUTION SUMMARY:');
     console.log('========================');
-    
+
     // Count assignments per user
     const userAssignmentCounts = new Map<number, number>();
     const userNames = new Map<number, string>();
-    
+
     // Initialize counts
     for (const user of availableUsers) {
       userAssignmentCounts.set(user.id, 0);
       userNames.set(user.id, `${user.namaDepan} ${user.namaBelakang}`);
     }
-    
+
     // Count actual assignments
     for (const assignment of assignments) {
       const currentCount = userAssignmentCounts.get(assignment.userId) || 0;
       userAssignmentCounts.set(assignment.userId, currentCount + 1);
     }
-    
+
     // Sort by assignment count for analysis
     const sortedCounts = Array.from(userAssignmentCounts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10); // Top 10 most assigned users
-    
+
     console.log('Top assigned users:');
     for (const [userId, count] of sortedCounts) {
       if (count > 0) {
         console.log(`- ${userNames.get(userId)}: ${count} shifts`);
       }
     }
-    
+
     // Calculate distribution stats
-    const counts = Array.from(userAssignmentCounts.values()).filter(c => c > 0);
-    const avgAssignments = counts.reduce((sum, c) => sum + c, 0) / counts.length;
+    const counts = Array.from(userAssignmentCounts.values()).filter(
+      (c) => c > 0,
+    );
+    const avgAssignments =
+      counts.reduce((sum, c) => sum + c, 0) / counts.length;
     const maxAssignments = Math.max(...counts);
     const minAssignments = Math.min(...counts);
-    
+
     console.log(`\nDistribution Stats:`);
-    console.log(`- Average: ${avgAssignments.toFixed(1)} shifts per active user`);
+    console.log(
+      `- Average: ${avgAssignments.toFixed(1)} shifts per active user`,
+    );
     console.log(`- Range: ${minAssignments} - ${maxAssignments} shifts`);
     console.log(`- Distribution spread: ${maxAssignments - minAssignments}`);
-    
+
     if (maxAssignments - minAssignments <= 3) {
       console.log('✅ Good distribution achieved!');
     } else {
@@ -1305,15 +1783,19 @@ export class AdminShiftOptimizationService {
   // ENHANCED WORKLOAD BALANCING METHODS
   private calculateWorkloadBalance(
     userWorkload: any,
-    allUserWorkloads: Map<number, any>
+    allUserWorkloads: Map<number, any>,
   ): number {
-    const allShiftCounts = Array.from(allUserWorkloads.values()).map(w => w.totalShifts);
-    const avgShifts = allShiftCounts.reduce((sum, count) => sum + count, 0) / allShiftCounts.length;
+    const allShiftCounts = Array.from(allUserWorkloads.values()).map(
+      (w) => w.totalShifts,
+    );
+    const avgShifts =
+      allShiftCounts.reduce((sum, count) => sum + count, 0) /
+      allShiftCounts.length;
     const minShifts = Math.min(...allShiftCounts);
-    
+
     // ENHANCED: Even more aggressive workload balancing
     const shiftDifference = avgShifts - userWorkload.totalShifts;
-    
+
     if (userWorkload.totalShifts === minShifts) {
       return 40; // MASSIVE bonus for user with least shifts
     } else if (shiftDifference > 3) {
@@ -1329,16 +1811,16 @@ export class AdminShiftOptimizationService {
     } else if (shiftDifference < -1) {
       return -20; // Medium penalty for slightly over-worked users
     }
-    
+
     return 0; // No bonus/penalty for average workload
   }
 
   private calculateConsecutivePenalty(
     userWorkload: any,
-    request: ShiftCreationRequest
+    request: ShiftCreationRequest,
   ): number {
     let penalty = 0;
-    
+
     // ENHANCED: Much stricter consecutive penalties
     if (userWorkload.consecutiveDays >= 3) {
       penalty += 50; // MASSIVE penalty for 3+ consecutive days
@@ -1347,12 +1829,15 @@ export class AdminShiftOptimizationService {
     } else if (userWorkload.consecutiveDays >= 1) {
       penalty += 15; // Medium penalty for consecutive days
     }
-    
+
     // Consecutive night shifts penalty
-    if (request.shiftType === 'MALAM' && userWorkload.nightShiftsConsecutive >= 1) {
+    if (
+      request.shiftType === 'MALAM' &&
+      userWorkload.nightShiftsConsecutive >= 1
+    ) {
       penalty += 35; // MASSIVE penalty for consecutive night shifts
     }
-    
+
     // Weekly shift overload penalty
     if (userWorkload.weeklyShifts >= 4) {
       penalty += 40; // MASSIVE penalty for too many weekly shifts
@@ -1361,59 +1846,70 @@ export class AdminShiftOptimizationService {
     } else if (userWorkload.weeklyShifts >= 2) {
       penalty += 10; // Light penalty
     }
-    
+
     return penalty;
   }
 
   private calculateShiftVarietyBonus(
     userWorkload: any,
-    request: ShiftCreationRequest
+    request: ShiftCreationRequest,
   ): number {
     const recentShiftTypes = userWorkload.shiftTypes.slice(-5); // Last 5 shifts
-    
+
     // Heavy bonus for variety
     if (!recentShiftTypes.includes(request.shiftType)) {
       return 20; // New shift type bonus
     }
-    
+
     // Count occurrences of this shift type in recent history
-    const typeCount = recentShiftTypes.filter(type => type === request.shiftType).length;
-    
-    if (typeCount >= 4) return -25; // Heavy penalty for too much of same type
-    else if (typeCount >= 3) return -15; // Medium penalty
+    const typeCount = recentShiftTypes.filter(
+      (type) => type === request.shiftType,
+    ).length;
+
+    if (typeCount >= 4)
+      return -25; // Heavy penalty for too much of same type
+    else if (typeCount >= 3)
+      return -15; // Medium penalty
     else if (typeCount >= 2) return -5; // Light penalty
-    
+
     return 5; // Small bonus for variety
   }
 
   private updateUserWorkload(
     userWorkloadMap: Map<number, any>,
     userId: number,
-    request: ShiftCreationRequest
+    request: ShiftCreationRequest,
   ): void {
     const workload = userWorkloadMap.get(userId)!;
-    
+
     workload.totalShifts++;
     workload.shiftTypes.push(request.shiftType);
     workload.locations.push(request.location);
     workload.recentAssignments++;
     workload.daysSinceLastShift = 0; // Just assigned
-    
+
     // Update consecutive tracking
     const requestDate = new Date(request.date);
-    const lastDate = workload.lastShiftDate ? new Date(workload.lastShiftDate) : null;
-    
+    const lastDate = workload.lastShiftDate
+      ? new Date(workload.lastShiftDate)
+      : null;
+
     if (lastDate) {
-      const daysDiff = (requestDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (Math.abs(daysDiff) === 1) { // Consecutive day
+      const daysDiff =
+        (requestDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (Math.abs(daysDiff) === 1) {
+        // Consecutive day
         workload.consecutiveDays++;
       } else {
         workload.consecutiveDays = 1;
       }
-      
+
       // Update night shift consecutive count
       if (request.shiftType === 'MALAM') {
-        if (Math.abs(daysDiff) === 1 && workload.shiftTypes[workload.shiftTypes.length - 2] === 'MALAM') {
+        if (
+          Math.abs(daysDiff) === 1 &&
+          workload.shiftTypes[workload.shiftTypes.length - 2] === 'MALAM'
+        ) {
           workload.nightShiftsConsecutive++;
         } else {
           workload.nightShiftsConsecutive = 1;
@@ -1425,10 +1921,10 @@ export class AdminShiftOptimizationService {
       workload.consecutiveDays = 1;
       workload.nightShiftsConsecutive = request.shiftType === 'MALAM' ? 1 : 0;
     }
-    
+
     workload.lastShiftDate = request.date;
     workload.weeklyShifts++; // Simplified weekly tracking
-    
+
     // Keep arrays manageable
     if (workload.shiftTypes.length > 10) {
       workload.shiftTypes = workload.shiftTypes.slice(-10);
@@ -1490,12 +1986,19 @@ export class AdminShiftOptimizationService {
 
   private checkDateConflict(user: any, targetDate: string): boolean {
     // Check if user already has shift on target date
-    return (
-      user.shifts?.some(
-        (shift: any) =>
-          shift.tanggal.toISOString().split('T')[0] === targetDate,
-      ) || false
-    );
+    if (!user.shifts || user.shifts.length === 0) return false;
+    
+    const targetDateStr = targetDate; // Assume targetDate is already in YYYY-MM-DD format
+    
+    return user.shifts.some((shift: any) => {
+      const shiftDateStr = shift.tanggal instanceof Date 
+        ? shift.tanggal.toISOString().split('T')[0]
+        : shift.tanggal.split('T')[0];
+      
+      console.log(`🔍 Checking conflict: User ${user.id} on ${targetDateStr} vs existing ${shiftDateStr}`);
+      
+      return shiftDateStr === targetDateStr;
+    });
   }
 
   private async getConsecutiveDaysCount(userId: number): Promise<number> {

@@ -138,42 +138,78 @@ export class ShiftService {
         },
       });
 
-      // Kirim notifikasi shift baru
-      if (this.notificationService && shift.user) {
-        try {
-          // Gunakan method yang sudah ada di notifikasi service
-          await this.notificationService.sendNotification(
-            shift.userId,
-            'SHIFT_BARU_DITAMBAHKAN',
-            '📅 Shift Baru Ditambahkan',
-            `Shift baru telah ditambahkan untuk Anda pada ${shift.tanggal.toLocaleDateString('id-ID')} dari ${shift.jammulai.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})} - ${shift.jamselesai.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})} di ${shift.lokasishift}`,
-            {
-              shiftId: shift.id,
-              tanggal: shift.tanggal,
-              jammulai: shift.jammulai,
-              jamselesai: shift.jamselesai,
-              lokasishift: shift.lokasishift,
-              tipeshift: shift.tipeshift,
-            }
-          );
-        } catch (notificationError) {
-          console.error('[ShiftService][create] Notification error:', notificationError);
-          // Don't throw error if notification fails, just log it
-        }
-      }
-
-      // Format the response
-      return {
+      // Format the response first (before notification)
+      const formattedShift = {
         ...shift,
         tanggal: shift.tanggal.toISOString().split('T')[0], // Format date as YYYY-MM-DD
         nama: shift.user
           ? `${shift.user.namaDepan} ${shift.user.namaBelakang}`
           : undefined,
         idpegawai: shift.user?.username, // Include for compatibility
+        notificationStatus: 'pending' // Track notification status
+      };
+
+      // Kirim notifikasi shift baru (async, non-blocking)
+      if (this.notificationService && shift.user) {
+        // Send notification in background without blocking the response
+        setImmediate(() => {
+          // Run async function without awaiting - explicitly void to handle promise
+          void (async () => {
+            try {
+              if (this.notificationService) {
+                await this.notificationService.sendNotification(
+                  shift.userId,
+                  'SHIFT_BARU_DITAMBAHKAN',
+                  '📅 Shift Baru Ditambahkan',
+                  `Shift baru telah ditambahkan untuk Anda pada ${shift.tanggal.toLocaleDateString('id-ID')} dari ${shift.jammulai.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${shift.jamselesai.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} di ${shift.lokasishift}`,
+                  {
+                    shiftId: shift.id,
+                    tanggal: shift.tanggal,
+                    jammulai: shift.jammulai,
+                    jamselesai: shift.jamselesai,
+                    lokasishift: shift.lokasishift,
+                    tipeshift: shift.tipeshift,
+                  },
+                );
+                console.log(
+                  `[ShiftService][create] Notification sent successfully for shift ${shift.id}`,
+                );
+              }
+            } catch (notificationError) {
+              console.error(
+                `[ShiftService][create] Notification failed for shift ${shift.id}:`,
+                notificationError,
+              );
+              // Log but don't affect shift creation success
+            }
+          })();
+        });
+        
+        // Mark notification as sent (optimistic)
+        formattedShift.notificationStatus = 'sent';
+      } else {
+        formattedShift.notificationStatus = 'skipped';
+      }
+
+      // Return formatted shift with success confirmation
+      return {
+        success: true,
+        message: 'Shift berhasil dibuat',
+        data: formattedShift,
       };
     } catch (error) {
       console.error('[ShiftService][create] Error:', error);
-      throw new InternalServerErrorException(error.message || 'Failed to create shift');
+      
+      // Return structured error for better frontend handling
+      if (error instanceof BadRequestException) {
+        throw error; // Re-throw validation errors as-is
+      }
+      
+      throw new InternalServerErrorException({
+        success: false,
+        message: (error as Error).message || 'Failed to create shift',
+        error: (error as Error).message,
+      });
     }
   }
 

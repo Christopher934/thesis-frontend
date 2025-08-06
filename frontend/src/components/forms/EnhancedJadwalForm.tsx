@@ -747,6 +747,7 @@ const EnhancedJadwalForm = ({
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ 
+                    success: false,
                     message: `HTTP ${response.status}: ${response.statusText}` 
                 }));
                 
@@ -800,21 +801,39 @@ const EnhancedJadwalForm = ({
             
             const result = await response.json();
             
-            setSuccessMessage(
-                type === 'create' 
-                    ? `✅ Jadwal shift berhasil dibuat untuk ${user.namaDepan} ${user.namaBelakang}`
-                    : `✅ Jadwal shift berhasil diperbarui`
-            );
+            // Check if backend explicitly returned success: false
+            if (result.success === false) {
+                throw new Error(result.message || result.error || 'Operasi gagal');
+            }
+            
+            // Handle successful response (success: true or no success field but valid data)
+            const shiftData = result.data || result;
+            const notificationStatus = shiftData.notificationStatus || 'unknown';
+            
+            let successMessage = type === 'create' 
+                ? `✅ Jadwal shift berhasil dibuat untuk ${user.namaDepan} ${user.namaBelakang}`
+                : `✅ Jadwal shift berhasil diperbarui`;
+                
+            // Add notification status info
+            if (notificationStatus === 'sent') {
+                successMessage += ` (Notifikasi terkirim)`;
+            } else if (notificationStatus === 'pending') {
+                successMessage += ` (Notifikasi sedang dikirim)`;
+            } else if (notificationStatus === 'skipped') {
+                successMessage += ` (Tanpa notifikasi)`;
+            }
+            
+            setSuccessMessage(successMessage);
             
             if (type === 'create' && onCreate) {
-                onCreate(result);
+                onCreate(shiftData);
             } else if (type === 'update' && onUpdate) {
-                onUpdate(result);
+                onUpdate(shiftData);
             }
             
             setTimeout(() => {
                 onClose();
-            }, 2000);
+            }, 2500);
             
         } catch (error: any) {
             console.error('Error submitting form:', error);

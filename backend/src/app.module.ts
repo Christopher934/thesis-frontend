@@ -12,6 +12,7 @@ import { AbsensiModule } from './absensi/absensi.module'; // Import AbsensiModul
 import { NotifikasiModule } from './notifikasi/notifikasi.module'; // Import NotifikasiModule
 import { LaporanModule } from './laporan/laporan.module'; // Import LaporanModule
 import { OverworkModule } from './overwork/overwork.module'; // Import OverworkModule
+import { AdminShiftOptimizationService } from './shift/admin-shift-optimization.service';
 
 @Module({
   imports: [
@@ -30,6 +31,6 @@ import { OverworkModule } from './overwork/overwork.module'; // Import OverworkM
     OverworkModule,
   ], // Tambahkan ShiftModule, KegiatanModule, dan AbsensiModule
   controllers: [AppController],
-  providers: [PrismaService, AppService],
+  providers: [PrismaService, AppService, AdminShiftOptimizationService],
 })
 export class AppModule {}

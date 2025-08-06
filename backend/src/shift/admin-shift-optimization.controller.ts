@@ -464,4 +464,35 @@ export class AdminShiftOptimizationController {
       throw new Error('Failed to generate monthly template');
     }
   }
+
+  /**
+   * TEST ENDPOINT: Test enhanced algorithm without authentication (development only)
+   */
+  @Post('test-enhanced-algorithm')
+  async testEnhancedAlgorithm(
+    @Body() testDto: { shiftRequests: ShiftRequestDto[] }
+  ): Promise<any> {
+    try {
+      console.log('🧪 TEST ENDPOINT: Testing enhanced algorithm...');
+      console.log('📋 Received test requests:', JSON.stringify(testDto, null, 2));
+      
+      const result = await this.adminOptimizationService.createOptimalShiftAssignments(testDto.shiftRequests);
+      
+      console.log('✅ Test completed successfully');
+      return {
+        success: true,
+        ...result,
+        testMode: true,
+        message: 'Enhanced algorithm test completed'
+      };
+    } catch (error) {
+      console.error('❌ Test failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        testMode: true,
+        message: 'Enhanced algorithm test failed'
+      };
+    }
+  }
 }

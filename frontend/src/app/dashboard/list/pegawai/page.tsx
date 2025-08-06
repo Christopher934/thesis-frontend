@@ -406,20 +406,17 @@ export default function PegawaiPage() {
                 if (status === 'CRITICAL' || utilizationRate > 90) {
                   return {
                     color: 'bg-red-100 text-red-800 border-red-200',
-                    icon: '🔴',
-                    text: 'T'
+                    text: 'Tinggi'
                   };
                 } else if (status === 'WARNING' || utilizationRate > 70) {
                   return {
                     color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                    icon: '⚠️',
-                    text: 'S'
+                    text: 'Sedang'
                   };
                 } else {
                   return {
                     color: 'bg-green-100 text-green-800 border-green-200',
-                    icon: '✅',
-                    text: 'N'
+                    text: 'Normal'
                   };
                 }
               };

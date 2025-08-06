@@ -1307,23 +1307,23 @@ const ManagemenJadwalPage = () => {
                 const backendError = result.error || 'Gagal membuat jadwal bulanan';
                 console.log('❌ Backend returned success: false with error:', backendError);
                 
-                // Show detailed error modal for workload/capacity issues
-                showNotificationModal({
-                    type: 'error',
-                    title: 'Gagal Membuat Jadwal Bulanan',
-                    message: backendError,
-                    details: {
-                        createdShifts: result.createdShifts || 0,
-                        conflicts: result.conflicts || [],
-                        workloadAlerts: result.workloadAlerts || [],
-                        recommendations: result.recommendations || [
-                            'Kurangi beban kerja maksimum per pegawai',
-                            'Tambah lebih banyak pegawai yang tersedia',
-                            'Gunakan penjadwalan mingguan untuk kontrol lebih baik',
-                            'Periksa ketersediaan pegawai untuk bulan tersebut'
-                        ]
-                    }
-                });
+                // Hide detailed error modal for bulk monthly scheduling
+                // showNotificationModal({
+                //     type: 'error',
+                //     title: 'Gagal Membuat Jadwal Bulanan',
+                //     message: backendError,
+                //     details: {
+                //         createdShifts: result.createdShifts || 0,
+                //         conflicts: result.conflicts || [],
+                //         workloadAlerts: result.workloadAlerts || [],
+                //         recommendations: result.recommendations || [
+                //             'Kurangi beban kerja maksimum per pegawai',
+                //             'Tambah lebih banyak pegawai yang tersedia',
+                //             'Gunakan penjadwalan mingguan untuk kontrol lebih baik',
+                //             'Periksa ketersediaan pegawai untuk bulan tersebut'
+                //         ]
+                //     }
+                // });
                 
                 setIsBulkScheduleModalOpen(false);
                 return; // Stop processing
@@ -1339,39 +1339,41 @@ const ManagemenJadwalPage = () => {
             console.log(`✅ Monthly schedule successful: ${createdCount} shifts created`);
             
             if (createdCount > 0) {
-                showNotificationModal({
-                    type: hasConflicts ? 'warning' : 'success',
-                    title: hasConflicts ? 'Jadwal Bulanan Dibuat dengan Konflik' : 'Jadwal Bulanan Berhasil Dibuat',
-                    message: `${createdCount} shift bulanan berhasil dibuat untuk ${monthlyRequest.month}/${monthlyRequest.year}. ${
-                        hasConflicts 
-                            ? 'Terdapat beberapa konflik yang perlu diperhatikan. Data akan diperbarui setelah Anda menutup notifikasi ini.' 
-                            : 'Semua shift bulanan berhasil dijadwalkan. Data akan diperbarui setelah Anda menutup notifikasi ini.'
-                    }`,
-                    details: {
-                        createdShifts: createdCount,
-                        successfulAssignments: result.monthlySchedule?.successfulAssignments || result.successfulAssignments || createdCount,
-                        fulfillmentRate: fulfillmentRate,
-                        conflicts: result.monthlySchedule?.conflicts || result.conflicts || [],
-                        workloadAlerts: result.monthlySchedule?.workloadAlerts || result.workloadAlerts || [],
-                        recommendations: result.monthlySchedule?.recommendations || result.recommendations || []
-                    }
-                });
+                // Hide success notification for bulk monthly scheduling
+                // showNotificationModal({
+                //     type: hasConflicts ? 'warning' : 'success',
+                //     title: hasConflicts ? 'Jadwal Bulanan Dibuat dengan Konflik' : 'Jadwal Bulanan Berhasil Dibuat',
+                //     message: `${createdCount} shift bulanan berhasil dibuat untuk ${monthlyRequest.month}/${monthlyRequest.year}. ${
+                //         hasConflicts 
+                //             ? 'Terdapat beberapa konflik yang perlu diperhatikan. Data akan diperbarui setelah Anda menutup notifikasi ini.' 
+                //             : 'Semua shift bulanan berhasil dijadwalkan. Data akan diperbarui setelah Anda menutup notifikasi ini.'
+                //     }`,
+                //     details: {
+                //         createdShifts: createdCount,
+                //         successfulAssignments: result.monthlySchedule?.successfulAssignments || result.successfulAssignments || createdCount,
+                //         fulfillmentRate: fulfillmentRate,
+                //         conflicts: result.monthlySchedule?.conflicts || result.conflicts || [],
+                //         workloadAlerts: result.monthlySchedule?.workloadAlerts || result.workloadAlerts || [],
+                //         recommendations: result.monthlySchedule?.recommendations || result.recommendations || []
+                //     }
+                // });
             } else {
-                showNotificationModal({
-                    type: 'error',
-                    title: 'Gagal Membuat Jadwal Bulanan',
-                    message: `Tidak ada shift bulanan yang berhasil dibuat untuk ${monthlyRequest.month}/${monthlyRequest.year}. Data akan diperbarui setelah Anda menutup notifikasi ini.`,
-                    details: {
-                        createdShifts: 0,
-                        conflicts: result.monthlySchedule?.conflicts || result.conflicts || [],
-                        recommendations: [
-                            'Periksa rata-rata staff per shift',
-                            'Pastikan ada cukup pegawai untuk seluruh bulan',
-                            'Kurangi workload limits jika terlalu ketat',
-                            'Pilih bulan yang berbeda jika sudah banyak jadwal'
-                        ]
-                    }
-                });
+                // Hide error notification for bulk monthly scheduling
+                // showNotificationModal({
+                //     type: 'error',
+                //     title: 'Gagal Membuat Jadwal Bulanan',
+                //     message: `Tidak ada shift bulanan yang berhasil dibuat untuk ${monthlyRequest.month}/${monthlyRequest.year}. Data akan diperbarui setelah Anda menutup notifikasi ini.`,
+                //     details: {
+                //         createdShifts: 0,
+                //         conflicts: result.monthlySchedule?.conflicts || result.conflicts || [],
+                //         recommendations: [
+                //             'Periksa rata-rata staff per shift',
+                //             'Pastikan ada cukup pegawai untuk seluruh bulan',
+                //             'Kurangi workload limits jika terlalu ketat',
+                //             'Pilih bulan yang berbeda jika sudah banyak jadwal'
+                //         ]
+                //     }
+                // });
             }
             
             setIsBulkScheduleModalOpen(false);
@@ -1422,18 +1424,19 @@ const ManagemenJadwalPage = () => {
                 ];
             }
             
-            showNotificationModal({
-                type: 'error',
-                title: notificationTitle,
-                message: errorMessage,
-                details: {
-                    timestamp: new Date().toLocaleString('id-ID'),
-                    recommendations: recommendations.concat([
-                        'Hubungi administrator sistem jika masalah berlanjut',
-                        'Gunakan penjadwalan mingguan atau harian sebagai alternatif'
-                    ])
-                }
-            });
+            // Hide catch block notification for bulk monthly scheduling 
+            // showNotificationModal({
+            //     type: 'error',
+            //     title: notificationTitle,
+            //     message: errorMessage,
+            //     details: {
+            //         timestamp: new Date().toLocaleString('id-ID'),
+            //         recommendations: recommendations.concat([
+            //             'Hubungi administrator sistem jika masalah berlanjut',
+            //             'Gunakan penjadwalan mingguan atau harian sebagai alternatif'
+            //         ])
+            //     }
+            // });
         } finally {
             setIsBulkScheduling(false);
         }

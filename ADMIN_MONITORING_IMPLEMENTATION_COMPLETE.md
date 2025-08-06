@@ -155,7 +155,7 @@ From testing simulation:
 
 - **Employee workload alerts** prevent burnout
 - **Location capacity tracking** prevents understaffing
-- **Automatic shift optimization** using AI algorithms
+- **Automatic shift optimization** using advanced algorithms
 - **Conflict resolution** through intelligent backtracking
 
 #### Decision Support:

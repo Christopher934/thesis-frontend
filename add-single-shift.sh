@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script untuk menambahkan 1 shift ke database
+# Skrip untuk menambahkan 1 shift ke database
 # Menggunakan API endpoint backend
 
 # Konfigurasi
@@ -11,21 +11,21 @@ TOKEN_FILE="/Users/jo/Downloads/Thesis/test-token.txt"
 get_token() {
     if [ -f "$TOKEN_FILE" ]; then
         TOKEN=$(cat "$TOKEN_FILE")
-        echo "Using token from file: ${TOKEN:0:20}..."
+        echo "Menggunakan token dari file: ${TOKEN:0:20}..."
     else
-        echo "Token file not found. Please login first or create token file."
-        echo "You can create token file by running:"
-        echo "echo 'your_jwt_token_here' > $TOKEN_FILE"
+        echo "File token tidak ditemukan. Silakan login terlebih dahulu atau buat file token."
+        echo "Anda dapat membuat file token dengan menjalankan:"
+        echo "echo 'jwt_token_anda_disini' > $TOKEN_FILE"
         exit 1
     fi
 }
 
-# Fungsi untuk mendapatkan daftar user (untuk memilih employee)
+# Fungsi untuk mendapatkan daftar user (untuk memilih pegawai)
 get_users() {
-    echo "Getting list of users..."
+    echo "Mendapatkan daftar pengguna..."
     curl -s -X GET "$API_URL/users" \
         -H "Authorization: Bearer $TOKEN" \
-        -H "Content-Type: application/json" | jq '.[0:5]' || echo "Failed to get users"
+        -H "Content-Type: application/json" | jq '.[0:5]' || echo "Gagal mendapatkan daftar pengguna"
 }
 
 # Fungsi untuk membuat shift baru
@@ -37,8 +37,8 @@ create_shift() {
     local lokasi="$5"
     local tipe_shift="$6"
 
-    echo "Creating shift with data:"
-    echo "  Employee ID: $employee_id"
+    echo "Membuat shift dengan data:"
+    echo "  ID Pegawai: $employee_id"
     echo "  Tanggal: $tanggal"
     echo "  Jam Mulai: $jam_mulai"
     echo "  Jam Selesai: $jam_selesai"
@@ -57,7 +57,7 @@ create_shift() {
 EOF
 )
 
-    echo "Sending request to $API_URL/shifts..."
+    echo "Mengirim permintaan ke $API_URL/shifts..."
     
     RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST "$API_URL/shifts" \
         -H "Authorization: Bearer $TOKEN" \
@@ -69,23 +69,23 @@ EOF
 
     if [ "$HTTP_STATUS" -eq 201 ] || [ "$HTTP_STATUS" -eq 200 ]; then
         echo "✅ Shift berhasil dibuat!"
-        echo "Response: $HTTP_BODY" | jq '.' 2>/dev/null || echo "$HTTP_BODY"
+        echo "Respons: $HTTP_BODY" | jq '.' 2>/dev/null || echo "$HTTP_BODY"
     else
-        echo "❌ Gagal membuat shift. HTTP Status: $HTTP_STATUS"
-        echo "Response: $HTTP_BODY" | jq '.' 2>/dev/null || echo "$HTTP_BODY"
+        echo "❌ Gagal membuat shift. Status HTTP: $HTTP_STATUS"
+        echo "Respons: $HTTP_BODY" | jq '.' 2>/dev/null || echo "$HTTP_BODY"
         return 1
     fi
 }
 
-# Main script
-echo "🏥 Script Menambahkan Shift ke Database RSUD Anugerah"
+# Skrip utama
+echo "🏥 Skrip Menambahkan Shift ke Database RSUD Anugerah"
 echo "=================================================="
 
-# Get token
+# Dapatkan token
 get_token
 
-# Check if backend is running
-echo "Checking backend connection..."
+# Periksa apakah backend berjalan
+echo "Memeriksa koneksi backend..."
 curl -s "$API_URL/health" > /dev/null || {
     echo "❌ Backend tidak dapat diakses di $API_URL"
     echo "Pastikan backend sedang berjalan dengan perintah:"
@@ -93,11 +93,11 @@ curl -s "$API_URL/health" > /dev/null || {
     exit 1
 }
 
-echo "✅ Backend connected"
+echo "✅ Backend terhubung"
 
-# Show available users (first 5)
+# Tampilkan pengguna yang tersedia (5 pertama)
 echo ""
-echo "Daftar beberapa user yang tersedia:"
+echo "Daftar beberapa pengguna yang tersedia:"
 get_users
 
 echo ""
@@ -111,8 +111,8 @@ JAM_SELESAI="16:00"
 LOKASI="ICU"
 TIPE_SHIFT="PAGI"
 
-# Create the shift
+# Buat shift
 create_shift "$EMPLOYEE_ID" "$TANGGAL" "$JAM_MULAI" "$JAM_SELESAI" "$LOKASI" "$TIPE_SHIFT"
 
 echo ""
-echo "Script selesai. Cek database atau frontend untuk melihat hasil."
+echo "Skrip selesai. Periksa database atau frontend untuk melihat hasil."

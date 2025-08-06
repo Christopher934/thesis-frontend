@@ -3870,7 +3870,7 @@ export class AdminShiftOptimizationService {
    * 🔥 NEW: Get user-friendly notification for scheduling results
    * This method can be called after createMonthlySchedule to get UI notification
    */
-  async getSchedulingNotification(result: SchedulingResult): Promise<{
+  getSchedulingNotification(result: SchedulingResult): {
     type: 'success' | 'warning' | 'error' | 'info';
     title: string;
     message: string;
@@ -3886,7 +3886,7 @@ export class AdminShiftOptimizationService {
       severity: string;
       message: string;
     }>;
-  }> {
+  } {
     return this.generateUserNotification(result);
   }
 

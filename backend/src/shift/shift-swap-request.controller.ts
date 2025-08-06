@@ -36,9 +36,9 @@ export class ShiftSwapRequestController {
     @Body() createDto: CreateShiftSwapRequestDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const userId = req.user?.id || (req.body?.fromUserId as number); // Fallback for testing
+    const userId = req.user?.id || (req.body?.fromUserId as number); // Fallback untuk pengujian
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.create(createDto, userId);
   }
@@ -55,9 +55,9 @@ export class ShiftSwapRequestController {
   @Get('my-requests')
   @UseGuards(JwtAuthGuard)
   getMyRequests(@Request() req: AuthenticatedRequest) {
-    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback for testing
+    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback untuk pengujian
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.getMyRequests(userId);
   }
@@ -65,9 +65,9 @@ export class ShiftSwapRequestController {
   @Get('pending-approvals')
   @UseGuards(JwtAuthGuard)
   getPendingApprovals(@Request() req: AuthenticatedRequest) {
-    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback for testing
+    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback untuk pengujian
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.getPendingApprovals(userId);
   }
@@ -75,9 +75,9 @@ export class ShiftSwapRequestController {
   @Get('admin/monitoring')
   @UseGuards(JwtAuthGuard)
   async getAdminMonitoringData(@Request() req: AuthenticatedRequest) {
-    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback for testing
+    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback untuk pengujian
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.getAdminMonitoringData(userId);
   }
@@ -85,9 +85,9 @@ export class ShiftSwapRequestController {
   @Get('monitoring')
   @UseGuards(JwtAuthGuard)
   async getMonitoringData(@Request() req: AuthenticatedRequest) {
-    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback for testing
+    const userId = req.user?.id || parseInt(req.query?.userId as string, 10); // Fallback untuk pengujian
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.getAdminMonitoringData(userId);
   }
@@ -95,7 +95,7 @@ export class ShiftSwapRequestController {
   @Get('monitoring/test')
   async getMonitoringDataTest(@Query('userId') userId: string) {
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.getAdminMonitoringData(parseInt(userId, 10));
   }
@@ -112,9 +112,9 @@ export class ShiftSwapRequestController {
     @Body() updateDto: UpdateShiftSwapRequestDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const userId = req.user?.id || (req.body?.userId as number); // Fallback for testing
+    const userId = req.user?.id || (req.body?.userId as number); // Fallback untuk pengujian
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.update(id, updateDto, userId);
   }
@@ -126,9 +126,9 @@ export class ShiftSwapRequestController {
     @Body() responseDto: ResponseShiftSwapRequestDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const userId = req.user?.id || (req.body?.userId as number); // Fallback for testing
+    const userId = req.user?.id || (req.body?.userId as number); // Fallback untuk pengujian
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.respondToRequest(
       id,
@@ -143,9 +143,9 @@ export class ShiftSwapRequestController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
   ) {
-    const userId = req.user?.id || (req.body?.userId as number); // Fallback for testing
+    const userId = req.user?.id || (req.body?.userId as number); // Fallback untuk pengujian
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error('Identitas pegawai diperlukan');
     }
     return this.shiftSwapRequestService.remove(id, userId);
   }

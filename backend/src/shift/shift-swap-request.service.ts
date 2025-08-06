@@ -25,23 +25,23 @@ export class ShiftSwapRequestService {
 
   async create(createDto: CreateShiftSwapRequestDto, fromUserId: number) {
     if (!createDto || !fromUserId) {
-      throw new BadRequestException('Shift swap data and fromUserId are required');
+      throw new BadRequestException('Data permintaan tukar shift dan identitas pengguna diperlukan');
     }
     try {
-      // Ambil data user yang mengajukan
+      // Ambil data pegawai yang mengajukan
       const fromUser = await this.prisma.user.findUnique({
         where: { id: fromUserId },
       });
       if (!fromUser) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException('Pegawai tidak ditemukan');
       }
       if (fromUser.role === Role.ADMIN || fromUser.role === Role.SUPERVISOR) {
         throw new ForbiddenException(
-          'Admin dan supervisor tidak boleh mengajukan permintaan tukar shift',
+          'Administrator dan penyelia tidak diperkenankan mengajukan permintaan tukar shift',
         );
       }
 
-      // Validate that the shift exists and belongs to the requesting user
+      // Validasi bahwa shift yang dimaksud ada dan milik pengguna yang mengajukan
       const shift = await this.prisma.shift.findFirst({
         where: {
           id: createDto.shiftId,
@@ -53,19 +53,19 @@ export class ShiftSwapRequestService {
       });
 
       if (!shift) {
-        throw new NotFoundException('Shift not found or does not belong to you');
+        throw new NotFoundException('Shift tidak ditemukan atau bukan milik Anda');
       }
 
-      // Validate that target user exists
+      // Validasi bahwa pegawai tujuan ada
       const targetUser = await this.prisma.user.findUnique({
         where: { id: createDto.toUserId },
       });
 
       if (!targetUser) {
-        throw new NotFoundException('Target user not found');
+        throw new NotFoundException('Pegawai tujuan tidak ditemukan');
       }
 
-      // Check if there's already a pending swap request for this shift
+      // Periksa apakah sudah ada permintaan tukar shift yang menunggu untuk shift ini
       const existingSwap = await this.prisma.shiftSwap.findFirst({
         where: {
           shiftId: createDto.shiftId,
@@ -86,12 +86,12 @@ export class ShiftSwapRequestService {
         );
       }
 
-      // Determine if unit head approval is required based on shift location
+      // Tentukan apakah perlu persetujuan kepala unit berdasarkan lokasi shift
       const specialUnits = ['ICU', 'NICU', 'IGD', 'EMERGENCY_ROOM'];
       const requiresUnitHead =
         specialUnits.includes(shift.lokasishift) || createDto.requiresUnitHead;
 
-      // Setelah swap berhasil dibuat, kirim notifikasi ke user B (toUser)
+      // Setelah permintaan tukar shift berhasil dibuat, kirim notifikasi ke pegawai B (toUser)
       const swap = await this.prisma.shiftSwap.create({
         data: {
           fromUserId,
@@ -133,7 +133,7 @@ export class ShiftSwapRequestService {
         },
       });
 
-      // Kirim notifikasi ke user B (toUser)
+      // Kirim notifikasi ke pegawai B (toUser)
       await this.notificationService.sendNotification(
         createDto.toUserId,
         JenisNotifikasi.KONFIRMASI_TUKAR_SHIFT,
@@ -144,9 +144,9 @@ export class ShiftSwapRequestService {
 
       return swap;
     } catch (error) {
-      console.error('[ShiftSwapRequestService][create] Error:', error);
+      console.error('[LayananPermintaanTukarShift][create] Kesalahan:', error);
       throw new InternalServerErrorException(
-        error.message || 'Failed to create shift swap request',
+        error.message || 'Gagal membuat permintaan tukar shift',
       );
     }
   }
@@ -237,7 +237,7 @@ export class ShiftSwapRequestService {
     });
 
     if (!shiftSwap) {
-      throw new NotFoundException('Shift swap request not found');
+      throw new NotFoundException('Permintaan tukar shift tidak ditemukan');
     }
 
     return shiftSwap;
@@ -252,10 +252,10 @@ export class ShiftSwapRequestService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Pegawai tidak ditemukan');
     }
 
-    // Determine the user's role in this swap request
+    // Tentukan peran pengguna dalam permintaan tukar shift ini
     const isTargetUser = shiftSwap.toUserId === userId;
     const isUnitHead =
       user.role === Role.SUPERVISOR && shiftSwap.requiresUnitHead;
@@ -278,7 +278,7 @@ export class ShiftSwapRequestService {
     };
 
     if (isTargetUser && shiftSwap.status === SwapStatus.PENDING) {
-      // Target user responding to initial request
+      // Pegawai tujuan merespons permintaan awal
       if (responseDto.action === ResponseAction.ACCEPT) {
         newStatus = shiftSwap.requiresUnitHead
           ? SwapStatus.WAITING_UNIT_HEAD
@@ -289,13 +289,13 @@ export class ShiftSwapRequestService {
         newStatus = SwapStatus.REJECTED_BY_TARGET;
         updateData.rejectionReason = responseDto.rejectionReason;
       } else {
-        throw new BadRequestException('Invalid action for target user');
+        throw new BadRequestException('Tindakan tidak valid untuk pegawai tujuan');
       }
     } else if (
       isUnitHead &&
       shiftSwap.status === SwapStatus.WAITING_UNIT_HEAD
     ) {
-      // Unit head responding
+      // Respons kepala unit
       if (responseDto.action === ResponseAction.APPROVE) {
         newStatus = SwapStatus.WAITING_SUPERVISOR;
         updateData.unitHeadApprovedAt = new Date();
@@ -304,29 +304,29 @@ export class ShiftSwapRequestService {
         newStatus = SwapStatus.REJECTED_BY_UNIT_HEAD;
         updateData.rejectionReason = responseDto.rejectionReason;
       } else {
-        throw new BadRequestException('Invalid action for unit head');
+        throw new BadRequestException('Tindakan tidak valid untuk kepala unit');
       }
     } else if (
       (isSupervisor || isAdmin) &&
       shiftSwap.status === SwapStatus.WAITING_SUPERVISOR
     ) {
-      // Supervisor or Admin final approval
+      // Persetujuan akhir penyelia atau administrator
       if (responseDto.action === ResponseAction.APPROVE) {
         newStatus = SwapStatus.APPROVED;
         updateData.supervisorApprovedAt = new Date();
         updateData.supervisorApprovedBy = userId;
 
-        // Auto-transfer shift ownership when approved
+        // Transfer otomatis kepemilikan shift ketika disetujui
         await this.transferShiftOwnership(shiftSwap);
       } else if (responseDto.action === ResponseAction.REJECT) {
         newStatus = SwapStatus.REJECTED_BY_SUPERVISOR;
         updateData.rejectionReason = responseDto.rejectionReason;
       } else {
-        throw new BadRequestException('Invalid action for supervisor/admin');
+        throw new BadRequestException('Tindakan tidak valid untuk penyelia/administrator');
       }
     } else {
       throw new ForbiddenException(
-        'You are not authorized to respond to this request at this stage',
+        'Anda tidak berwenang merespons permintaan ini pada tahap saat ini',
       );
     }
 
@@ -366,9 +366,9 @@ export class ShiftSwapRequestService {
       },
     });
 
-    // Kirim notifikasi ke supervisor jika status WAITING_SUPERVISOR
+    // Kirim notifikasi ke penyelia jika status WAITING_SUPERVISOR
     if (newStatus === SwapStatus.WAITING_SUPERVISOR) {
-      // Cari semua supervisor di unit terkait
+      // Cari semua penyelia di unit terkait
       const supervisors = await this.prisma.user.findMany({
         where: { role: Role.SUPERVISOR },
       });
@@ -383,7 +383,7 @@ export class ShiftSwapRequestService {
       }
     }
 
-    // Setelah shift swap disetujui oleh supervisor, kirim notifikasi ke kedua user
+    // Setelah tukar shift disetujui oleh penyelia, kirim notifikasi ke kedua pegawai
     if (newStatus === SwapStatus.APPROVED) {
       // Notifikasi ke pengaju (fromUser)
       await this.notificationService.sendNotification(
@@ -393,7 +393,7 @@ export class ShiftSwapRequestService {
         `Permintaan tukar shift Anda dengan ${shiftSwap.toUser?.namaDepan || ''} ${shiftSwap.toUser?.namaBelakang || ''} pada tanggal ${shiftSwap.tanggalSwap instanceof Date ? shiftSwap.tanggalSwap.toISOString().split('T')[0] : shiftSwap.tanggalSwap} telah disetujui dan jadwal sudah diperbarui.`,
         { shiftSwapId: id },
       );
-      // Notifikasi ke partner (toUser)
+      // Notifikasi ke mitra (toUser)
       await this.notificationService.sendNotification(
         shiftSwap.toUserId,
         JenisNotifikasi.KONFIRMASI_TUKAR_SHIFT,
@@ -415,17 +415,17 @@ export class ShiftSwapRequestService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Pegawai tidak ditemukan');
     }
 
-    // Only allow the requester to update their own request if it's still pending
+    // Hanya izinkan pengaju untuk memperbarui permintaan mereka sendiri jika masih menunggu
     if (shiftSwap.fromUserId !== userId && user.role !== Role.ADMIN) {
-      throw new ForbiddenException('You can only update your own requests');
+      throw new ForbiddenException('Anda hanya dapat memperbarui permintaan Anda sendiri');
     }
 
     if (shiftSwap.status !== SwapStatus.PENDING) {
       throw new BadRequestException(
-        'Cannot update a request that has already been processed',
+        'Tidak dapat memperbarui permintaan yang sudah diproses',
       );
     }
 
@@ -469,18 +469,18 @@ export class ShiftSwapRequestService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Pegawai tidak ditemukan');
     }
 
-    // Only allow the requester or admin to delete
+    // Hanya izinkan pengaju atau administrator untuk menghapus
     if (shiftSwap.fromUserId !== userId && user.role !== Role.ADMIN) {
-      throw new ForbiddenException('You can only delete your own requests');
+      throw new ForbiddenException('Anda hanya dapat menghapus permintaan Anda sendiri');
     }
 
-    // Only allow deletion if request is still pending
+    // Hanya izinkan penghapusan jika permintaan masih menunggu
     if (shiftSwap.status !== SwapStatus.PENDING) {
       throw new BadRequestException(
-        'Cannot delete a request that has already been processed',
+        'Tidak dapat menghapus permintaan yang sudah diproses',
       );
     }
 
@@ -495,7 +495,7 @@ export class ShiftSwapRequestService {
 
   async getPendingApprovals(userId: number) {
     if (!userId) {
-      throw new BadRequestException('userId is required');
+      throw new BadRequestException('Identitas pegawai diperlukan');
     }
     try {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -566,18 +566,18 @@ export class ShiftSwapRequestService {
     } catch (error) {
       console.error('[ShiftSwapRequestService][getPendingApprovals] Error:', error);
       throw new InternalServerErrorException(
-        error.message || 'Failed to get pending approvals',
+        error.message || 'Gagal mendapatkan persetujuan yang tertunda',
       );
     }
   }
 
   /**
-   * Transfer shift ownership when swap request is approved
-   * This method swaps the userId between the requester and target user shifts
+   * Transfer kepemilikan shift ketika permintaan tukar disetujui
+   * Metode ini menukar userId antara pengaju dan pegawai tujuan
    */
   private async transferShiftOwnership(shiftSwap: ShiftSwap): Promise<void> {
     try {
-      // Find the shift being swapped
+      // Cari shift yang akan ditukar
       const originalShift = await this.prisma.shift.findUnique({
         where: { id: shiftSwap.shiftId },
         include: { user: true },
@@ -585,11 +585,11 @@ export class ShiftSwapRequestService {
 
       if (!originalShift) {
         throw new Error(
-          `Original shift with ID ${shiftSwap.shiftId} not found`,
+          `Shift asli dengan ID ${shiftSwap.shiftId} tidak ditemukan`,
         );
       }
 
-      // Find corresponding shift for the target user on the same date
+      // Cari shift terkait untuk pegawai tujuan pada tanggal yang sama
       const targetShift = await this.prisma.shift.findFirst({
         where: {
           userId: shiftSwap.toUserId,
@@ -599,25 +599,25 @@ export class ShiftSwapRequestService {
       });
 
       if (!targetShift) {
-        // If target user doesn't have a shift on the same date, just transfer the shift
+        // Jika pegawai tujuan tidak memiliki shift pada tanggal yang sama, cukup transfer shift
         await this.prisma.shift.update({
           where: { id: originalShift.id },
           data: { userId: shiftSwap.toUserId },
         });
 
         console.log(
-          `Shift ${originalShift.id} transferred from user ${shiftSwap.fromUserId} to user ${shiftSwap.toUserId}`,
+          `Shift ${originalShift.id} ditransfer dari pegawai ${shiftSwap.fromUserId} ke pegawai ${shiftSwap.toUserId}`,
         );
       } else {
-        // If both users have shifts on the same date, swap them
+        // Jika kedua pegawai memiliki shift pada tanggal yang sama, tukar keduanya
         await this.prisma.$transaction(async (tx) => {
-          // Update original shift to target user
+          // Perbarui shift asli ke pegawai tujuan
           await tx.shift.update({
             where: { id: originalShift.id },
             data: { userId: shiftSwap.toUserId },
           });
 
-          // Update target shift to original user
+          // Perbarui shift tujuan ke pegawai asli
           await tx.shift.update({
             where: { id: targetShift.id },
             data: { userId: shiftSwap.fromUserId },
@@ -625,38 +625,38 @@ export class ShiftSwapRequestService {
         });
 
         console.log(
-          `Shifts swapped: Shift ${originalShift.id} (${shiftSwap.fromUserId} → ${shiftSwap.toUserId}), Shift ${targetShift.id} (${shiftSwap.toUserId} → ${shiftSwap.fromUserId})`,
+          `Shift ditukar: Shift ${originalShift.id} (${shiftSwap.fromUserId} → ${shiftSwap.toUserId}), Shift ${targetShift.id} (${shiftSwap.toUserId} → ${shiftSwap.fromUserId})`,
         );
       }
     } catch (error) {
-      console.error('Error transferring shift ownership:', error);
+      console.error('Kesalahan dalam transfer kepemilikan shift:', error);
       throw new Error(
-        `Failed to transfer shift ownership: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Gagal mentransfer kepemilikan shift: ${error instanceof Error ? error.message : 'Kesalahan tidak diketahui'}`,
       );
     }
   }
 
   /**
-   * Get comprehensive monitoring data for admin
-   * Includes all requests with statistics and trends
+   * Dapatkan data pemantauan komprehensif untuk administrator
+   * Termasuk semua permintaan dengan statistik dan tren
    */
   async getAdminMonitoringData(userId: number) {
     if (!userId) {
-      throw new BadRequestException('userId is required');
+      throw new BadRequestException('Identitas pegawai diperlukan');
     }
 
     try {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException('Pegawai tidak ditemukan');
       }
 
       if (user.role !== Role.ADMIN) {
-        throw new ForbiddenException('Only admins can access monitoring data');
+        throw new ForbiddenException('Hanya administrator yang dapat mengakses data pemantauan');
       }
 
-      // Get all shift swap requests
+      // Dapatkan semua permintaan tukar shift
       const allRequests = await this.prisma.shiftSwap.findMany({
         include: {
           fromUser: {
@@ -700,7 +700,7 @@ export class ShiftSwapRequestService {
         },
       });
 
-      // Group requests by status
+      // Kelompokkan permintaan berdasarkan status
       const groupedRequests = {
         pending: allRequests.filter(req => 
           req.status === SwapStatus.PENDING || 
@@ -716,7 +716,7 @@ export class ShiftSwapRequestService {
         ),
       };
 
-      // Calculate statistics
+      // Hitung statistik
       const stats = {
         total: allRequests.length,
         approved: groupedRequests.approved.length,
@@ -726,7 +726,7 @@ export class ShiftSwapRequestService {
           (groupedRequests.approved.length / allRequests.length * 100) : 0,
       };
 
-      // Monthly trends
+      // Tren bulanan
       const monthlyData = {};
       allRequests.forEach(req => {
         const date = new Date(req.createdAt);
@@ -753,7 +753,7 @@ export class ShiftSwapRequestService {
         if (req.status === SwapStatus.APPROVED) {
           monthlyData[monthKey].approved++;
           
-          // Calculate processing time
+          // Hitung waktu pemrosesan
           if (req.createdAt && req.supervisorApprovedAt) {
             const created = new Date(req.createdAt);
             const approved = new Date(req.supervisorApprovedAt);
@@ -768,7 +768,7 @@ export class ShiftSwapRequestService {
         }
       });
 
-      // Calculate monthly averages
+      // Hitung rata-rata bulanan
       Object.keys(monthlyData).forEach(monthKey => {
         const month = monthlyData[monthKey];
         month.avgProcessingTime = month.processedCount > 0 ? 
@@ -777,7 +777,7 @@ export class ShiftSwapRequestService {
           (month.approved / month.total * 100) : 0;
       });
 
-      // Approver performance
+      // Performa penyetuju
       const approverStats = {};
       allRequests.forEach(req => {
         if (req.supervisorApprovedBy) {
@@ -786,8 +786,8 @@ export class ShiftSwapRequestService {
               approverId: req.supervisorApprovedBy,
               approverName: req.supervisorApprover ? 
                 `${req.supervisorApprover.namaDepan} ${req.supervisorApprover.namaBelakang}` : 
-                'Unknown',
-              approverRole: req.supervisorApprover?.role || 'Unknown',
+                'Tidak Diketahui',
+              approverRole: req.supervisorApprover?.role || 'Tidak Diketahui',
               count: 0,
               avgProcessingTime: 0,
               totalProcessingTime: 0,
@@ -805,7 +805,7 @@ export class ShiftSwapRequestService {
         }
       });
 
-      // Calculate approver averages
+      // Hitung rata-rata penyetuju
       Object.keys(approverStats).forEach(approverId => {
         const stats = approverStats[approverId];
         stats.avgProcessingTime = stats.count > 0 ? 
@@ -830,7 +830,7 @@ export class ShiftSwapRequestService {
         error,
       );
       throw new InternalServerErrorException(
-        (error as Error).message || 'Failed to get admin monitoring data',
+        (error as Error).message || 'Gagal mendapatkan data pemantauan administrator',
       );
     }
   }

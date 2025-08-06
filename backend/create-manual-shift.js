@@ -1,5 +1,5 @@
-// Manual shift creation script using Prisma directly
-// Run this from backend directory: node create-manual-shift.js
+// Skrip pembuatan shift manual menggunakan Prisma langsung
+// Jalankan dari direktori backend: node create-manual-shift.js
 
 const { PrismaClient } = require('@prisma/client');
 
@@ -7,9 +7,9 @@ const prisma = new PrismaClient();
 
 async function createShift() {
     try {
-        console.log('Creating shift directly in database...');
+        console.log('Membuat shift langsung di basis data...');
 
-        // First, let's check available users
+        // Pertama, mari periksa pegawai yang tersedia
         const users = await prisma.user.findMany({
             take: 5,
             select: {
@@ -21,20 +21,20 @@ async function createShift() {
             }
         });
 
-        console.log('Available users:');
+        console.log('Pegawai yang tersedia:');
         users.forEach(user => {
             console.log(`- ${user.username} (${user.namaDepan} ${user.namaBelakang}) - ${user.role}`);
         });
 
-        // Pick the first user
+        // Pilih pegawai pertama
         const selectedUser = users[0];
-        console.log(`\nCreating shift for: ${selectedUser.username} (${selectedUser.namaDepan} ${selectedUser.namaBelakang})`);
+        console.log(`\nMembuat shift untuk: ${selectedUser.username} (${selectedUser.namaDepan} ${selectedUser.namaBelakang})`);
 
-        // Create shift data
+        // Buat data shift
         const shiftData = {
             tanggal: new Date('2025-08-07T00:00:00.000Z'),
-            jammulai: new Date('1970-01-01T07:00:00.000Z'), // Time only - use epoch date
-            jamselesai: new Date('1970-01-01T15:00:00.000Z'), // Time only - use epoch date
+            jammulai: new Date('1970-01-01T07:00:00.000Z'), // Waktu saja - gunakan tanggal epoch
+            jamselesai: new Date('1970-01-01T15:00:00.000Z'), // Waktu saja - gunakan tanggal epoch
             lokasishift: 'RAWAT_INAP',
             tipeshift: 'PAGI',
             userId: selectedUser.id,
@@ -43,17 +43,17 @@ async function createShift() {
             difficulty: 'STANDARD'
         };
 
-        console.log('Shift data to create:', JSON.stringify(shiftData, null, 2));
+        console.log('Data shift yang akan dibuat:', JSON.stringify(shiftData, null, 2));
 
-        // Create the shift
+        // Buat shift
         const createdShift = await prisma.shift.create({
             data: shiftData
         });
 
         console.log('✅ Shift berhasil dibuat!');
-        console.log('Created shift:', JSON.stringify(createdShift, null, 2));
+        console.log('Shift yang dibuat:', JSON.stringify(createdShift, null, 2));
 
-        // Verify by getting all shifts
+        // Verifikasi dengan mengambil semua shift
         const allShifts = await prisma.shift.findMany({
             include: {
                 user: {
@@ -67,14 +67,14 @@ async function createShift() {
             }
         });
 
-        console.log(`\nTotal shifts in database: ${allShifts.length}`);
+        console.log(`\nTotal shift dalam basis data: ${allShifts.length}`);
         allShifts.forEach(shift => {
             console.log(`- ${shift.tanggal.toISOString().split('T')[0]} | ${shift.user?.namaDepan} ${shift.user?.namaBelakang} | ${shift.jammulai}-${shift.jamselesai} | ${shift.lokasishift} | ${shift.tipeshift}`);
         });
 
     } catch (error) {
-        console.error('❌ Error creating shift:', error.message);
-        console.error('Full error:', error);
+        console.error('❌ Kesalahan dalam membuat shift:', error.message);
+        console.error('Kesalahan lengkap:', error);
     } finally {
         await prisma.$disconnect();
     }

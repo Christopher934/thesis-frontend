@@ -4,9 +4,9 @@ const prisma = new PrismaClient();
 
 async function manualShiftReminderCheck() {
   try {
-    console.log('🔍 Checking for upcoming shifts to send reminders...');
+    console.log('🔍 Memeriksa shift yang akan datang untuk mengirim pengingat...');
     
-    // Get all shifts for today
+    // Dapatkan semua shift untuk hari ini
     const today = new Date();
     const todayStart = new Date(today.toDateString());
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -30,9 +30,9 @@ async function manualShiftReminderCheck() {
       },
     });
     
-    console.log(`📋 Found ${allShiftsToday.length} shifts today`);
+    console.log(`📋 Ditemukan ${allShiftsToday.length} shift hari ini`);
     
-    // Filter shifts that start within the next hour (with 15 minute tolerance)
+    // Filter shift yang dimulai dalam satu jam ke depan (dengan toleransi 15 menit)
     const oneHourFromNow = new Date();
     oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
     
@@ -42,17 +42,17 @@ async function manualShiftReminderCheck() {
       const targetTimeInMinutes = oneHourFromNow.getHours() * 60 + oneHourFromNow.getMinutes();
       const timeDiff = Math.abs(shiftTimeInMinutes - targetTimeInMinutes);
       
-      console.log(`⏰ Shift ${shift.id}: ${shift.jammulai.toLocaleString()} - Target: ${oneHourFromNow.toLocaleString()} - Diff: ${timeDiff} minutes`);
+      console.log(`⏰ Shift ${shift.id}: ${shift.jammulai.toLocaleString()} - Target: ${oneHourFromNow.toLocaleString()} - Selisih: ${timeDiff} menit`);
       
       return timeDiff <= 15;
     });
     
-    console.log(`🎯 Found ${upcomingShifts.length} upcoming shifts (within 1 hour)`);
+    console.log(`🎯 Ditemukan ${upcomingShifts.length} shift yang akan datang (dalam 1 jam)`);
     
     for (const shift of upcomingShifts) {
-      console.log(`\\n📅 Processing shift for ${shift.user.namaDepan} ${shift.user.namaBelakang}`);
+      console.log(`\\n📅 Memproses shift untuk ${shift.user.namaDepan} ${shift.user.namaBelakang}`);
       
-      // Check if reminder already sent today
+      // Periksa apakah pengingat sudah dikirim hari ini
       const existingReminder = await prisma.notifikasi.findFirst({
         where: {
           userId: shift.userId,
@@ -68,13 +68,13 @@ async function manualShiftReminderCheck() {
       });
       
       if (existingReminder) {
-        console.log('⏭️  Reminder already sent for this shift');
+        console.log('⏭️  Pengingat sudah dikirim untuk shift ini');
         continue;
       }
       
-      // Send Telegram notification if user has chatId
+      // Kirim notifikasi Telegram jika pengguna memiliki chatId
       if (shift.user.telegramChatId) {
-        console.log('📱 Sending Telegram reminder...');
+        console.log('📱 Mengirim pengingat Telegram...');
         
         const message = `🏥 *REMINDER SHIFT - RSUD ANUGERAH*
 
@@ -97,21 +97,21 @@ Harap bersiap dan datang tepat waktu.
           });
           
           if (response.data.ok) {
-            console.log('✅ Telegram reminder sent successfully');
+            console.log('✅ Pengingat Telegram berhasil dikirim');
           } else {
-            console.log('❌ Failed to send Telegram reminder:', response.data.description);
+            console.log('❌ Gagal mengirim pengingat Telegram:', response.data.description);
           }
         } catch (error) {
-          console.error('❌ Telegram error:', error.message);
+          console.error('❌ Kesalahan Telegram:', error.message);
         }
       }
       
-      // Create notification record
+      // Buat catatan notifikasi
       await prisma.notifikasi.create({
         data: {
           userId: shift.userId,
           jenis: 'REMINDER_SHIFT',
-          judul: 'Reminder Shift',
+          judul: 'Pengingat Shift',
           pesan: `Shift Anda akan dimulai dalam 1 jam di ${shift.lokasishift}`,
           status: 'UNREAD',
           data: {
@@ -124,13 +124,13 @@ Harap bersiap dan datang tepat waktu.
         },
       });
       
-      console.log(`✅ Reminder sent to ${shift.user.namaDepan} ${shift.user.namaBelakang}`);
+      console.log(`✅ Pengingat dikirim ke ${shift.user.namaDepan} ${shift.user.namaBelakang}`);
     }
     
-    console.log(`\\n🎉 Processed ${upcomingShifts.length} upcoming shifts`);
+    console.log(`\\n🎉 Diproses ${upcomingShifts.length} shift yang akan datang`);
     
   } catch (error) {
-    console.error('❌ Error in shift reminder check:', error);
+    console.error('❌ Kesalahan dalam pengecekan pengingat shift:', error);
   } finally {
     await prisma.$disconnect();
   }

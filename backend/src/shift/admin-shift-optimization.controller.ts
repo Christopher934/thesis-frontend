@@ -375,11 +375,23 @@ export class AdminShiftOptimizationController {
       return {
         success: true,
         weeklySchedule: result,
-        message: `Generated ${result.totalShifts} shifts for week starting ${request.startDate}`
+        message: `Berhasil membuat ${result.totalShifts} shift untuk minggu dimulai ${request.startDate}`
       };
     } catch (error) {
       console.error('Weekly schedule creation error:', error);
-      throw new Error('Failed to create weekly schedule');
+      
+      // Return proper error response instead of throwing
+      return {
+        success: false,
+        weeklySchedule: {
+          totalShifts: 0,
+          successfulAssignments: 0,
+          conflicts: [],
+          recommendations: [],
+          createdShifts: 0,
+        },
+        message: `❌ Gagal membuat jadwal mingguan: ${error.message}`
+      };
     }
   }
 
@@ -417,19 +429,68 @@ export class AdminShiftOptimizationController {
       const result =
         await this.adminOptimizationService.createMonthlySchedule(request);
       
-      // Generate detailed notification with error breakdown
-      const notification =
-        await this.adminOptimizationService.getSchedulingNotification(result);
-      
-      return {
-        success: result.success,
-        monthlySchedule: result,
-        message: notification.message,
-        notification,
-      };
+      try {
+        // Generate detailed notification with error breakdown
+        const notification =
+          this.adminOptimizationService.getSchedulingNotification(result);
+        
+        return {
+          success: result.success,
+          monthlySchedule: result,
+          message: notification.message,
+          notification,
+        };
+      } catch (notificationError) {
+        console.error('Failed to generate notification, but schedule creation succeeded:', notificationError);
+        
+        // Return success response even if notification generation fails
+        const fallbackMessage = result.success 
+          ? `✅ Jadwal bulanan berhasil dibuat! ${result.totalCreated} shift telah dijadwalkan.`
+          : `⚠️ Jadwal bulanan dibuat sebagian. ${result.totalCreated} dari ${result.totalRequested} shift berhasil dijadwalkan.`;
+          
+        return {
+          success: result.success,
+          monthlySchedule: result,
+          message: fallbackMessage,
+          notification: {
+            type: result.success ? 'success' : 'warning' as const,
+            title: result.success ? '🎉 Jadwal Berhasil Dibuat' : '⚠️ Jadwal Dibuat Sebagian',
+            message: fallbackMessage,
+          },
+        };
+      }
     } catch (error) {
       console.error('Monthly schedule creation error:', error);
-      throw new Error('Failed to create monthly schedule');
+      
+      // Return proper error response instead of throwing
+      return {
+        success: false,
+        monthlySchedule: {
+          success: false,
+          fulfillmentRate: 0,
+          totalRequested: 0,
+          totalCreated: 0,
+          errors: [],
+          warnings: [],
+          summary: {
+            successfulDates: [],
+            failedDates: [],
+            partialDates: [],
+            overLimitStaff: [],
+            incompleteShifts: [],
+          },
+          recommendations: [],
+        },
+        message: `❌ Gagal membuat jadwal bulanan: ${error.message}`,
+        notification: {
+          type: 'error' as const,
+          title: '❌ Gagal Membuat Jadwal',
+          message: `Terjadi kesalahan saat membuat jadwal bulanan: ${error.message}`,
+          actions: [
+            { label: 'Coba Lagi', action: 'retry', style: 'primary' as const },
+          ],
+        },
+      };
     }
   }
 

@@ -325,7 +325,9 @@ export class AdminShiftOptimizationService {
         // Calculate enhanced fitness scores with ROTATION PENALTY
         const userScores = availableUsers.map((user) => {
           const workload = userWorkload.get(user.id)!;
-          const baseScore = this.calculateUserFitnessScore(user, request);
+          
+          // Enhanced fitness score with current assignments context
+          const baseScore = this.calculateEnhancedUserFitnessScore(user, request, assignments);
 
           // FORCED ROTATION: Heavy penalty for users assigned today
           let rotationPenalty = 0;
@@ -743,6 +745,77 @@ export class AdminShiftOptimizationService {
     return Math.max(0, Math.min(100, score));
   }
 
+  /**
+   * ENHANCED fitness score calculation with current assignments context
+   */
+  private calculateEnhancedUserFitnessScore(
+    user: any,
+    request: ShiftCreationRequest,
+    currentAssignments: ShiftAssignment[],
+  ): number {
+    // Start with base fitness score
+    let score = this.calculateUserFitnessScore(user, request);
+    
+    // If base score is 0, user is unavailable
+    if (score === 0) return 0;
+
+    // Additional validation with current assignments context
+    const userAssignmentsOnDate = currentAssignments.filter(
+      assignment => assignment.userId === user.id && 
+                   assignment.shiftDetails.date === request.date
+    );
+
+    // STRICT ENFORCEMENT: Maximum 2 shifts per day
+    if (userAssignmentsOnDate.length >= 2) {
+      console.log(
+        `🚫 ENHANCED VALIDATION: User ${user.id} already has ${userAssignmentsOnDate.length} shifts on ${request.date} - BLOCKING`,
+      );
+      return 0; // Completely block assignment
+    }
+
+    // Check for time conflicts with current assignments
+    if (userAssignmentsOnDate.length > 0) {
+      const newStart = this.parseTimeToMinutes(
+        this.getShiftStartTime(request.shiftType),
+      );
+      const newEnd = this.parseTimeToMinutes(
+        this.getShiftEndTime(request.shiftType),
+      );
+
+      for (const existingAssignment of userAssignmentsOnDate) {
+        const existingStart = this.parseTimeToMinutes(
+          this.getShiftStartTime(existingAssignment.shiftDetails.shiftType),
+        );
+        const existingEnd = this.parseTimeToMinutes(
+          this.getShiftEndTime(existingAssignment.shiftDetails.shiftType),
+        );
+
+        if (this.hasTimeOverlap(newStart, newEnd, existingStart, existingEnd)) {
+          console.log(
+            `🚫 ENHANCED TIME CONFLICT: User ${user.id} ${request.shiftType} overlaps with existing ${existingAssignment.shiftDetails.shiftType} on ${request.date}`,
+          );
+          return 0; // Block overlapping assignments
+        }
+
+        // Check for same location conflicts
+        if (existingAssignment.shiftDetails.location === request.location) {
+          console.log(
+            `🚫 ENHANCED LOCATION CONFLICT: User ${user.id} already assigned to ${request.location} on ${request.date}`,
+          );
+          return 0; // Block same location double-booking
+        }
+      }
+
+      // Apply penalty for second shift of the day (even if valid)
+      score -= 15; // Small penalty to encourage distribution
+      console.log(
+        `⚠️ Second shift penalty: User ${user.id} getting 2nd shift on ${request.date}, score reduced to ${score}`,
+      );
+    }
+
+    return Math.max(0, Math.min(100, score));
+  }
+
   // Enhanced helper methods for constraints
   private checkRoleSuitability(
     role: string,
@@ -1127,7 +1200,7 @@ export class AdminShiftOptimizationService {
       const assignments: ShiftAssignment[] = userComb.map((user) => ({
         userId: user.id as number,
         shiftDetails: requirement,
-        score: this.calculateUserFitnessScore(user, requirement),
+        score: this.calculateEnhancedUserFitnessScore(user, requirement, currentSolution),
         reason: `Backtracking combination: User ${user.id as number}`,
       }));
 
@@ -1209,7 +1282,7 @@ export class AdminShiftOptimizationService {
       })
       .map((user) => ({
         user,
-        fitness: this.calculateUserFitnessScore(user, requirement),
+        fitness: this.calculateEnhancedUserFitnessScore(user, requirement, currentSolution),
         workload: this.getUserCurrentWorkload(
           user.id as number,
           currentSolution,
@@ -1985,20 +2058,23 @@ export class AdminShiftOptimizationService {
   }
 
   private checkDateConflict(user: any, targetDate: string): boolean {
-    // Check if user already has shift on target date
+    // Check if user already has 2 or more shifts on target date (maximum allowed)
     if (!user.shifts || user.shifts.length === 0) return false;
     
     const targetDateStr = targetDate; // Assume targetDate is already in YYYY-MM-DD format
     
-    return user.shifts.some((shift: any) => {
+    const shiftsOnDate = user.shifts.filter((shift: any) => {
       const shiftDateStr = shift.tanggal instanceof Date 
         ? shift.tanggal.toISOString().split('T')[0]
         : shift.tanggal.split('T')[0];
       
-      console.log(`🔍 Checking conflict: User ${user.id} on ${targetDateStr} vs existing ${shiftDateStr}`);
-      
       return shiftDateStr === targetDateStr;
     });
+    
+    console.log(`🔍 Checking daily limit: User ${user.id} has ${shiftsOnDate.length} shifts on ${targetDateStr} (max 2 allowed)`);
+    
+    // Return true (conflict) if user already has 2 or more shifts on this date
+    return shiftsOnDate.length >= 2;
   }
 
   private async getConsecutiveDaysCount(userId: number): Promise<number> {

@@ -957,80 +957,37 @@ const ManagemenJadwalPage = () => {
                 }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                
-                // Parse specific error details from backend
-                let detailedError = {
-                    message: errorData.message || 'Gagal membuat jadwal optimal',
-                    conflicts: errorData.conflicts || [],
-                    workloadIssues: errorData.workloadIssues || [],
-                    capacityIssues: errorData.capacityIssues || [],
-                    unavailableEmployees: errorData.unavailableEmployees || [],
-                    schedulingConstraints: errorData.schedulingConstraints || [],
-                    recommendations: errorData.recommendations || []
-                };
-
-                // Create comprehensive error message
-                let errorMessage = detailedError.message;
-                let recommendations = [...detailedError.recommendations];
-                
-                if (detailedError.conflicts.length > 0) {
-                    errorMessage += `\n\n🔴 Konflik Jadwal Ditemukan (${detailedError.conflicts.length}):`;
-                    detailedError.conflicts.forEach((conflict: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${conflict.employeeName || conflict.employee} sudah memiliki shift pada ${conflict.date} ${conflict.time || conflict.shift}`;
-                    });
-                    recommendations.push('Periksa jadwal yang sudah ada untuk pegawai tersebut');
-                    recommendations.push('Pilih tanggal atau waktu yang berbeda');
-                }
-
-                if (detailedError.unavailableEmployees.length > 0) {
-                    errorMessage += `\n\n⚠️ Pegawai Tidak Tersedia (${detailedError.unavailableEmployees.length}):`;
-                    detailedError.unavailableEmployees.forEach((emp: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${emp.name || emp.employee}: ${emp.reason || 'Tidak tersedia'}`;
-                    });
-                    recommendations.push('Pastikan pegawai tidak sedang cuti atau memiliki shift lain');
-                }
-
-                if (detailedError.workloadIssues.length > 0) {
-                    errorMessage += `\n\n📊 Masalah Beban Kerja (${detailedError.workloadIssues.length}):`;
-                    detailedError.workloadIssues.forEach((issue: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${issue.employeeName || issue.employee}: ${issue.issue || 'Beban kerja berlebihan'}`;
-                    });
-                    recommendations.push('Distribusikan shift lebih merata');
-                    recommendations.push('Pertimbangkan menambah pegawai untuk periode ini');
-                }
-
-                if (detailedError.capacityIssues.length > 0) {
-                    errorMessage += `\n\n🏥 Masalah Kapasitas Lokasi (${detailedError.capacityIssues.length}):`;
-                    detailedError.capacityIssues.forEach((issue: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${issue.location}: ${issue.issue || 'Kapasitas penuh'}`;
-                    });
-                    recommendations.push('Pilih lokasi dengan kapasitas tersedia');
-                    recommendations.push('Kurangi jumlah shift untuk lokasi yang penuh');
-                }
-
-                if (detailedError.schedulingConstraints.length > 0) {
-                    errorMessage += `\n\n🚫 Batasan Penjadwalan:`;
-                    detailedError.schedulingConstraints.forEach((constraint: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${constraint.constraint || constraint}`;
-                    });
-                }
-
-                // If no specific errors, add general recommendations
-                if (recommendations.length === 0) {
-                    recommendations = [
-                        'Periksa ketersediaan pegawai pada tanggal yang dipilih',
-                        'Pastikan tidak ada konflik dengan shift yang sudah ada',
-                        'Verifikasi kapasitas lokasi masih tersedia',
-                        'Coba dengan parameter yang berbeda'
-                    ];
-                }
-
-                throw new Error(errorMessage);
-            }
-
+            // Backend now always returns 200 with structured response
+            // No need to check response.ok since backend handles all errors gracefully
             const result = await response.json();
+            
+            // Check backend success flag first
+            if (result.success === false) {
+                const backendError = result.error || 'Gagal membuat jadwal optimal';
+                console.log('❌ Backend returned success: false with error:', backendError);
+                
+                // Show detailed error modal for workload/capacity issues
+                showNotificationModal({
+                    type: 'error',
+                    title: 'Gagal Membuat Jadwal Otomatis',
+                    message: backendError,
+                    details: {
+                        createdShifts: result.createdShifts || 0,
+                        conflicts: result.conflicts || [],
+                        workloadAlerts: result.workloadAlerts || [],
+                        recommendations: result.recommendations || [
+                            'Periksa ketersediaan pegawai pada tanggal yang dipilih',
+                            'Pastikan tidak ada konflik dengan shift yang sudah ada',
+                            'Verifikasi kapasitas lokasi masih tersedia',
+                            'Coba dengan parameter yang berbeda'
+                        ]
+                    }
+                });
+                
+                setIsAutoScheduleModalOpen(false);
+                return; // Stop processing
+            }
+            
             setAutoScheduleResult(result);
             
             // Show detailed notification instead of auto-refresh
@@ -1183,61 +1140,37 @@ const ManagemenJadwalPage = () => {
                 body: JSON.stringify(weeklyRequest),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                
-                // Parse specific error details from backend for weekly scheduling
-                let detailedError = {
-                    message: errorData.message || 'Gagal membuat jadwal mingguan',
-                    conflicts: errorData.conflicts || [],
-                    workloadIssues: errorData.workloadIssues || [],
-                    capacityIssues: errorData.capacityIssues || [],
-                    unavailableEmployees: errorData.unavailableEmployees || [],
-                    weeklyConstraints: errorData.weeklyConstraints || [],
-                    recommendations: errorData.recommendations || []
-                };
-
-                // Create comprehensive error message
-                let errorMessage = detailedError.message;
-                let recommendations = [...detailedError.recommendations];
-                
-                if (detailedError.conflicts.length > 0) {
-                    errorMessage += `\n\n🔴 Konflik Jadwal Mingguan (${detailedError.conflicts.length}):`;
-                    detailedError.conflicts.forEach((conflict: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${conflict.employeeName || conflict.employee} - ${conflict.date} ${conflict.time || conflict.shift}`;
-                    });
-                    recommendations.push('Sesuaikan pola shift mingguan');
-                    recommendations.push('Pastikan tidak ada tumpang tindih dengan jadwal existing');
-                }
-
-                if (detailedError.unavailableEmployees.length > 0) {
-                    errorMessage += `\n\n⚠️ Pegawai Tidak Tersedia untuk Periode Mingguan:`;
-                    detailedError.unavailableEmployees.forEach((emp: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${emp.name || emp.employee}: ${emp.reason || 'Tidak tersedia untuk periode ini'}`;
-                    });
-                    recommendations.push('Periksa ketersediaan pegawai untuk seluruh minggu');
-                }
-
-                if (detailedError.weeklyConstraints.length > 0) {
-                    errorMessage += `\n\n🚫 Batasan Penjadwalan Mingguan:`;
-                    detailedError.weeklyConstraints.forEach((constraint: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${constraint.constraint || constraint}`;
-                    });
-                }
-
-                if (recommendations.length === 0) {
-                    recommendations = [
-                        'Periksa ketersediaan pegawai untuk periode mingguan',
-                        'Pastikan pola shift tidak bertentangan dengan aturan existing',
-                        'Verifikasi kapasitas lokasi untuk seluruh minggu',
-                        'Pertimbangkan menggunakan penjadwalan harian sebagai alternatif'
-                    ];
-                }
-
-                throw new Error(errorMessage);
-            }
-
+            // Backend now always returns 200 with structured response
+            // No need to check response.ok since backend handles all errors gracefully
             const result = await response.json();
+            
+            // Check backend success flag first
+            if (result.success === false) {
+                const backendError = result.error || 'Gagal membuat jadwal mingguan';
+                console.log('❌ Backend returned success: false with error:', backendError);
+                
+                // Show detailed error modal for workload/capacity issues
+                showNotificationModal({
+                    type: 'error',
+                    title: 'Gagal Membuat Jadwal Mingguan',
+                    message: backendError,
+                    details: {
+                        createdShifts: result.createdShifts || 0,
+                        conflicts: result.conflicts || [],
+                        workloadAlerts: result.workloadAlerts || [],
+                        recommendations: result.recommendations || [
+                            'Periksa ketersediaan pegawai untuk periode mingguan',
+                            'Pastikan pola shift tidak bertentangan dengan aturan existing',
+                            'Verifikasi kapasitas lokasi untuk seluruh minggu',
+                            'Pertimbangkan menggunakan penjadwalan harian sebagai alternatif'
+                        ]
+                    }
+                });
+                
+                setIsBulkScheduleModalOpen(false);
+                return; // Stop processing
+            }
+            
             setBulkScheduleResult(result);
             
             // Show notification instead of auto-refresh
@@ -1365,61 +1298,8 @@ const ManagemenJadwalPage = () => {
                 body: JSON.stringify(monthlyRequest),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                
-                // Parse specific error details from backend for monthly scheduling
-                let detailedError = {
-                    message: errorData.message || 'Gagal membuat jadwal bulanan',
-                    conflicts: errorData.conflicts || [],
-                    workloadIssues: errorData.workloadIssues || [],
-                    capacityIssues: errorData.capacityIssues || [],
-                    unavailableEmployees: errorData.unavailableEmployees || [],
-                    monthlyConstraints: errorData.monthlyConstraints || [],
-                    recommendations: errorData.recommendations || []
-                };
-
-                // Create comprehensive error message
-                let errorMessage = detailedError.message;
-                let recommendations = [...detailedError.recommendations];
-                
-                if (detailedError.conflicts.length > 0) {
-                    errorMessage += `\n\n🔴 Konflik Jadwal Bulanan (${detailedError.conflicts.length}):`;
-                    detailedError.conflicts.forEach((conflict: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${conflict.employeeName || conflict.employee} - ${conflict.date} ${conflict.time || conflict.shift}`;
-                    });
-                    recommendations.push('Sesuaikan distribusi shift bulanan');
-                    recommendations.push('Periksa konflik dengan jadwal existing di seluruh bulan');
-                }
-
-                if (detailedError.unavailableEmployees.length > 0) {
-                    errorMessage += `\n\n⚠️ Pegawai Tidak Tersedia untuk Periode Bulanan:`;
-                    detailedError.unavailableEmployees.forEach((emp: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${emp.name || emp.employee}: ${emp.reason || 'Tidak tersedia untuk periode ini'}`;
-                    });
-                    recommendations.push('Koordinasi dengan HR untuk jadwal cuti bulanan');
-                    recommendations.push('Periksa ketersediaan pegawai di seluruh bulan');
-                }
-
-                if (detailedError.monthlyConstraints.length > 0) {
-                    errorMessage += `\n\n🚫 Batasan Penjadwalan Bulanan:`;
-                    detailedError.monthlyConstraints.forEach((constraint: any, index: number) => {
-                        errorMessage += `\n${index + 1}. ${constraint.constraint || constraint}`;
-                    });
-                }
-
-                if (recommendations.length === 0) {
-                    recommendations = [
-                        'Periksa ketersediaan pegawai untuk periode bulanan penuh',
-                        'Pastikan distribusi beban kerja merata sepanjang bulan',
-                        'Verifikasi tidak ada hari libur atau cuti yang bertabrakan',
-                        'Pertimbangkan menggunakan penjadwalan mingguan sebagai alternatif'
-                    ];
-                }
-
-                throw new Error(errorMessage);
-            }
-
+            // Backend now always returns 200 with structured response
+            // No need to check response.ok since backend handles all errors gracefully
             const result = await response.json();
             
             // Check backend success flag first

@@ -325,9 +325,13 @@ export class AdminShiftOptimizationService {
         // Calculate enhanced fitness scores with ROTATION PENALTY
         const userScores = availableUsers.map((user) => {
           const workload = userWorkload.get(user.id)!;
-          
+
           // Enhanced fitness score with current assignments context
-          const baseScore = this.calculateEnhancedUserFitnessScore(user, request, assignments);
+          const baseScore = this.calculateEnhancedUserFitnessScore(
+            user,
+            request,
+            assignments,
+          );
 
           // FORCED ROTATION: Heavy penalty for users assigned today
           let rotationPenalty = 0;
@@ -490,18 +494,23 @@ export class AdminShiftOptimizationService {
     availableUsers: any[],
   ): Promise<ShiftAssignment[]> {
     console.log('🔄 Starting True Backtracking Algorithm...');
-    console.log(`🔄 Input: ${initialAssignments.length} assignments from Greedy`);
+    console.log(
+      `🔄 Input: ${initialAssignments.length} assignments from Greedy`,
+    );
 
     // Group assignments by shift requirements (not by user assignments)
     const shiftRequirements = this.extractShiftRequirements(initialAssignments);
-    console.log(`🔄 Extracted ${shiftRequirements.length} unique shift requirements`);
+    console.log(
+      `🔄 Extracted ${shiftRequirements.length} unique shift requirements`,
+    );
 
     // Initialize solution state
     const solution: ShiftAssignment[] = [];
     const constraints = await this.buildConstraints(availableUsers);
 
     // Sort requirements by difficulty (most constrained first)
-    const sortedRequirements = this.sortRequirementsByConstraints(shiftRequirements);
+    const sortedRequirements =
+      this.sortRequirementsByConstraints(shiftRequirements);
 
     // Start recursive backtracking with clean slate
     const result = await this.backtrackRecursive(
@@ -521,12 +530,14 @@ export class AdminShiftOptimizationService {
   /**
    * Extract unique shift requirements from assignments
    */
-  private extractShiftRequirements(assignments: ShiftAssignment[]): ShiftCreationRequest[] {
+  private extractShiftRequirements(
+    assignments: ShiftAssignment[],
+  ): ShiftCreationRequest[] {
     const requirementMap = new Map<string, ShiftCreationRequest>();
 
     for (const assignment of assignments) {
       const key = `${assignment.shiftDetails.date}-${assignment.shiftDetails.location}-${assignment.shiftDetails.shiftType}`;
-      
+
       if (!requirementMap.has(key)) {
         // Create new requirement
         requirementMap.set(key, {
@@ -535,7 +546,7 @@ export class AdminShiftOptimizationService {
           shiftType: assignment.shiftDetails.shiftType,
           requiredCount: 1,
           priority: assignment.shiftDetails.priority || 'NORMAL',
-          preferredRoles: assignment.shiftDetails.preferredRoles
+          preferredRoles: assignment.shiftDetails.preferredRoles,
         });
       } else {
         // Increment required count
@@ -577,13 +588,13 @@ export class AdminShiftOptimizationService {
 
     for (const combination of assignmentCombinations) {
       console.log(
-        `🔄 Trying combination: [${combination.map(c => c.userId).join(', ')}]`,
+        `🔄 Trying combination: [${combination.map((c) => c.userId).join(', ')}]`,
       );
 
       // Check if all assignments in this combination are valid
       let allValid = true;
       const tempSolution = [...currentSolution];
-      
+
       for (const assignment of combination) {
         if (!this.isValidAssignment(assignment, tempSolution, constraints)) {
           allValid = false;
@@ -616,7 +627,9 @@ export class AdminShiftOptimizationService {
         }
 
         // BACKTRACK: Remove all assignments from this combination
-        console.log(`⬅️ Backtracking from combination [${combination.map(c => c.userId).join(', ')}]`);
+        console.log(
+          `⬅️ Backtracking from combination [${combination.map((c) => c.userId).join(', ')}]`,
+        );
         for (const assignment of combination) {
           currentSolution.pop();
           this.restoreConstraints(constraints, assignment);
@@ -633,7 +646,7 @@ export class AdminShiftOptimizationService {
     console.log(
       `❌ No valid combination found for ${currentRequirement.shiftType} at ${currentRequirement.location} on ${currentRequirement.date}`,
     );
-    
+
     // Continue with next requirement (partial solution)
     return await this.backtrackRecursive(
       requirements,
@@ -755,14 +768,15 @@ export class AdminShiftOptimizationService {
   ): number {
     // Start with base fitness score
     let score = this.calculateUserFitnessScore(user, request);
-    
+
     // If base score is 0, user is unavailable
     if (score === 0) return 0;
 
     // Additional validation with current assignments context
     const userAssignmentsOnDate = currentAssignments.filter(
-      assignment => assignment.userId === user.id && 
-                   assignment.shiftDetails.date === request.date
+      (assignment) =>
+        assignment.userId === user.id &&
+        assignment.shiftDetails.date === request.date,
     );
 
     // STRICT ENFORCEMENT: Maximum 2 shifts per day
@@ -1200,7 +1214,11 @@ export class AdminShiftOptimizationService {
       const assignments: ShiftAssignment[] = userComb.map((user) => ({
         userId: user.id as number,
         shiftDetails: requirement,
-        score: this.calculateEnhancedUserFitnessScore(user, requirement, currentSolution),
+        score: this.calculateEnhancedUserFitnessScore(
+          user,
+          requirement,
+          currentSolution,
+        ),
         reason: `Backtracking combination: User ${user.id as number}`,
       }));
 
@@ -1282,7 +1300,11 @@ export class AdminShiftOptimizationService {
       })
       .map((user) => ({
         user,
-        fitness: this.calculateEnhancedUserFitnessScore(user, requirement, currentSolution),
+        fitness: this.calculateEnhancedUserFitnessScore(
+          user,
+          requirement,
+          currentSolution,
+        ),
         workload: this.getUserCurrentWorkload(
           user.id as number,
           currentSolution,
@@ -1298,7 +1320,7 @@ export class AdminShiftOptimizationService {
         return b.fitness - a.fitness;
       });
 
-    return candidates.map((c) => c.user as any);
+    return candidates.map((c) => c.user);
   }
 
   private isValidAssignment(
@@ -1328,9 +1350,11 @@ export class AdminShiftOptimizationService {
 
     // 1.5 Additional validation: Check daily shift count and time conflicts
     const dailyShifts = currentSolution.filter(
-      (a) => a.userId === userId && a.shiftDetails.date === assignment.shiftDetails.date,
+      (a) =>
+        a.userId === userId &&
+        a.shiftDetails.date === assignment.shiftDetails.date,
     );
-    
+
     if (dailyShifts.length >= 2) {
       console.log(
         `🚫 DAILY LIMIT: User ${userId} already has ${dailyShifts.length} shifts on ${assignment.shiftDetails.date} (max 2 allowed)`,
@@ -1491,7 +1515,14 @@ export class AdminShiftOptimizationService {
         );
 
         // Check for time overlap
-        if (this.hasTimeOverlap(newStartTime, newEndTime, existingStart, existingEnd)) {
+        if (
+          this.hasTimeOverlap(
+            newStartTime,
+            newEndTime,
+            existingStart,
+            existingEnd,
+          )
+        ) {
           console.log(
             `🚫 TIME CONFLICT: User ${userId} shift ${newShift.shiftType} (${this.getShiftStartTime(newShift.shiftType)}-${this.getShiftEndTime(newShift.shiftType)}) overlaps with existing ${existingAssignment.shiftDetails.shiftType} (${this.getShiftStartTime(existingAssignment.shiftDetails.shiftType)}-${this.getShiftEndTime(existingAssignment.shiftDetails.shiftType)})`,
           );
@@ -1532,7 +1563,7 @@ export class AdminShiftOptimizationService {
       end1 += 24 * 60; // Add 24 hours to end time
     }
     if (end2 < start2) {
-      // Shift 2 is overnight (crosses midnight)  
+      // Shift 2 is overnight (crosses midnight)
       end2 += 24 * 60; // Add 24 hours to end time
     }
 
@@ -1546,23 +1577,27 @@ export class AdminShiftOptimizationService {
       const end1_mod = end1 % (24 * 60);
       const start2_mod = start2 % (24 * 60);
       const end2_mod = end2 % (24 * 60);
-      
+
       // If either shift crosses midnight, check both segments
       if (end1 > 24 * 60) {
         // Shift 1 crosses midnight: check [start1, 24:00] and [00:00, end1_mod]
-        return (start1 < start2 + 24 * 60 && start2 < 24 * 60) || 
-               (0 < end2 && start2_mod < end1_mod);
+        return (
+          (start1 < start2 + 24 * 60 && start2 < 24 * 60) ||
+          (0 < end2 && start2_mod < end1_mod)
+        );
       }
       if (end2 > 24 * 60) {
         // Shift 2 crosses midnight: check [start2, 24:00] and [00:00, end2_mod]
-        return (start2 < start1 + 24 * 60 && start1 < 24 * 60) || 
-               (0 < end1 && start1_mod < end2_mod);
+        return (
+          (start2 < start1 + 24 * 60 && start1 < 24 * 60) ||
+          (0 < end1 && start1_mod < end2_mod)
+        );
       }
     }
 
     if (hasOverlap) {
       console.log(
-        `⚠️ TIME OVERLAP DETECTED: ${Math.floor(start1/60)}:${(start1%60).toString().padStart(2,'0')}-${Math.floor(end1/60)}:${(end1%60).toString().padStart(2,'0')} overlaps with ${Math.floor(start2/60)}:${(start2%60).toString().padStart(2,'0')}-${Math.floor(end2/60)}:${(end2%60).toString().padStart(2,'0')}`,
+        `⚠️ TIME OVERLAP DETECTED: ${Math.floor(start1 / 60)}:${(start1 % 60).toString().padStart(2, '0')}-${Math.floor(end1 / 60)}:${(end1 % 60).toString().padStart(2, '0')} overlaps with ${Math.floor(start2 / 60)}:${(start2 % 60).toString().padStart(2, '0')}-${Math.floor(end2 / 60)}:${(end2 % 60).toString().padStart(2, '0')}`,
       );
     }
 
@@ -2060,19 +2095,22 @@ export class AdminShiftOptimizationService {
   private checkDateConflict(user: any, targetDate: string): boolean {
     // Check if user already has 2 or more shifts on target date (maximum allowed)
     if (!user.shifts || user.shifts.length === 0) return false;
-    
+
     const targetDateStr = targetDate; // Assume targetDate is already in YYYY-MM-DD format
-    
+
     const shiftsOnDate = user.shifts.filter((shift: any) => {
-      const shiftDateStr = shift.tanggal instanceof Date 
-        ? shift.tanggal.toISOString().split('T')[0]
-        : shift.tanggal.split('T')[0];
-      
+      const shiftDateStr =
+        shift.tanggal instanceof Date
+          ? shift.tanggal.toISOString().split('T')[0]
+          : shift.tanggal.split('T')[0];
+
       return shiftDateStr === targetDateStr;
     });
-    
-    console.log(`🔍 Checking daily limit: User ${user.id} has ${shiftsOnDate.length} shifts on ${targetDateStr} (max 2 allowed)`);
-    
+
+    console.log(
+      `🔍 Checking daily limit: User ${user.id} has ${shiftsOnDate.length} shifts on ${targetDateStr} (max 2 allowed)`,
+    );
+
     // Return true (conflict) if user already has 2 or more shifts on this date
     return shiftsOnDate.length >= 2;
   }

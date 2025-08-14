@@ -10,7 +10,7 @@ import TableSearch from '@/components/common/TableSearch';
 import Image from 'next/image';
 import FilterButton from '@/components/common/FilterButton';
 import SortButton from '@/components/common/SortButton';
-import { Brain, Calendar, Clock, MapPin, Users, AlertTriangle, CheckCircle, Loader2, Grid, List, Zap, Plus, RefreshCw, Eye, Edit, Trash2, Download, BarChart3, Shield, X } from 'lucide-react';
+import { Brain, Calendar, Clock, MapPin, Users, AlertTriangle, CheckCircle, Loader2, Grid, List, Zap, Plus, RefreshCw, Eye, Edit, Trash2, Download, BarChart3, Shield, X, Search, User } from 'lucide-react';
 import WorkloadCounterWidget from '@/components/WorkloadCounterWidget';
 import MonthlyScheduleView from '@/components/MonthlyScheduleView';
 import AutoScheduleModal from '@/components/modals/AutoScheduleModal';
@@ -439,8 +439,21 @@ const ManagemenJadwalPage = () => {
     const [sortValue, setSortValue] = useState("");
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
     const [showAllSchedules, setShowAllSchedules] = useState(false); // Toggle untuk melihat semua jadwal
-    const [viewMode, setViewMode] = useState<'table' | 'monthly'>('table'); // Toggle untuk view mode
+    const [viewMode, setViewMode] = useState<'table' | 'monthly' | 'history'>('table'); // Toggle untuk view mode
     const [showWorkloadCounters, setShowWorkloadCounters] = useState(true); // Toggle untuk workload counters
+    
+    // Historical data state untuk tab riwayat
+    const [historicalData, setHistoricalData] = useState<{
+        shifts: any[];
+        workloadSummary: any;
+    }>({
+        shifts: [],
+        workloadSummary: {}
+    });
+    
+    const [selectedHistoryMonth, setSelectedHistoryMonth] = useState(new Date().getMonth() + 1);
+    const [selectedHistoryYear, setSelectedHistoryYear] = useState(new Date().getFullYear());
+    const [historicalDataLoading, setHistoricalDataLoading] = useState(false);
     
     // Additional state variables for missing functionality
     const [isCreateShiftModalOpen, setIsCreateShiftModalOpen] = useState(false);
@@ -1701,6 +1714,135 @@ const ManagemenJadwalPage = () => {
             }
     };
 
+    // Fetch historical data untuk tab riwayat
+    const fetchHistoricalData = async () => {
+        setHistoricalDataLoading(true);
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Token tidak ditemukan');
+            }
+
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            
+            // Fetch shifts untuk bulan yang dipilih
+            const shiftsResponse = await fetch(
+                `${apiUrl}/shifts/history/${selectedHistoryYear}/${selectedHistoryMonth}`, 
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            
+            // Fetch workload summary untuk bulan yang dipilih
+            const workloadResponse = await fetch(
+                `${apiUrl}/admin/workload/monthly-summary/${selectedHistoryYear}/${selectedHistoryMonth}`, 
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            let shifts = [];
+            let workloadSummary = {};
+
+            if (shiftsResponse.ok) {
+                const shiftsData = await shiftsResponse.json();
+                // Format historical shifts data sama seperti data normal
+                shifts = shiftsData.map((shift: any) => {
+                    const user = users.find((u: any) => 
+                        u.id === shift.userId || u.username === shift.idpegawai
+                    );
+                    
+                    return {
+                        ...shift,
+                        nama: user ? `${user.namaDepan} ${user.namaBelakang}` : shift.idpegawai,
+                        user: user,
+                        tanggal: formatDateForDisplay(shift.tanggal).formatted,
+                        originalDate: formatDateForDisplay(shift.tanggal).original
+                    };
+                });
+            }
+
+            if (workloadResponse.ok) {
+                const workloadData = await workloadResponse.json();
+                // Process workload data untuk menghitung summary per pegawai
+                workloadSummary = {};
+                
+                shifts.forEach((shift: any) => {
+                    const employeeId = shift.idpegawai;
+                    if (!workloadSummary[employeeId]) {
+                        workloadSummary[employeeId] = {
+                            nama: shift.nama,
+                            totalShifts: 0,
+                            totalHours: 0,
+                            shiftBreakdown: {
+                                PAGI: 0,
+                                SIANG: 0,
+                                MALAM: 0
+                            }
+                        };
+                    }
+                    
+                    workloadSummary[employeeId].totalShifts++;
+                    
+                    // Calculate hours based on shift type
+                    const shiftDuration = getShiftDuration(shift.jammulai, shift.jamselesai);
+                    workloadSummary[employeeId].totalHours += shiftDuration;
+                    
+                    // Count by shift type
+                    if (shift.tipeshift && workloadSummary[employeeId].shiftBreakdown[shift.tipeshift]) {
+                        workloadSummary[employeeId].shiftBreakdown[shift.tipeshift]++;
+                    }
+                });
+            }
+
+            setHistoricalData({
+                shifts,
+                workloadSummary
+            });
+
+        } catch (error: any) {
+            console.error('Error fetching historical data:', error);
+            showNotificationModal({
+                type: 'error',
+                title: 'Gagal Memuat Data Riwayat',
+                message: error.message || 'Terjadi kesalahan saat memuat data riwayat'
+            });
+        } finally {
+            setHistoricalDataLoading(false);
+        }
+    };
+
+    // Helper function untuk menghitung durasi shift
+    const getShiftDuration = (startTime: string, endTime: string): number => {
+        try {
+            const start = new Date(`2000-01-01 ${startTime}`);
+            const end = new Date(`2000-01-01 ${endTime}`);
+            let duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // Convert to hours
+            
+            // Handle shifts that cross midnight
+            if (duration < 0) {
+                duration += 24;
+            }
+            
+            return duration;
+        } catch (error) {
+            console.error('Error calculating shift duration:', error);
+            return 8; // Default 8 hours
+        }
+    };
+
+    // Effect untuk fetch historical data ketika tab history dibuka atau bulan/tahun berubah
+    useEffect(() => {
+        if (viewMode === 'history' && users.length > 0) {
+            fetchHistoricalData();
+        }
+    }, [viewMode, selectedHistoryMonth, selectedHistoryYear, users]);
+
     // Handle successful creation of a new jadwal entry
     const handleJadwalCreated = (newJadwal: Jadwal) => {
         // Find user data to supplement the jadwal entry
@@ -2375,6 +2517,23 @@ const ManagemenJadwalPage = () => {
                         <List className="w-4 h-4" />
                         <span>Tabel</span>
                     </button>
+                    
+                    {/* Tab Riwayat */}
+                    <button
+                        onClick={() => {
+                            setViewMode('history');
+                            setUseInteractiveCalendar(false);
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            viewMode === 'history'
+                                ? 'bg-green-600 text-white shadow-sm' 
+                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                        title="Lihat jadwal dan beban kerja bulan-bulan sebelumnya"
+                    >
+                        <BarChart3 className="w-4 h-4" />
+                        <span>Riwayat</span>
+                    </button>
                     {/* Hidden: Kalender Interaktif button */}
                     {/* <button
                         onClick={() => {
@@ -2720,6 +2879,251 @@ const ManagemenJadwalPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* KONTEN TAB RIWAYAT */}
+            {viewMode === 'history' && (
+                <div className="space-y-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-green-100 rounded-lg">
+                                    <BarChart3 className="w-6 h-6 text-green-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-semibold text-gray-900">Riwayat Jadwal & Beban Kerja</h2>
+                                    <p className="text-sm text-gray-600">Lihat jadwal dan analisis beban kerja pegawai dari bulan-bulan sebelumnya</p>
+                                </div>
+                            </div>
+                            
+                            {/* Date Range Selector */}
+                            <div className="flex items-center gap-3">
+                                <select
+                                    value={selectedHistoryMonth}
+                                    onChange={(e) => setSelectedHistoryMonth(parseInt(e.target.value))}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                >
+                                    {Array.from({length: 12}, (_, i) => {
+                                        const month = i + 1;
+                                        const monthName = new Date(2024, i, 1).toLocaleString('id-ID', { month: 'long' });
+                                        return (
+                                            <option key={month} value={month}>
+                                                {monthName}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                
+                                <select
+                                    value={selectedHistoryYear}
+                                    onChange={(e) => setSelectedHistoryYear(parseInt(e.target.value))}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                >
+                                    {Array.from({length: 5}, (_, i) => {
+                                        const year = new Date().getFullYear() - i;
+                                        return (
+                                            <option key={year} value={year}>
+                                                {year}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                
+                                <button
+                                    onClick={fetchHistoricalData}
+                                    disabled={historicalDataLoading}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {historicalDataLoading ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <Search className="w-4 h-4" />
+                                    )}
+                                    {historicalDataLoading ? 'Memuat...' : 'Lihat Data'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Historical Data Content */}
+                        {historicalDataLoading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="text-center">
+                                    <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                                    <p className="text-gray-600">Memuat data historis...</p>
+                                </div>
+                            </div>
+                        ) : historicalData.shifts.length === 0 ? (
+                            <div className="text-center py-12">
+                                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-gray-600 mb-2">Tidak Ada Data Historis</h3>
+                                <p className="text-gray-500">
+                                    Tidak ditemukan data jadwal untuk {new Date(selectedHistoryYear, selectedHistoryMonth - 1, 1).toLocaleString('id-ID', { month: 'long', year: 'numeric' })}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Summary Statistics */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-blue-800">Total Shift</p>
+                                                <p className="text-2xl font-bold text-blue-600">{historicalData.shifts.length}</p>
+                                            </div>
+                                            <Calendar className="w-8 h-8 text-blue-500" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-green-800">Pegawai Aktif</p>
+                                                <p className="text-2xl font-bold text-green-600">
+                                                    {new Set(historicalData.shifts.map(s => s.idpegawai)).size}
+                                                </p>
+                                            </div>
+                                            <Users className="w-8 h-8 text-green-500" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-purple-800">Lokasi</p>
+                                                <p className="text-2xl font-bold text-purple-600">
+                                                    {new Set(historicalData.shifts.map(s => s.lokasishift)).size}
+                                                </p>
+                                            </div>
+                                            <MapPin className="w-8 h-8 text-purple-500" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-orange-800">Shift Types</p>
+                                                <p className="text-2xl font-bold text-orange-600">
+                                                    {new Set(historicalData.shifts.map(s => s.tipeshift)).size}
+                                                </p>
+                                            </div>
+                                            <Clock className="w-8 h-8 text-orange-500" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Workload Summary */}
+                                {historicalData.workloadSummary && (
+                                    <div className="bg-gray-50 rounded-lg p-6">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                            <BarChart3 className="w-5 h-5 text-gray-600" />
+                                            Ringkasan Beban Kerja
+                                        </h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {Object.entries(historicalData.workloadSummary).map(([employeeId, data]: [string, any]) => (
+                                                <div key={employeeId} className="bg-white border border-gray-200 rounded-lg p-4">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h4 className="font-medium text-gray-900">{data.nama || `Pegawai ${employeeId}`}</h4>
+                                                        <span className="text-sm text-gray-500">ID: {employeeId}</span>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-2">
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">Total Shift:</span>
+                                                            <span className="font-medium">{data.totalShifts}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">Jam Kerja:</span>
+                                                            <span className="font-medium">{data.totalHours}h</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">Shift Pagi:</span>
+                                                            <span className="font-medium">{data.shiftBreakdown?.PAGI || 0}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">Shift Siang:</span>
+                                                            <span className="font-medium">{data.shiftBreakdown?.SIANG || 0}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">Shift Malam:</span>
+                                                            <span className="font-medium">{data.shiftBreakdown?.MALAM || 0}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Historical Shifts Table */}
+                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                    <div className="px-6 py-4 border-b border-gray-200">
+                                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                            <List className="w-5 h-5 text-gray-600" />
+                                            Daftar Shift Historis
+                                        </h3>
+                                    </div>
+                                    
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pegawai</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jam</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {historicalData.shifts.map((shift: any, index: number) => (
+                                                    <tr key={index} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex items-center">
+                                                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                                                    <User className="w-4 h-4 text-gray-600" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-sm font-medium text-gray-900">{shift.nama}</div>
+                                                                    <div className="text-sm text-gray-500">ID: {shift.idpegawai}</div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm text-gray-900">
+                                                                {new Date(shift.tanggal).toLocaleDateString('id-ID', {
+                                                                    weekday: 'short',
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric'
+                                                                })}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                                shift.tipeshift === 'PAGI' ? 'bg-yellow-100 text-yellow-800' :
+                                                                shift.tipeshift === 'SIANG' ? 'bg-blue-100 text-blue-800' :
+                                                                'bg-purple-100 text-purple-800'
+                                                            }`}>
+                                                                {shift.tipeshift}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                            {shift.lokasishift}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                            {shift.jammulai} - {shift.jamselesai}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Modal Bulk Schedule */}
             {isBulkScheduleModalOpen && (

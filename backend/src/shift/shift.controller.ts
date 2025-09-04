@@ -31,6 +31,18 @@ export class ShiftController {
   }
 
   /**
+   * Get historical shifts data for a specific year and month
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('history/:year/:month')
+  async getHistoricalShifts(
+    @Param('year') year: string,
+    @Param('month') month: string,
+  ) {
+    return this.shiftService.getHistoricalShifts(parseInt(year), parseInt(month));
+  }
+
+  /**
    * Get all available shift types based on RSUD Anugerah official regulations
    */
   @UseGuards(JwtAuthGuard)

@@ -5032,4 +5032,96 @@ export class AdminShiftOptimizationService {
 
     return Math.max(maxConsecutive, currentConsecutive);
   }
+
+  /**
+   * Get workload monthly summary for historical data analysis
+   */
+  async getWorkloadMonthlySummary(year: number, month: number) {
+    try {
+      // Create start and end dates for the month
+      const startDate = new Date(year, month - 1, 1); // month is 0-indexed
+      const endDate = new Date(year, month, 0); // last day of the month
+
+      // Get all shifts for the month
+      const shifts = await this.prisma.shift.findMany({
+        where: {
+          tanggal: {
+            gte: startDate,
+            lte: endDate
+          }
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              employeeId: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
+          },
+        },
+      });
+
+      // Calculate workload summary by employee
+      const workloadSummary: any = {};
+
+      shifts.forEach(shift => {
+        const employeeId = shift.user?.employeeId || shift.userId.toString();
+        
+        if (!workloadSummary[employeeId]) {
+          workloadSummary[employeeId] = {
+            nama: shift.user ? `${shift.user.namaDepan} ${shift.user.namaBelakang}` : `User ${shift.userId}`,
+            totalShifts: 0,
+            totalHours: 0,
+            shiftBreakdown: {
+              PAGI: 0,
+              SIANG: 0,
+              MALAM: 0
+            }
+          };
+        }
+
+        workloadSummary[employeeId].totalShifts++;
+        
+        // Calculate hours based on shift type or times
+        const shiftDuration = this.calculateShiftDuration(shift.jammulai, shift.jamselesai);
+        workloadSummary[employeeId].totalHours += shiftDuration;
+        
+        // Count by shift type
+        const shiftType = shift.tipeshift || shift.tipeEnum;
+        if (shiftType && workloadSummary[employeeId].shiftBreakdown[shiftType]) {
+          workloadSummary[employeeId].shiftBreakdown[shiftType]++;
+        }
+      });
+
+      return workloadSummary;
+    } catch (error) {
+      console.error('Error getting workload monthly summary:', error);
+      throw new Error(`Failed to get workload monthly summary: ${error.message}`);
+    }
+  }
+
+  /**
+   * Helper method to calculate shift duration in hours
+   */
+  private calculateShiftDuration(startTime: Date, endTime: Date): number {
+    try {
+      // Convert times to hours
+      const startHours = startTime.getHours() + (startTime.getMinutes() / 60);
+      const endHours = endTime.getHours() + (endTime.getMinutes() / 60);
+      
+      let duration = endHours - startHours;
+      
+      // Handle shifts that cross midnight
+      if (duration < 0) {
+        duration += 24;
+      }
+      
+      return duration;
+    } catch (error) {
+      console.error('Error calculating shift duration:', error);
+      return 8; // Default 8 hours
+    }
+  }
 }

@@ -609,6 +609,62 @@ export class ShiftService {
     }
   }
 
+  /**
+   * Get historical shifts data for a specific year and month
+   */
+  async getHistoricalShifts(year: number, month: number) {
+    try {
+      // Create start and end dates for the month
+      const startDate = new Date(year, month - 1, 1); // month is 0-indexed
+      const endDate = new Date(year, month, 0); // last day of the month
+
+      const shifts = await this.prisma.shift.findMany({
+        where: {
+          tanggal: {
+            gte: startDate,
+            lte: endDate
+          }
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              employeeId: true,
+              namaDepan: true,
+              namaBelakang: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: [
+          { tanggal: 'asc' },
+          { jammulai: 'asc' }
+        ]
+      });
+
+      // Format the data for frontend
+      const formattedShifts = shifts.map(shift => ({
+        id: shift.id,
+        idpegawai: shift.user?.employeeId || shift.userId.toString(),
+        nama: shift.user ? `${shift.user.namaDepan} ${shift.user.namaBelakang}` : `User ${shift.userId}`,
+        tanggal: shift.tanggal,
+        jammulai: shift.jammulai,
+        jamselesai: shift.jamselesai,
+        lokasishift: shift.lokasishift,
+        tipeshift: shift.tipeshift || shift.tipeEnum,
+        userId: shift.userId,
+        user: shift.user
+      }));
+
+      return formattedShifts;
+    } catch (error) {
+      console.error('Error fetching historical shifts:', error);
+      throw new InternalServerErrorException(
+        `Failed to fetch historical shifts: ${error.message}`
+      );
+    }
+  }
+
   async removeAll() {
     try {
       // Count total shifts before deletion for response

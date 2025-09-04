@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Download, Filter, Eye, Users, Clock, MapPin } from 'lucide-react';
 import WorkloadCounterWidget from '@/components/WorkloadCounterWidget';
+import DayShiftModal from '@/components/DayShiftModal';
 
 interface Shift {
   id: number;
-  idpegawai: string;
+  idpegawai?: string;
   nama: string;
   tanggal: string;
   lokasishift: string;
@@ -14,6 +15,8 @@ interface Shift {
   jamselesai: string;
   tipeshift: string;
   userId?: number;
+  user?: any;
+  originalDate?: string;
 }
 
 interface MonthlyViewProps {
@@ -32,15 +35,45 @@ const MonthlyScheduleView: React.FC<MonthlyViewProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [selectedShiftType, setSelectedShiftType] = useState<string>('');
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [showDayModal, setShowDayModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Get unique employees, locations, and shift types
-  const employees = [...new Set(shifts.map(s => s.nama))].sort();
-  const locations = [...new Set(shifts.map(s => s.lokasishift))].sort();
-  const shiftTypes = [...new Set(shifts.map(s => s.tipeshift))].filter(Boolean).sort();
+  const employees = [...new Set(shifts.filter(s => s.nama).map(s => s.nama))].sort();
+  const locations = [...new Set(shifts.filter(s => s.lokasishift).map(s => s.lokasishift))].sort();
+  const shiftTypes = [...new Set(shifts.filter(s => s.tipeshift).map(s => s.tipeshift))].filter(Boolean).sort();
 
   // Filter shifts based on current month and filters
   const filteredShifts = shifts.filter(shift => {
-    const shiftDate = new Date(shift.tanggal);
+    // Parse tanggal with better handling
+    let shiftDate;
+    try {
+      // Handle different date formats
+      if (shift.tanggal.includes('/')) {
+        // Format DD/MM/YYYY or MM/DD/YYYY
+        const parts = shift.tanggal.split('/');
+        if (parts.length === 3) {
+          // Assume DD/MM/YYYY format for Indonesian locale
+          const [day, month, year] = parts;
+          shiftDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        } else {
+          shiftDate = new Date(shift.tanggal);
+        }
+      } else {
+        // ISO format or other standard format
+        shiftDate = new Date(shift.tanggal);
+      }
+      
+      // Validate date
+      if (isNaN(shiftDate.getTime())) {
+        console.warn('Invalid date:', shift.tanggal);
+        return false;
+      }
+    } catch (error) {
+      console.warn('Error parsing date:', shift.tanggal, error);
+      return false;
+    }
+    
     const monthMatch = shiftDate.getMonth() === currentDate.getMonth() && 
                       shiftDate.getFullYear() === currentDate.getFullYear();
     
@@ -80,8 +113,31 @@ const MonthlyScheduleView: React.FC<MonthlyViewProps> = ({
   const getShiftsForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
     return filteredShifts.filter(shift => {
-      const shiftDate = new Date(shift.tanggal);
-      return shiftDate.toISOString().split('T')[0] === dateStr;
+      let shiftDate;
+      try {
+        // Handle different date formats
+        if (shift.tanggal.includes('/')) {
+          const parts = shift.tanggal.split('/');
+          if (parts.length === 3) {
+            // Assume DD/MM/YYYY format
+            const [day, month, year] = parts;
+            shiftDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          } else {
+            shiftDate = new Date(shift.tanggal);
+          }
+        } else {
+          shiftDate = new Date(shift.tanggal);
+        }
+        
+        if (isNaN(shiftDate.getTime())) {
+          return false;
+        }
+        
+        return shiftDate.toISOString().split('T')[0] === dateStr;
+      } catch (error) {
+        console.warn('Error parsing shift date:', shift.tanggal, error);
+        return false;
+      }
     });
   };
 
@@ -96,6 +152,15 @@ const MonthlyScheduleView: React.FC<MonthlyViewProps> = ({
       }
       return newDate;
     });
+  };
+
+  // Handle date click to show modal
+  const handleDateClick = (date: Date) => {
+    const shiftsForDate = getShiftsForDate(date);
+    if (shiftsForDate.length > 0) {
+      setSelectedDate(date);
+      setShowDayModal(true);
+    }
   };
 
   // Export to CSV
@@ -308,35 +373,47 @@ const MonthlyScheduleView: React.FC<MonthlyViewProps> = ({
           ))}
           
           {/* Calendar cells */}
-          {calendarDays.map((date, index) => (
-            <div key={index} className="min-h-[120px] border border-gray-200 p-1">
-              {date && (
-                <>
-                  <div className="text-sm font-medium text-gray-700 mb-1">
-                    {date.getDate()}
-                  </div>
-                  <div className="space-y-1">
-                    {getShiftsForDate(date).slice(0, 3).map((shift, shiftIndex) => (
-                      <div
-                        key={shiftIndex}
-                        onClick={() => onShiftClick?.(shift)}
-                        className={`text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity ${getShiftTypeColor(shift.tipeshift)}`}
-                        title={`${shift.nama} - ${shift.lokasishift} (${shift.jammulai}-${shift.jamselesai})`}
-                      >
-                        <div className="font-medium truncate">{shift.nama}</div>
-                        <div className="truncate">{shift.jammulai}-{shift.jamselesai}</div>
-                      </div>
-                    ))}
-                    {getShiftsForDate(date).length > 3 && (
-                      <div className="text-xs text-gray-500 text-center">
-                        +{getShiftsForDate(date).length - 3} lainnya
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
+          {calendarDays.map((date, index) => {
+            const shiftsForDate = date ? getShiftsForDate(date) : [];
+            const hasShifts = shiftsForDate.length > 0;
+            
+            return (
+              <div 
+                key={index} 
+                className={`min-h-[120px] border border-gray-200 p-1 ${
+                  hasShifts ? 'cursor-pointer hover:bg-blue-50 transition-colors' : ''
+                }`}
+                onClick={() => date && hasShifts && handleDateClick(date)}
+              >
+                {date && (
+                  <>
+                    <div className={`text-sm font-medium mb-1 ${
+                      hasShifts ? 'text-blue-700' : 'text-gray-700'
+                    }`}>
+                      {date.getDate()}
+                    </div>
+                    <div className="space-y-1">
+                      {shiftsForDate.slice(0, 3).map((shift, shiftIndex) => (
+                        <div
+                          key={shiftIndex}
+                          className={`text-xs p-1 rounded transition-opacity ${getShiftTypeColor(shift.tipeshift)}`}
+                          title={`${shift.nama} - ${shift.lokasishift} (${shift.jammulai}-${shift.jamselesai})`}
+                        >
+                          <div className="font-medium truncate">{shift.nama}</div>
+                          <div className="truncate">{shift.jammulai}-{shift.jamselesai}</div>
+                        </div>
+                      ))}
+                      {shiftsForDate.length > 3 && (
+                        <div className="text-xs text-blue-600 text-center font-medium">
+                          +{shiftsForDate.length - 3} lainnya
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         /* List View */
@@ -359,7 +436,9 @@ const MonthlyScheduleView: React.FC<MonthlyViewProps> = ({
                   </div>
                   <div>
                     <div className="font-medium text-gray-900">{shift.nama}</div>
-                    <div className="text-sm text-gray-500">{shift.idpegawai}</div>
+                    <div className="text-sm text-gray-500">
+                      {shift.idpegawai ? shift.idpegawai : 'ID tidak tersedia'}
+                    </div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-700">{shift.lokasishift}</div>
@@ -373,6 +452,15 @@ const MonthlyScheduleView: React.FC<MonthlyViewProps> = ({
             ))}
         </div>
       )}
+
+      {/* Day Shift Modal */}
+      <DayShiftModal
+        isOpen={showDayModal}
+        onClose={() => setShowDayModal(false)}
+        date={selectedDate}
+        shifts={selectedDate ? getShiftsForDate(selectedDate) : []}
+        onShiftClick={onShiftClick}
+      />
     </div>
   );
 };

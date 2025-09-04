@@ -527,6 +527,31 @@ export class AdminShiftOptimizationController {
   }
 
   /**
+   * Get workload monthly summary for historical data
+   */
+  @Get('workload/monthly-summary/:year/:month')
+  async getWorkloadMonthlySummary(
+    @Param('year') year: string, 
+    @Param('month') month: string,
+    @Req() req: UserRequest
+  ) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Unauthorized: Admin access required');
+    }
+
+    try {
+      const summary = await this.adminOptimizationService.getWorkloadMonthlySummary(
+        parseInt(year), 
+        parseInt(month)
+      );
+      return { success: true, data: summary };
+    } catch (error) {
+      console.error('Workload monthly summary error:', error);
+      throw new Error('Failed to get workload monthly summary');
+    }
+  }
+
+  /**
    * TEST ENDPOINT: Test enhanced algorithm without authentication (development only)
    */
   @Post('test-enhanced-algorithm')

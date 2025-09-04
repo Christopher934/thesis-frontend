@@ -321,110 +321,7 @@ type Jadwal = {
     originalDate?: string; // Store original date format
 }
 
-// Workload Analysis Component
-const WorkloadAnalysisSection = ({ jadwalData, users }: { jadwalData: Jadwal[], users: User[] }) => {
-    const [workloadData, setWorkloadData] = useState<Record<number, {
-        monthlyShifts: number;
-        weeklyShifts: number;
-        dailyShifts: number;
-        status: 'NORMAL' | 'WARNING' | 'CRITICAL';
-        utilizationRate: number;
-        totalHours: number;
-    }>>({});
 
-    // Fetch workload data
-    const fetchWorkloadData = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-            const response = await fetch(`${apiUrl}/overwork/admin/workload/analysis`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const workloadMap: Record<number, any> = {};
-                
-                if (Array.isArray(data)) {
-                    data.forEach((item: any) => {
-                        workloadMap[item.userId] = {
-                            monthlyShifts: item.currentShifts || 0,
-                            weeklyShifts: item.weeklyShifts || 0,
-                            dailyShifts: item.dailyShifts || 0,
-                            status: item.status === 'CRITICAL' ? 'CRITICAL' : 
-                                   item.status === 'WARNING' ? 'WARNING' : 'NORMAL',
-                            utilizationRate: item.utilizationRate || 0,
-                            totalHours: item.weeklyHours || 0,
-                        };
-                    });
-                }
-                
-                setWorkloadData(workloadMap);
-            }
-        } catch (error) {
-            console.error('Error fetching workload data:', error);
-        }
-    };
-
-    useEffect(() => {
-        fetchWorkloadData();
-    }, [jadwalData]);
-
-    // Calculate total weekly and daily shifts from all users
-    const totalWeeklyShifts = Object.values(workloadData).reduce((sum, workload) => sum + workload.weeklyShifts, 0);
-    const totalDailyShifts = Object.values(workloadData).reduce((sum, workload) => sum + workload.dailyShifts, 0);
-
-    return (
-        <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-800">Analisis Beban Kerja</h2>
-                        <p className="text-sm text-gray-600">Monitoring real-time beban kerja pegawai</p>
-                    </div>
-                </div>
-                <button
-                    onClick={fetchWorkloadData}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                >
-                    <RefreshCw className="w-4 h-4" />
-                    Refresh
-                </button>
-            </div>
-
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
-                    <div className="text-2xl font-bold text-blue-600">{jadwalData.length}</div>
-                    <div className="text-sm text-gray-600">Total Shift</div>
-                </div>
-                <div className="bg-white p-4 rounded-lg border border-green-200 shadow-sm">
-                    <div className="text-2xl font-bold text-green-600">
-                        {[...new Set(jadwalData.map(j => j.idpegawai))].length}
-                    </div>
-                    <div className="text-sm text-gray-600">Pegawai Aktif</div>
-                </div>
-                <div className="bg-white p-4 rounded-lg border border-purple-200 shadow-sm">
-                    <div className="text-2xl font-bold text-purple-600">{totalWeeklyShifts}</div>
-                    <div className="text-sm text-gray-600">Total Shift Minggu Ini</div>
-                </div>
-                <div className="bg-white p-4 rounded-lg border border-orange-200 shadow-sm">
-                    <div className="text-2xl font-bold text-orange-600">{totalDailyShifts}</div>
-                    <div className="text-sm text-gray-600">Total Shift Hari Ini</div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 // Main component for the Manajemen Jadwal page
 const ManagemenJadwalPage = () => {
@@ -1738,7 +1635,7 @@ const ManagemenJadwalPage = () => {
             
             // Fetch workload summary untuk bulan yang dipilih
             const workloadResponse = await fetch(
-                `${apiUrl}/admin/workload/monthly-summary/${selectedHistoryYear}/${selectedHistoryMonth}`, 
+                `${apiUrl}/admin/shift-optimization/workload/monthly-summary/${selectedHistoryYear}/${selectedHistoryMonth}`, 
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -1751,32 +1648,84 @@ const ManagemenJadwalPage = () => {
 
             if (shiftsResponse.ok) {
                 const shiftsData = await shiftsResponse.json();
-                // Format historical shifts data sama seperti data normal
+                console.log('📊 Historical shifts data:', shiftsData);
+                
+                // Process and enrich shifts data with user information
                 shifts = shiftsData.map((shift: any) => {
-                    const user = users.find((u: any) => 
-                        u.id === shift.userId || u.username === shift.idpegawai
+                    // Find user information
+                    const user = users.find(u => 
+                        u.id === shift.userId || 
+                        u.username === shift.idpegawai
                     );
+                    
+                    console.log('🔍 Processing shift:', {
+                        id: shift.id,
+                        idpegawai: shift.idpegawai,
+                        jammulai: shift.jammulai,
+                        jamselesai: shift.jamselesai,
+                        tipeshift: shift.tipeshift,
+                        hasUser: !!user
+                    });
                     
                     return {
                         ...shift,
-                        nama: user ? `${user.namaDepan} ${user.namaBelakang}` : shift.idpegawai,
-                        user: user,
-                        tanggal: formatDateForDisplay(shift.tanggal).formatted,
-                        originalDate: formatDateForDisplay(shift.tanggal).original
+                        nama: user ? `${user.namaDepan} ${user.namaBelakang}` : shift.nama || 'Nama tidak tersedia',
+                        user: user
                     };
                 });
+                
+                console.log('📊 Processed historical shifts:', shifts.length, 'items');
+            } else {
+                console.warn('Failed to fetch historical shifts:', shiftsResponse.status);
+                
+                // Try alternative endpoint if the first fails
+                try {
+                    const alternativeResponse = await fetch(
+                        `${apiUrl}/shifts?month=${selectedHistoryMonth}&year=${selectedHistoryYear}`, 
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        }
+                    );
+                    
+                    if (alternativeResponse.ok) {
+                        const alternativeData = await alternativeResponse.json();
+                        shifts = alternativeData.map((shift: any) => {
+                            const user = users.find(u => 
+                                u.id === shift.userId || 
+                                u.username === shift.idpegawai
+                            );
+                            
+                            return {
+                                ...shift,
+                                nama: user ? `${user.namaDepan} ${user.namaBelakang}` : shift.nama || 'Nama tidak tersedia',
+                                user: user
+                            };
+                        });
+                        console.log('📊 Alternative endpoint data:', shifts.length, 'items');
+                    }
+                } catch (altError) {
+                    console.warn('Alternative endpoint also failed:', altError);
+                }
             }
 
             if (workloadResponse.ok) {
                 const workloadData = await workloadResponse.json();
-                // Process workload data untuk menghitung summary per pegawai
+                console.log('📈 Workload summary data:', workloadData);
+                workloadSummary = workloadData.success ? workloadData.data : workloadData;
+            } else {
+                console.warn('Failed to fetch workload summary:', workloadResponse.status);
+                // Calculate workload summary from shifts data if API fails
                 workloadSummary = {};
                 
                 shifts.forEach((shift: any) => {
-                    const employeeId = shift.idpegawai;
+                    const employeeId = shift.idpegawai || shift.userId;
+                    const employeeName = shift.nama || 'Nama tidak tersedia';
+                    
                     if (!workloadSummary[employeeId]) {
                         workloadSummary[employeeId] = {
-                            nama: shift.nama,
+                            nama: employeeName,
                             totalShifts: 0,
                             totalHours: 0,
                             shiftBreakdown: {
@@ -1791,13 +1740,17 @@ const ManagemenJadwalPage = () => {
                     
                     // Calculate hours based on shift type
                     const shiftDuration = getShiftDuration(shift.jammulai, shift.jamselesai);
-                    workloadSummary[employeeId].totalHours += shiftDuration;
+                    if (!isNaN(shiftDuration) && shiftDuration > 0) {
+                        workloadSummary[employeeId].totalHours += shiftDuration;
+                    }
                     
                     // Count by shift type
-                    if (shift.tipeshift && workloadSummary[employeeId].shiftBreakdown[shift.tipeshift]) {
+                    if (shift.tipeshift && workloadSummary[employeeId].shiftBreakdown[shift.tipeshift] !== undefined) {
                         workloadSummary[employeeId].shiftBreakdown[shift.tipeshift]++;
                     }
                 });
+                
+                console.log('📈 Calculated workload summary:', Object.keys(workloadSummary).length, 'employees');
             }
 
             setHistoricalData({
@@ -1820,8 +1773,34 @@ const ManagemenJadwalPage = () => {
     // Helper function untuk menghitung durasi shift
     const getShiftDuration = (startTime: string, endTime: string): number => {
         try {
-            const start = new Date(`2000-01-01 ${startTime}`);
-            const end = new Date(`2000-01-01 ${endTime}`);
+            // Check if both times are provided and valid
+            if (!startTime || !endTime || 
+                typeof startTime !== 'string' || 
+                typeof endTime !== 'string') {
+                console.warn('Invalid shift times:', { startTime, endTime });
+                return 8; // Default 8 hours for invalid data
+            }
+
+            // Clean the time strings
+            const cleanStart = startTime.trim();
+            const cleanEnd = endTime.trim();
+            
+            // Validate time format (HH:MM or H:MM)
+            const timePattern = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            if (!timePattern.test(cleanStart) || !timePattern.test(cleanEnd)) {
+                console.warn('Invalid time format:', { startTime: cleanStart, endTime: cleanEnd });
+                return 8; // Default 8 hours for invalid format
+            }
+
+            const start = new Date(`2000-01-01 ${cleanStart}`);
+            const end = new Date(`2000-01-01 ${cleanEnd}`);
+            
+            // Check if dates are valid
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                console.warn('Invalid date parsing:', { startTime: cleanStart, endTime: cleanEnd });
+                return 8; // Default 8 hours for invalid dates
+            }
+
             let duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // Convert to hours
             
             // Handle shifts that cross midnight
@@ -1829,16 +1808,31 @@ const ManagemenJadwalPage = () => {
                 duration += 24;
             }
             
+            // Sanity check: duration should be reasonable (between 1 and 24 hours)
+            if (duration < 1 || duration > 24) {
+                console.warn('Unreasonable shift duration:', { startTime: cleanStart, endTime: cleanEnd, duration });
+                return 8; // Default 8 hours for unreasonable duration
+            }
+            
+            console.log('✅ Calculated shift duration:', { startTime: cleanStart, endTime: cleanEnd, duration });
             return duration;
         } catch (error) {
-            console.error('Error calculating shift duration:', error);
+            console.error('Error calculating shift duration:', error, { startTime, endTime });
             return 8; // Default 8 hours
         }
     };
 
     // Effect untuk fetch historical data ketika tab history dibuka atau bulan/tahun berubah
     useEffect(() => {
+        console.log('🔄 History useEffect triggered:', {
+            viewMode,
+            usersLength: users.length,
+            selectedHistoryMonth,
+            selectedHistoryYear
+        });
+        
         if (viewMode === 'history' && users.length > 0) {
+            console.log('✅ Fetching historical data...');
             fetchHistoricalData();
         }
     }, [viewMode, selectedHistoryMonth, selectedHistoryYear, users]);
@@ -2584,35 +2578,37 @@ const ManagemenJadwalPage = () => {
                     </div>
                 )} */}
 
-                {/* Toggle untuk workload counters */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setShowWorkloadCounters(!showWorkloadCounters)}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                            showWorkloadCounters 
-                                ? 'bg-purple-100 text-purple-800 border border-purple-300' 
-                                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
-                        }`}
-                        title={showWorkloadCounters ? 'Sembunyikan counter beban kerja' : 'Tampilkan counter beban kerja'}
-                    >
-                        <Users className="w-4 h-4 inline mr-2" />
-                        {showWorkloadCounters ? 'Counter ON' : 'Counter OFF'}
-                    </button>
-                    
-                    {/* Toggle untuk workload validator */}
-                    <button
-                        onClick={() => setShowWorkloadValidator(!showWorkloadValidator)}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                            showWorkloadValidator 
-                                ? 'bg-green-100 text-green-800 border border-green-300' 
-                                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
-                        }`}
-                        title={showWorkloadValidator ? 'Sembunyikan validator workload' : 'Tampilkan validator workload'}
-                    >
-                        <Shield className="w-4 h-4 inline mr-2" />
-                        {showWorkloadValidator ? 'Validator ON' : 'Validator OFF'}
-                    </button>
-                </div>
+                {/* Toggle untuk workload counters - hanya tampil di mode table */}
+                {viewMode === 'table' && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowWorkloadCounters(!showWorkloadCounters)}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                showWorkloadCounters 
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-300' 
+                                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                            }`}
+                            title={showWorkloadCounters ? 'Sembunyikan counter beban kerja' : 'Tampilkan counter beban kerja'}
+                        >
+                            <Users className="w-4 h-4 inline mr-2" />
+                            {showWorkloadCounters ? 'Counter ON' : 'Counter OFF'}
+                        </button>
+                        
+                        {/* Toggle untuk workload validator */}
+                        <button
+                            onClick={() => setShowWorkloadValidator(!showWorkloadValidator)}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                showWorkloadValidator 
+                                    ? 'bg-green-100 text-green-800 border border-green-300' 
+                                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                            }`}
+                            title={showWorkloadValidator ? 'Sembunyikan validator workload' : 'Tampilkan validator workload'}
+                        >
+                            <Shield className="w-4 h-4 inline mr-2" />
+                            {showWorkloadValidator ? 'Validator ON' : 'Validator OFF'}
+                        </button>
+                    </div>
+                )}
                 
                 {/* Filter and Sort Controls */}
                 <div className="flex items-center gap-3 ml-auto">
@@ -2680,8 +2676,8 @@ const ManagemenJadwalPage = () => {
                 </div>
             )}
 
-            {/* STATISTICS AND COUNTERS SECTION */}
-            {showWorkloadCounters && (
+            {/* STATISTICS AND COUNTERS SECTION - hanya tampil di mode table */}
+            {showWorkloadCounters && viewMode === 'table' && (
                 <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Analisis Beban Kerja</h3>
                     {jadwalData.length === 0 ? (
@@ -2734,19 +2730,13 @@ const ManagemenJadwalPage = () => {
                                     <div className="text-sm text-gray-600">Rata-rata/Hari</div>
                                 </div>
                             </div>
-
-                            {/* WORKLOAD ANALYSIS SECTION */}
-                            <WorkloadAnalysisSection 
-                                jadwalData={jadwalData}
-                                users={users}
-                            />
                         </div>
                     )}
                 </div>
             )}
 
-            {/* REAL-TIME WORKLOAD VALIDATOR SECTION */}
-            {showWorkloadValidator && (
+            {/* REAL-TIME WORKLOAD VALIDATOR SECTION - hanya tampil di mode table */}
+            {showWorkloadValidator && viewMode === 'table' && (
                 <div className="mb-8">
                     <RealTimeWorkloadValidator 
                         onValidationResult={(result) => {
@@ -3029,11 +3019,11 @@ const ManagemenJadwalPage = () => {
                                                     <div className="space-y-2">
                                                         <div className="flex justify-between text-sm">
                                                             <span className="text-gray-600">Total Shift:</span>
-                                                            <span className="font-medium">{data.totalShifts}</span>
+                                                            <span className="font-medium">{data.totalShifts || 0}</span>
                                                         </div>
                                                         <div className="flex justify-between text-sm">
                                                             <span className="text-gray-600">Jam Kerja:</span>
-                                                            <span className="font-medium">{data.totalHours}h</span>
+                                                            <span className="font-medium">{isNaN(data.totalHours) ? 'N/A' : Math.round(data.totalHours)}h</span>
                                                         </div>
                                                         <div className="flex justify-between text-sm">
                                                             <span className="text-gray-600">Shift Pagi:</span>
